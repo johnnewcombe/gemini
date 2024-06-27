@@ -1,0 +1,926 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                         Programmable Calculator Simulation.
+                        *************************************
+
+
+
+                                    System Notes.
+                                   ---------------
+
+
+
+
+
+
+                    Copyright (c) Electronic Accounting Services 1981.  
+
+                    All rights reserved.  
+
+
+
+
+
+
+                                     Disclaimer of liability.
+
+                          In no event can Electronic  Accounting  Services  be
+                    held liable for consequential losses or damages.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                                            Contents.
+                                           ***********
+
+
+
+
+
+
+
+
+
+
+
+
+        No                         Title                           Page No.
+        
+         1 : Introduction  ------------------------------------------  2
+        
+         2 : System Initialisation  ---------------------------------  4
+        
+         3 : Program Editor  ----------------------------------------  5
+        
+         4 : Data File Editor  --------------------------------------  7
+        
+         5 : Language Specification  --------------------------------  8
+        
+         6 : Compiler Program  -------------------------------------- 12
+        
+         7 : Runtime System  ---------------------------------------- 13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    NB : Note throughout these notes :- 
+
+                        1)  @ = Carriage Return.  
+
+                        2)  # = ASCII (23H) more normally seen as 
+
+
+                                           1
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+                                        1 : Introduction.
+                                       *******************
+
+
+              The    simulation  takes  the  form  of  a  series  of  programs
+        specifically tailored to  write,develop,test  and  run  programs,in  a
+        manner similar to a programmable calculator.This has been done so that
+        programs  can  be  written  simply  and  quickly  to achieve transient
+        objectives where it would seem uneconomic to use  a  more  traditional
+        programming language.  
+
+              The programs have been written with a bias towards the needs  of
+        the  business  or financial user.Calculations are therefore not geared
+        for speed,but for high precision in  a  fixed  point  mode  (with  the
+        number  of  decimal  places selected by the user).For the same reasons
+        all output is aligned on the decimal point,with commas inserted in the
+        appropriate places.  
+
+              The  simulation  cannot  handle  text  or  strings  but  like  a
+        calculator  deals  with  registers  (r1  to  r40) and not variables.To
+        increase clarity each register may be named so that whenever  data  is
+        output,or  input  is  requested  the  associated  name  will  be  used
+        automatically by the runtime system ie.   If  R1  is  named  as  GROSS
+        PAY,`INPUT  R1'  would  produce  the  prompt  `INPUT  GROSS  PAY  : ',
+        similarly if R1 has a value  of  12563.72  `PRINT  R1'  would  produce
+        `GROSS PAY        12,563.72'.  
+
+              The instructions accepted by the simulation are drawn from  many
+        of  the  major  languages  and are essentially block structured.  Goto
+        statements are strictly limited to jumps within a  block,  jumping  to
+        labels  and  not  line  numbers.No  line  numbers  are used except for
+        reference in the editor and error reports.  
+
+              The main blocks are :- 
+
+                1 : DO                                        LOOP 
+
+                2 : WHILE                                     WEND 
+
+                3 : IF                  ELSE                  FEND 
+
+                4 : SELECT     rX       MAX        X          TIMES          X
+
+              All subroutines are called by name to aid readability and may be
+        called recursively,allowing up to 20 levels of static nesting  and  50
+        levels of dynamic nesting.  
+
+              The programs supplied are :- 
+
+            1 : CALC.INT :A calculator program displaying data and results  on
+                a single screen.  
+
+            2 : EDITOR.INT :An editor program used to  write  programs  to  be
+                used by the simulation.  
+
+
+
+                                           2
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+            3 : EDITOR1.INT :An editor program used to  construct  data  files
+                which  will be used by the  program constructed by (2) and the
+                simulation.  
+
+            4 : COMPILE.INT :A compiler which reads in a  program  constructed
+                by  (2)  and  generates  an  object  program usable by (5).Any
+                errors detected in the first pass generates a  screen  showing
+                the  offending  line plus the 9 lines which preceed it and the
+                10 which follow.The opportunity is then given for the user  to
+                insert  a line,alter the offending line, delete that line,skip
+                the line and continue or abort the compilation.    The  second
+                pass detects context dependant errors and flags the errors for
+                later amendment.  
+
+            5 : RUNOBJ.INT :A runtime  module  which  will  establish  whether
+                program  output  is  to be echoed to the printer,a disc output
+                file or a disc input file,or any combination  and  if  a  disc
+                file is to be used for data input.The runtime module will then
+                as the name suggests run the object program.  
+
+            6 :    PROG.INT  :  The  programmable  calculator  control  module
+                supplying the main menu where 2 to 5  above  are  selected  as
+                required.  
+
+            7 : INIT.INT : A  module  which  is  automatically  selected  when
+                required  to  initialise  the  system  variables common to all
+                modules of the programmable calculator.  
+
+            8 : PCALC.INT :The program which controls all modules and  is  the
+                only one called from operating system level ie.CRUN2 PCALC@.  
+
+              There follows a more detailed outline of each  of  the  programs
+        and the associated language.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                           3
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                              2 : System Initialisation.
+                             ****************************
+
+
+
+              The programme suite uses 3 variables which are system  dependant
+        and  will  therefore  need  to  be  set  to your own values before the
+        programmes are run.The variables are all set in the first 20 lines  of
+        'PCALC.BAS'  which is included on the disc (with all other source code
+        in the corresponding '.BAS' files also on the disc).The  variables  in
+        question are :- 
+
+            1 : CLEAR$ :Which holds the character  or  characters  which  when
+                printed will clear the screen.  
+
+            2 : CURSOR$ :Which holds the character or  characters  which  when
+                printed with the row and column number following will move the
+                cursor to the appropriate location.  
+
+            3 : C.OFFSET% :Which holds the offset used by your  system  to  be
+                added  to  the row and column number when moving the cursor.If
+                your system does not use an offset,set C.OFFSET% = 0.  
+
+              The program assumes a 80 column display on the terminal if there
+        is less than this the program will not run in a comprehensible way.  
+
+              The program 'PCALC.BAS' when alterred as above will then need to
+        be re-compiled ie. CBAS2 PCALC $B@.  
+
+              The programme can then be run by typing  CRUN2  PCALC  and  when
+        loaded all further programmes are called by menu selection.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                           4
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                                 3 : Program Editor.
+                                *********************
+
+
+
+              The editor is constructed as three levels each utilising  single
+        letter  commands  to  carry  out a specific function or enter the next
+        level.At level 1 the outer level the command  character  is  typed  in
+        after  the program prompt of # (ASCII 23H).  Wherever possible once an
+        option is selected the editor reverts  to  an  interactive  format  to
+        actually  carry out the designated task.In this way for example when S
+        is    selected    the  filename  format  is  displayed  and  the  name
+        requested.Once any function is completed the program prompt returns.  
+
+              The commands are listed below giving firstly  the  level  number
+        ie.1  to  3  where  level 2 and 3 can only be used after command T has
+        been called from level 1 and level  1  can  only  be  used  after  the
+        program  prompt.This  is  followed by the command letter, then a brief
+        description and in parentheses any information provided by the program
+        at that point and information requested.  Then in square brackets  the
+        actual input required using the following conventions :- 
+           1 : all command letters are in capitals.  
+           2 : f = the first line number of a block (or perhaps only).  
+           3 : s = the first line number of the second block.  
+           4 : x = the size of the block in lines.  
+        The above  conventions  only  relate  to  the  way  the  commands  are
+        described  below  in  practice any combination of upper and lower case
+        may be used except in search and replace strings.  
+
+            1 : S : Save buffer in disc file (form of disc file  name  allowed
+              and requests the filename) [S] 
+
+            1 : L : Load buffer from disc file (form of disc file name allowed
+              plus size of file loaded in lines  and  requests  the  filename)
+              [L].  
+
+            1 : P : Print buffer or part of buffer  on  list  device  with  or
+              without  pagination  (size  of buffer in lines and then requests
+              the option.If only part of the buffer is selected,the first  and
+              last line number of the selected section is requested) [P].  
+
+            1 : C :Clear buffer so that a new file may be created[C].  
+
+            1 : I :Insert text (the current size of the buffer  in  lines  and
+              request  the  line  number where text is to be inserted) until #
+              (ASCII 23H) is typed as the only character on a line [I].  
+
+            1 : T :Type 40 lines of program  on  a  single  screen  and  enter
+              second level where editing is carried out on the displayed lines
+              by updating the buffer in place,so that the display always shows
+              the  current contents of the buffer (size of buffer and requests
+              the line number where the display should start)[T].  
+
+            2 : I :Insert line [fI] 
+
+
+                                           5
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+            2 : R :Replace line (the old line is displayed at  the  bottom  of
+              the screen and the replacement requested) [fR].  
+
+            2 : D :Delete line [fD].  
+
+            2 : S :Swap lines [fSs].  
+
+            2 : P :Display next page of 40 lines [P] 
+
+            2 : -P :Display previous page of 40 lines [-P].  
+
+            2 : T :type 40 lines from line number [fT].  
+
+            2 : C :Close up deleted lines.This is used because when lines  are
+              deleted  they are saved as blanks for insertions etc.If there is
+              not going to be an insertion then close up blanks [C].  
+
+            3 : BC :Copy a block from  one  part  of  the  buffer  to  another
+              [fBCx:s]  NB  : Note use of colon to seperate size of block from
+              start of second block.  
+
+            3 : BI :Insert a block [fBIx].  
+
+            3 : BR :Replace a block [fBRx].  
+
+            3 : BM :Move a block [fBMx:s].  
+
+            3 : BD :Delete a block which automatically closes up text  [fBDx].
+
+            2 : $ :Search and replace line(s) either [f$find$replace with]  or
+              [f:s$find$replace  with]  where  find and replace with represent
+              the appropriate strings.  
+
+            1 : $ :as level 2 $ but  will  also  accept  [$find$replace  with]
+              which searches the whole buffer.  
+
+            2 : E :Exit to level 1 [E].  
+
+            1 : E :Exit from program [E].  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                           6
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                                4 : Data File Editor.
+                               ***********************
+
+
+
+
+
+              The editor for data input files is constructed to handle numeric
+        as opposed to string data,but in all other aspects is identical to the
+        program editor.  
+
+              I do not therefore propose to repeat the commands here but refer
+        the reader to section (3).The only command which is available  in  the
+        program editor but is not available in the data file editor is [$] the
+        string search facility.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                           7
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                             5 : Language Specification.
+                            *****************************
+
+
+
+              The language described below  is  a  subset  of  many  languages
+        dealing with only numeric data in as simple way as possible.  
+
+              The instructions and the way they are used is listed below.There
+        are also two programs on disc which  should  give  a  better  idea  of
+        program structure,use the editor to inspect them.The examples are :- 
+
+            1) `SAL.SRC' :A routine to  generate  a  payslip  for  a  salaried
+            employee.  
+
+            2) `BM.SRC'      :A  routinte  to  run  an  approximation  to  PCW
+            benchmarks.  
+
+
+
+            INPUT / OUTPUT.  
+                READ r1...... ,INPUT r1.......... ,PRINT r1...........  
+
+                  I/O from  a  series  of  registers  specified  on  the  line
+                    seperated  by  spaces.Both  INPUT  and  PRINT will use the
+                    names associated with particular registers if specified.  
+
+                1 : READ : Reads into registers from a data file.  
+
+                2 :    INPUT  :  Accepts  input  from  the  keyboard  to  each
+                    register.Each register is requested seperately  ie.  INPUT
+                    name  .and  each  item  input  is  followed  by a carriage
+                    return.  
+
+                3 : PRINT : Outputs the contents of registers to the  terminal
+                    after  printing  a blank line.Each register is output on a
+                    seperate   line  and  all  the  values  are  automatically
+                    formatted.If previously selected the output will be echoed
+                    to the list device,a disc output file,a disc input file or
+                    any combination.  
+
+            PROGRAM BLOCKS.  
+
+               1 : DO rx 
+
+
+                   LOOP :Will exicute whatever lines appear between DO &  LOOP
+                    register x number of times.  
+
+               2 : WHILE r1 LT r2 
+
+
+                   WEND :Will exicute whatever lines appear  between  WHILE  &
+                    WEND  continuously  so  long  as  the expression following
+
+
+                                           8
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+                    WHILE remains true.The relationships which may  be  tested
+                    are :- 
+                        LT : Less than 
+                        GT : Greater than 
+                        EQU : Equal to 
+                        NEQ : Not equal to 
+                        LTE : Less than or equal to 
+                        GTE : Greater than or equal to 
+
+                    Tests  may  be  applied  against  registers  or  constants
+                    ie.WHILE R1 LT R2 or WHILE R12 GTE 128.  
+
+               3 : IF r1 LT r2 
+
+
+                   ELSE 
+
+
+                   FEND :Will exicute the lines  between  IF  &  ELSE  if  the
+                    expression  is  true  or  the lines between ELSE & FEND if
+                    false.If there is no ELSE then control is  passed  to  the
+                    statement after FEND if false.The relationships tested are
+                    the same as those used in while - wend.  
+
+               4 : SELECT r1 MAX 12 TIMES 3 :This is a many way  switch  which
+                    will  exicute  a  number  of  lines  specified  by   times
+                    (defaults  to  1 if TIMES is not present) according to the
+                    value of  the  specified  register.    Range  checking  is
+                    applied  automatically  against  the  contents   of    the
+                    specified  register  at  runtime  according  to  the value
+                    specified by MAX.  NB:lines which are not required  except
+                    to maintain the necessary symmetry of the select block can
+                    be comment lines ie.a line with just `;'.None of the three
+                    other types of block may appear in a SELECT block.  
+
+            CONTROL.  
+
+                STOP : The last statement of the main program and must  appear
+                    before any subroutines.  
+
+                EXIT : Exit from program which may appear any number of  times
+                    at any part of the program.  
+
+            SUBROUTINES.  
+
+                CALL NAME : Calls subroutine by name.  
+
+                SUB NAME :  Labels the first line of a subroutine.  
+
+                RETURN : Last statement of a subroutine which returns  control
+                    to  the  main  program.NB  Only  one  RETURN statement may
+                    appear in a subroutine.  
+
+            TRANSFER OF CONTROL.  
+
+
+
+                                           9
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+                1 : GOTO labelno : Jumps to specified label ie. GOTO 2 
+
+                2 : LABEL x : Labels the destination line of a  jump.ie  LABEL
+                    2.    NB:The  label  must  appear in the same block as the
+                    goto,but this does not mean  that  label  numbers  may  be
+                    repeated in other blocks.  
+
+            OTHER INSTRUCTIONS.  
+
+                NAME r1 name : Names specified register ie.NAME r6 GROSS  PAY.
+                    NB  :  The  whole name string will be reproduced including
+                    spaces.  
+
+                FIX 2 : Sets the maximum number of decimal  places  between  0
+                    and  9  (this example sets registers to 2 decimal places).
+                    If   not  specified  the  default  setting  is  3  decimal
+                    places.FIX may be used anywhere in the program any  number
+                    of  times.It  will have the effect of setting all register
+                    values to the set number of decimal places until a new FIX
+                    is executed which will change the number of places in  all
+                    registers.  
+
+                ; : Labels a line as a comment line which will  therefore  not
+                    be exicuted.  
+
+                INC r1 : Increments the specified register by 1.  
+
+                DEC r1 : Decrements the specified register by 1.  
+
+            Expressions.  
+
+                All expressions are expressed algebraically  using  registers,
+                    constants and pi.  
+                    ie. r6 = 6 + 7 / pi * r2.  
+                    Conventional           hierarchy        is        observed
+                    ie.brackets,functions,powers,   multiply  &  devide,add  &
+                    subtract.The functions operands  do  not  need  to  be  in
+                    brackets ie. r2 = sin 3 
+
+
+
+
+                    The operators and functions are listed on the next page :-
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                          10
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+
+
+
+
+
+                        1 : +        : Plus
+                        2 : -        : Minus
+                        3 : *        : Multiply
+                        4 : /        : Divide
+                        5 : ^        : Power (root = ^ (1 / 2) or ^ 0.5 etc.)
+                        6 : SIN      : Sin of number in radians
+                        7 : COS      : Cosine of number in radians
+                        8 : TAN      : Tangent of number in radians
+                        9 : ASIN     : Arc sine of number
+                       10 : ACOS     : Arc cosine of number
+                       11 : ATAN     : Arc tangent of number
+                       12 : LOG      : Log to base 10 of number
+                       13 : ALOG     : Anti-log to base 10 of number
+                       14 : LN       : Naperian logarithm base e
+                       15 : EXP      : e to power of number
+                       16 : SQ       : Square of number
+                       17 : RT       : Square root of number
+                       18 : RAD      : Convert number from degrees to radians
+                       19 : DEG      : Convert number from radians to degrees
+                       20 : ABS      : Absolute value of number
+                       21 : FACT     : Factorial of number
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                          11
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                                6 : Compiler Program.
+                               ***********************
+
+
+              The compiler is called by selecting option 7 from the  menu  and
+        will compile the source program already in memory.  
+
+              In the first pass the program compiles each  line  into  a  form
+        more  acceptable  to  a  machine  and checking for context independant
+        errors.If any  errors  are  found  the  program  gives  the  user  the
+        opportunity  to alter the source program whilst still in the compiler.
+
+              Before requesting the replacement line the program  displays  20
+        lines  from  the  source  program.The  lines displayed are the 9 lines
+        which preceed the erroneous line,the line  itself  and  the  10  lines
+        which  follow  it.If the user does not wish to replace the line he can
+        call on any one of the following options instead :- 
+
+            1 : INS : Insert a line before the incorrect line.ie. If no `STOP'
+                    has been found when a subroutine is reached `STOP' may  be
+                    inserted if there are no other errors.  
+
+            2 : DEL : Delete incorrect line.  
+
+            3 : SKIP : Skip incorrect line and  continue  compilation.If  this
+                    option is selected it wil be impossible to save the object
+                    file when compilation is complete.  
+
+            4 : ABORT : Stop compilation 
+
+
+              While the  program  is  compiling  the  lines  it  displays  the
+        partially  compiled  lines  on  the  console.This is done for no other
+        reason than to show how much of the program has been compiled.  
+
+              Once the first pass is completed  the  second  pass  will  start
+        which  is primarily looking for context dependant errors but will also
+        produce the final object program.Any errors  detected  at  this  stage
+        will  not  correspond  to  any particular line and will therefore just
+        produce a series of reports for subsequant alteration in the editor.  
+
+              When the second pass is completed a request is made for any  key
+        to  be  pressed  before the program continues.This is done so that the
+        user will have time to note down  any  error  messages  before  a  new
+        display appears.  
+
+              The opportunity will then be given to save the source and object
+        files on disc,depending on the errors found.  
+
+
+
+
+
+
+
+
+                                          12
+
+
+
+
+
+                              Programmable Calculator Simulation.
+
+
+
+                                 7 : Runtime System.
+                                *********************
+
+
+
+              The runtime system is loaded by selecting option 8 of  the  menu
+        and  will  run the object file plus any data file which are already in
+        memory.  
+
+              The program will echo output to printer and/or disc  (input  and
+        output files) according to selections already made from the menu.  
+
+              NB a disc input file will contain just the bare unformatted data
+        so that it can be used as an input file in  another  run  of  this  or
+        another  file.Whereas  a disc output file will contain fully formatted
+        output including associated register names.  
+
+              If data input files are being used for data input or output  and
+        they  reach  the  end  whilst  running  the runtime system will ask if
+        another file should be opened.In this  way  although  data  files  are
+        limited to 400 lines they can be interactively chained together.A file
+        which  was  produced during the run as an output file may also be used
+        later in the run as an input  file  if  necessary  (providing  it  was
+        echoed in input form).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                          13
+
+
+ more  traditional
+  

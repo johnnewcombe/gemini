@@ -1,0 +1,11 @@
+	TITLE DATE/TIME ROUTINES FOR CP/M PLUS BIOS
+
+	.Z80
+	GLOBAL ?TIME
+
+	CSEG
+
+;No external clock.
+?TIME:	RET	
+
+	END

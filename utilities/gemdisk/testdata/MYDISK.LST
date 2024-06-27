@@ -1,0 +1,37 @@
+
+
+DIRECTORY LISTING FOR MYDISK.IMG.
+
+USER      NAME EXT    SIZE
+   6     BIOSF.SYS    4608
+   6    BIOSFW.SYS    4992
+   5     BIOSN.SYS    4992
+   6     BIOSW.SYS    4864
+   2    SYSGEN.COM    1024
+   2    FORMAT.COM    1536
+   0      BOOT.COM     384
+   0    CONFIG.COM   11776
+   0   FINDBAD.COM    1664
+   0   FWM3212.COM    2816
+   0   FWM3425.COM    2816
+   0     FWNEC.COM    2816
+   0   FWRO201.COM    2816
+   0   FWRO202.COM    2816
+   0   FWRO203.COM    2816
+   0   FWRO204.COM    2816
+   0    GENSYS.COM   15616
+   0  SCRUBDIR.COM    1152
+   0   SYSTEMF.CFG    1792
+   0  SYSTEMFW.CFG    2176
+   0   SYSTEMW.CFG    2304
+   0      WHIG.COM    5760
+   0      PARK.COM    1408
+   0   SIMON44.ROM    1920
+   0   SIMON42.ROM    1920
+   0      READ. ME    2304
+
+files:  26
+ used:  62 blocks
+ free: 134 blocks
+bytes: 91904
+

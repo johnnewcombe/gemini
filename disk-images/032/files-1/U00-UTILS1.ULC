@@ -1,0 +1,310 @@
+{utils1.ulc}
+
+Procedure options;
+begin
+  gotoxy(1,8);
+  write('Option: ');
+  clreol;
+end; {of options}
+
+Procedure draw_vector(sx2,sy2,cx2,cy2,col : integer);
+var
+  ssx,ssy,scx,scy : integer;
+  sysclx, syscly : real;
+begin
+  set_area_boundries;
+  sysclx:=(right-left+1)/symbol_sizex;
+  syscly:=(bottom-top+1)/symbol_sizey;
+  ssx:=round(sx2*sysclx)+xoffs;
+  ssy:=round(sy2*syscly)+yoffs;
+  scx:=round(cx2*sysclx)+xoffs;
+  scy:=round(cy2*syscly)+yoffs;
+  if symvec.status=1 then
+  begin
+    sccol(col);
+    moveto(ssx,ssy);
+    lto(scx,scy);
+  end;
+  if symvec.status=2 then
+  begin
+   moveto(ssx,ssy);
+   sccol(col);
+   ffill;
+  end;
+end;  {of draw_vector}
+
+Procedure Key_info(ln : integer; n : info_name);
+begin
+gotoxy(1,ln);
+ case n of
+  Blank     : clreol;
+
+  Svl       : begin
+   write('In Use                                                  Label');
+   write('   Label   Label');
+              end;
+
+  CurrentAr : begin
+   gotoxy(9,ln);write(areanum,'     ');
+              end;
+
+  CurrentFt : begin
+   gotoxy(17,ln);write(fontname+copy('      ',1,6-length(fontname)));
+              end;
+
+  CurrentSc : begin
+   gotoxy(25,ln);write(scl:4:2,'  ');
+              end;
+
+  CurrentPn : begin
+   gotoxy(33,ln);write(curpen,'     ');
+              end;
+
+  CurrentLb : begin
+   gotoxy(1,6);write(labname+copy('          ',1,8-length(labname)));
+              end;
+
+ end; {of case}
+end; {of key_info}
+
+procedure do_inf;
+begin
+   for ifnm:=CurrentAr to CurrentPn do
+    Key_info(5,ifnm);options;
+end;
+
+Procedure Key_use(n : use_name);
+begin
+gotoxy(1,4);clreol;
+opmode:=n;
+ case n of
+
+  Move : begin
+   If param.contents=SymbolArea then
+   begin
+    write('Label   Area    Font    Scale   Pen     Symbol  Edit    Exit ');
+    clreol;
+    writeln;
+    write('In Use                                  Select  Label   Label');
+   end
+   else
+   begin
+    write('Label   Area    Font    Scale   Pen     Text    Edit    Exit ');
+    write('   Specify ');clreol;
+    writeln;
+    write('In Use                                  Entry   Label   Label');
+    write('   Variable');
+   end;
+   clreol;
+   do_inf;
+  end;
+
+  Save : begin
+    write('Label                                                   Save');
+    write('    Rename  Abort');
+    key_info(5,Svl);clreol;
+    options;
+  end;
+
+  Edt1 : begin
+    write('Redraw  Delete                                          Exit');
+    writeln;clreol;
+    write('Label   Area                                            Edit ');
+    clreol;
+  end;
+
+  Edt2 : begin
+   if param.contents=SymbolArea then
+   begin
+    write('Label   Delete                          Symbol          Exit');
+    write('          ');clreol;writeln;
+    write('In Use  Symbol                          Change          Edit');
+    write('        ');clreol;
+   end
+   else
+   begin
+    write('Label   Delete  Font    Scale   Pen     Text    Move    Exit');
+    write('          ');clreol;writeln;
+    write('In Use  Line    Change  Change  Change  Change  Text    Edit');
+    write('        ');clreol;
+   end;
+  end;
+
+  EntTx1: begin
+   if txtmode='F' then
+   begin
+    write('Stnd    Area    Font    Scale   Pen                     Exit');
+    write('          ');clreol;writeln;
+    write('Phrase ');clreol;
+   end;
+   if txtmode='S' then
+   begin
+    write('Free    Area    Font    Scale   Pen                     Exit');
+    write('          ');clreol;writeln;
+    write('Text');clreol;
+   end;
+   do_inf;
+  end;
+
+  EntTx2: begin
+   if curmode='V' then
+   begin
+    write('        Area    Font    Scale   Pen                     Exit');
+    write('    Accept');
+    do_inf;
+    clreol;
+   end
+   else
+   begin
+   if txtmode='F' then
+   begin
+    write('Stnd    Area    Font    Scale   Pen             Edit    Exit');
+    write('    Accept');clreol;writeln;
+    write('Phrase ');clreol;
+   end;
+   if txtmode='S' then
+   begin
+    write('Free    Area    Font    Scale   Pen             Edit    Exit');
+    write('    Accept');clreol;writeln;
+    write('Text');clreol;
+   end;
+   end; {of else - curmode not 'V'}
+   do_inf;
+  end;
+
+  EntVar: begin
+    write('Label   Area    Font    Scale   Pen                     Exit');
+    clreol;writeln;
+    write('In Use                                                       ');
+    clreol; do_inf;
+  end;
+
+  EntSy: begin
+    write('                                                        Exit');
+    write('    Accept');clreol;writeln;clreol;
+         end;
+
+ end; {of case}
+end; {of key_use}
+
+
+
+Procedure SortIndexList;
+var
+  I,J,Min : integer;
+  Temp    : IndexRec;
+Begin
+  for I:=1 to MaxRec-1 do
+  begin
+    Min:=I;
+    for J:=I+1 to MaxRec do
+      if KList[J].Key < Klist[Min].Key then
+        Min:=J;
+    Temp:=KList[I];
+    KList[I]:=Klist[Min];
+    KList[Min]:=Temp;
+  end;
+End; {of SortIndexList}
+
+
+Procedure MakeIndex;
+begin
+  assign(Dfile,labeldrive+'RISKSAFT.DAT');
+  {$I-} reset(Dfile); {$I+}
+  error:= ioresult;
+  if error<>0 then
+  begin
+   gotoxy(1,8);
+   write('File of Risk and Safety Phrases not on current drive.');
+   delay(3000);
+   gotoxy(1,8);clreol;
+   exit;
+  end;
+   FillChar(KList,Sizeof(KList),0);
+   seek(Dfile,0);
+   read(Dfile,Rec);
+   MaxRec:=Rec.NumRecs;
+   for i:=1 to maxrec do
+   begin
+    seek(Dfile,i);
+    FillChar(Rec,SizeOf(Rec),0);
+    read(Dfile,Rec);
+    KList[i].Key:=Rec.Key;
+    KList[i].Num:=i;
+   end;
+   SortIndexList;
+end; {of MakeIndex}
+
+
+Function FindKey(Key : KeyType) : Integer;
+Var
+  L, R, Mid : Integer;
+begin
+  L:=1; R:=MaxRec;
+  repeat
+    Mid:=(L+R) DIV 2;
+    If Key < KList[Mid].Key
+     then R:=Mid-1
+     else L:=Mid+1;
+  until (Key=KList[Mid].Key) or (L>R);
+  if Key=KList[Mid].Key
+    then FindKey:=Mid
+    else FindKey:=-1
+end; {of FindKey}
+
+
+procedure clrframe(t,b : integer);
+var i : integer;
+begin
+  for i:=t to b do
+  begin
+   gotoxy(1,i);
+   clreol;
+  end;
+end;
+
+Procedure Display_label_area;
+begin
+ initialise;
+ twoscreens:=FALSE;
+ sstle(4);
+ seek(paramf,1);
+ while not eof(paramf) do
+ begin
+   read(paramf,param);
+   if param.partition<>0 then
+   with param do
+   begin
+     if partition>1 then twoscreens:=TRUE;
+     setcwp(partition);setcdp(partition);
+     case areatype of
+      Line : begin
+              sccol(green);
+              moveto(tx,ty);
+              lto(bx,by);
+             end;
+       Box : begin
+              if Noprint=TRUE then sccol(blue)
+              else
+              sccol(green);
+              moveto(tx,ty);
+              lto(bx,ty);
+              lto(bx,by);
+              lto(tx,by);
+              lto(tx,ty);
+             end;
+      end;  {of case}
+   end;  {of with param}
+ end; {eof}
+end; {display_label_area}
+
+function UpcaseStr(S : Str80) : Str80;
+var
+  P : Integer;
+begin
+  for P := 1 to Length(S) do
+    S[P] := Upcase(S[P]);
+  UpcaseStr := S;
+end;
+
+

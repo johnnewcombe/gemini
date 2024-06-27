@@ -1,0 +1,46 @@
+To extract the programs contained in libraries on this disk,  use 
+NULU. The procedure is:
+
+     NULU                        {start the NULU program}
+     -o  <library file name>     {Open the library file}
+     -q *.*                      {Extract and usqueeze all entries}
+
+{note:  if  there is not room on the current disk drive  for  the 
+extracted files, use -q <new drive name>:*.*, for example:
+     
+     -q b:*.*
+
+to have all the extracted files put on the disk in drive B: }
+
+There  are  many other options available with this fine  program, 
+but the sequence above is all you really need to know.
+
+To unsqueeze files not in libraries (files with a Q in the middle 
+of the extension e.g. FILE.DQC), use NSWP. Tag the files with the 
+'T' command and use the 'Q' command to unsqueeze the files.
+
+** DBLDBL.LBR
+     PRINT  UP  TO 4 NORMAL PAGES ON ONE - NEAR MICROSCOPIC  TYPE 
+AND DOUBLE COLUMNS MAKE IT POSSIBLE. REQUIRES EPSON PRINTER.
+
+** LFIND.COM
+     AUTOMATICALLY SEARCHES YOUR DISK FOR THE LIBRARY  CONTAINING 
+A SPECIFIC FILE.
+
+** MATCH.LBR
+     CHECKS DOCUMENTS TO MAKE SURE THAT PRINT CONTROLS GET TURNED 
+OFF ONCE TURNED ON. ALSO WORKS TO MAKE SURE PARENTHESES, BRACKETS 
+ETC. MATCH. CAN BE EASILY CONFIGURED FOR MOST WORD-PROCESSORS.
+
+** PFORMAT.LBR
+     BEAUTIFIES TURBO PASCAL SOURCE FILES. YOU HAVE OPTIONS AS TO 
+WHETHER YOU WANT VARIABLES AND KEYWORDS IN UPPER-CASE, LOWER CASE 
+OR AS IS. INCLUDES PASCAL SOURCE.
+
+** PRTSCR.LBR
+     SCREEN PRINTING PROGRAMS FOR PRE 1984 KAYPROS, THE KAYPRO 10 
+AND POST-1984 KAYPROS.  
+
+** SYNONYM.COM
+     CREATE  SYNONYMS  FOR  COMMONLY  USED  COMMANDS,   INCLUDING 
+OPTIONAL PARAMETERS. A VERY HANDY UTILITY!

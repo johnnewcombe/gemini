@@ -1,0 +1,1846 @@
+VER	DEFL 5			;Version 4 module
+
+	SUBTTL IO Dispatching
+	PAGE
+	CSEG
+
+;Return address of character device table
+?DEVTB:	LD HL,CHRTBL
+	RET 
+
+;Initialise device in C
+?CINIT:	CALL BIGSTK		;Stack in common
+	LD A,(CURBNK)
+	PUSH AF			;Save current bank
+	XOR A
+	CALL ?BKSEL		;Bank 0 for device initialisation
+	LD DE,INITAB-2		;Point to initialising table
+	LD B,MAXDEV
+NXTIN:	DEC C
+	JP P,NEXIN		;Wait til C=0FFH
+	CALL DISPAT		;Go to dispatcher with device in B
+	LD B,1			;Ensure fall thru' to exit
+NEXIN:	DJNZ NXTIN
+	POP AF
+	CALL ?BKSEL		;Restore bank
+	RET			;Invalid device
+
+;Auxillary input status
+?AXIST: LD HL,(@AIVEC)
+	JR CNIST
+;Console input status
+?CNIST:	LD HL,(@CIVEC)		;Get input devices
+	IF VFC OR IVC
+	LD A,H			;Direct if keyboard only to speed things up
+	AND 01111111B
+	OR L
+	JP Z,KYBDST
+	ENDIF
+CNIST:	PUSH HL			;Save input device vector
+	LD B,MAXDEV
+NEXIST:	ADD HL,HL		;Test for active device
+	JR NC,NOISD		;Device not selected
+	LD DE,ISTTAB-2		;Point to table
+	CALL DISPAT
+	JR NZ,INRDY		;Device has a character
+NOISD:	DJNZ NEXIST		;Test for all devices
+INRDY:	POP HL
+	RET
+
+;Auxillary input
+?AUXIN:	LD HL,(@AIVEC)
+	JR CONIN
+;Console input
+?CONIN:	LD HL,(@CIVEC)		;Get input devices vector
+CONIN:	CALL CNIST		;See if any have a character
+	JR Z,NOWT		;No
+	LD DE,INTAB-2
+	JP DISPAT		;Go and get it
+
+;Nothing ready, so prompt for input
+NOWT:	LD B,MAXDEV		;If not enable prompt
+	PUSH HL			;Save input device vector
+NEXBLK:	ADD HL,HL		;Test for active device
+	JR NC,NOBLNK		;Not active
+	LD DE,BLKTAB-2
+	CALL DISPAT
+NOBLNK:	DJNZ NEXBLK		;Scan max devices
+	POP HL			;Restore input device vector
+NEXTIN:	CALL CNIST		;Look for input
+	JR Z,NEXTIN		;Wait for one
+	LD DE,INTAB-2
+	CALL DISPAT		;Go and get it
+	IF VFC OR IVC
+	PUSH AF
+	CALL CUROFF		;Shut down all prompts
+	POP AF
+	ENDIF
+	RET
+
+;List status
+?LSTST:	LD HL,(@LOVEC)
+	JR CNOST
+;Auxillary output status
+?AXOST:	LD HL,(@AOVEC)
+	JR CNOST
+;Console output status
+?CNOST:	LD HL,(@COVEC)		;Get output devices
+	LD A,H			;Direct if video only to speed things up
+	AND 10111111B
+	OR L
+	JP Z,READY
+CNOST:	LD B,MAXDEV
+NEXOST:	ADD HL,HL		;Test for active device
+	JR NC,NOOSD		;Not active
+	LD DE,OSTTAB-2
+	CALL DISPAT
+	RET Z			;A device is not ready
+NOOSD:	DJNZ NEXOST
+	RET
+
+;List output
+?LIST:	LD HL,(@LOVEC)
+	JR CONOT
+;Auxillary output
+?AUXOT:	LD HL,(@AOVEC)
+	JR CONOT
+;Console output
+?CONOT:	LD HL,(@COVEC)		;Get output devices
+	IF VFC OR IVC
+	LD A,H			;Direct if video to speed things up
+	AND 10111111B
+	OR L
+	JP Z,VIDEO
+	ENDIF
+CONOT:	LD B,MAXDEV
+NEXOUT:	ADD HL,HL		;Test for active device
+	JR NC,NOOTD		;Not active
+WAITO:	LD DE,OSTTAB-2
+	CALL DISPAT
+	JR Z,WAITO		;Wait for device ready
+	LD DE,OUTTAB-2
+	CALL DISPAT
+NOOTD:	DJNZ NEXOUT
+	RET
+
+;IO Dispatcher
+DISPAT:	PUSH BC			;Save device/character
+	PUSH HL			;Save active device bits
+	EX DE,HL		;Table to HL
+NEXDEV:	INC HL
+	INC HL			;Next device
+	DJNZ NEXDEV		;Go to required device
+	LD A,(HL)
+	INC HL
+	LD H,(HL)		;Address to HL
+	LD L,A
+	CALL IPCHL		;Go to routine
+	POP HL
+	POP BC			;Recover regs
+NOACT:	RET
+
+;Programmable key table for MAP keyboard
+PRGSIZ:	DEFW PRGOVR-PRGTAB	;Size of table
+
+PRGTAB:
+	IF ESCKEY
+	DEFB 80H,1BH,0FFH	;ESC
+	DEFB 90H,1BH,0FFH	;Shift ESC
+
+;Null bytes not permitted, 0FEH is changed to 00
+	DEFB 8BH,0FEH,0FFH	;EDIT
+	DEFB 9BH,0FEH,0FFH	;Shift EDIT
+
+	DEFB 8CH,1CH,0FFH	;CUR L
+	DEFB 9CH,1CH,0FFH
+	DEFB 8DH,1DH,0FFH	;CUR R
+	DEFB 9DH,1DH,0FFH
+	DEFB 8EH,1EH,0FFH	;CUR U
+	DEFB 9EH,1EH,0FFH
+	DEFB 8FH,1FH,0FFH	;CUR D
+	DEFB 9FH,1FH,0FFH
+
+;Numeric pad
+	DEFB 0A0H,"7",0FFH
+	DEFB 0B0H,"7",0FFH
+	DEFB 0A1H,"8",0FFH
+	DEFB 0B1H,"8",0FFH
+	DEFB 0A2H,"9",0FFH
+	DEFB 0B2H,"9",0FFH
+	DEFB 0A3H,"+",0FFH
+	DEFB 0B3H,"+",0FFH
+
+	DEFB 0A4H,"4",0FFH
+	DEFB 0B4H,"4",0FFH
+	DEFB 0A5H,"5",0FFH
+	DEFB 0B5H,"5",0FFH
+	DEFB 0A6H,"6",0FFH
+	DEFB 0B6H,"6",0FFH
+	DEFB 0A7H,"-",0FFH
+	DEFB 0B7H,"-",0FFH
+
+	DEFB 0A8H,"1",0FFH
+	DEFB 0B8H,"1",0FFH
+	DEFB 0A9H,"2",0FFH
+	DEFB 0B9H,"2",0FFH
+	DEFB 0AAH,"3",0FFH
+	DEFB 0BAH,"3",0FFH
+
+	DEFB 0ABH,",",0FFH
+	DEFB 0BBH,",",0FFH
+	DEFB 0ACH,"0",0FFH
+	DEFB 0BCH,"0",0FFH
+	DEFB 0ADH,".",0FFH
+	DEFB 0BDH,".",0FFH
+	DEFB 0AEH,0DH,0FFH
+	DEFB 0BEH,0DH,0FFH
+
+	ELSE
+	DEFB 8CH,'("',0FFH
+	DEFB 8EH,'")',0FFH		;C bits
+	DEFB 8FH,"/* ",0FFH
+	DEFB 80H," */",0FFH
+	ENDIF
+
+	DEFB 0
+
+	IF ESCKEY
+PRGEND:	DEFS 400-(PRGEND-PRGTAB),0	;Leave at least 400 byte table
+
+	ELSE
+
+PRGEND:	DEFS 150-(PRGEND-PRGTAB),0	;Leave at least 150 byte table
+	ENDIF
+PRGOVR:
+
+	SUBTTL Dispatch table
+	PAGE
+
+;	******************************
+;	*	DISPATCH TABLE       *
+;	******************************
+
+DISPT:
+;Initialisation
+INITAB:
+	IF MAP
+	DEFW INITSB		;SIO channel B
+	ENDIF
+	DEFW INITSA		;Main serial device
+	DEFW INITP		;PIO
+	IF VFC OR IVC
+	DEFW INITV		;Video
+	DEFW INITK		;Keyboard
+	ENDIF
+
+;Input status
+ISTTAB:
+	IF MAP
+	DEFW CPISTB		;SIO
+	ENDIF
+	DEFW CPISTA		;Main serial device
+	DEFW READY		;PIO Invalid
+	IF VFC OR IVC
+	DEFW READY		;Video Invalid
+	DEFW KYBDST		;Main system keyboard
+	ENDIF
+
+;Input
+INTAB:
+	IF MAP
+	DEFW CPSINB		;SIO
+	ENDIF
+	DEFW CPSINA		;Main serial device
+	DEFW INVAL		;PIO Invalid
+	IF VFC OR IVC
+	DEFW INVAL		;Video Invalid
+	DEFW KEYBD		;Main system keyboard
+	ENDIF
+
+;Output status
+OSTTAB:
+	IF MAP
+	DEFW CPOSTB		;SIO
+	ENDIF
+	DEFW CPOSTA		;Main serial device
+	DEFW PARST		;PIO
+	IF VFC OR IVC
+	DEFW READY		;Video always ready
+	DEFW READY		;Keyboard Invalid
+	ENDIF
+
+;Output
+OUTTAB:
+	IF MAP
+	DEFW CPOUTB		;SIO
+	ENDIF
+	DEFW CPOUTA		;Main serial device
+	DEFW PARALL		;PIO
+	IF VFC OR IVC
+	DEFW VIDEO		;VFC/IVC
+	DEFW NOACT		;Keyboard Invalid
+	ENDIF
+
+;Blink
+BLKTAB:
+	IF MAP
+	DEFW NOACT		;SIO-B no prompt
+	ENDIF
+	DEFW NOACT		;Main serial device no prompt
+	DEFW NOACT		;PIO no prompt
+	IF VFC OR IVC
+	DEFW NOACT		;Video no prompt
+	DEFW CURSON		;Cursor enabled on video
+	ENDIF
+
+;Invaid input send EOF
+INVAL:	LD A,1AH
+	RET
+
+	IF MAP
+;Set interrupts on MAP CPU
+SETI:	LD HL,INTVEC		;Get round LINK/M80 problem
+	LD A,H
+	LD I,A
+	IM 2
+NULLI:	EI
+	RETI			;Ensure all previous cleared
+
+	ELSE
+;No interrupts on Gemini or Nascom
+SETI:	RET
+	ENDIF
+
+	SUBTTL Character device table
+	PAGE
+
+CHRTBL:
+	IF MKBD
+	DEFB "MAPKEY"		; device 0, Keyboard
+	DEFB MBINP
+	DEFB NOBAUD
+	ENDIF
+
+	IF VKBD
+	DEFB "VFCKEY"		; device 0, Keyboard
+	DEFB MBINP
+	DEFB NOBAUD
+	ENDIF
+
+	IF IKBD
+	DEFB "IVCKEY"		; device 0, Keyboard
+	DEFB MBINP
+	DEFB NOBAUD
+	ENDIF
+
+	IF NKBD
+	DEFB "NASKEY"		; device 0, Keyboard
+	DEFB MBINP
+	DEFB NOBAUD
+	ENDIF
+
+	IF VFC
+	DEFB "VFC   "		;Video type
+	DEFB MBOUT
+	DEFB NOBAUD
+	ENDIF
+
+	IF IVC
+	DEFB "IVC   "		;Video type
+	DEFB MBOUT
+	DEFB NOBAUD
+	ENDIF
+
+	DEFB "CENTRO"		; device 2, Centronics parallel printer
+	DEFB MBOUT
+	DEFB NOBAUD
+
+	IF MAP
+	DEFB "SIO-A "		; device 3, Serial
+SMODEA:	DEFB IMODEA		;Initial mode
+SBAUDA:	DEFB IBAUDA		;Initial baud rate
+
+	DEFB "SIO-B "		; device 4, Serial
+SMODEB:	DEFB IMODEB		;Initial mode
+SBAUDB:	DEFB IBAUDB		;Initial baud rate
+	ENDIF
+
+	IF G811 OR G813
+	DEFB "SERIAL"		; device 3, Serial
+SMODE:	DEFB MBIO+MBSERL+MBSOFT+MBXNXF
+SBAUD:	DEFB IBAUD		;Initial baud rate
+	ENDIF
+
+	IF NAS
+	DEFB "SERIAL"		; device 3, Serial
+SMODE:	DEFB MBIO+MBSERL	;Mode
+	DEFB NOBAUD		;Initial baud rate
+	ENDIF
+
+CTBL:	DEFB 0			; table terminator
+
+MAXDEV	EQU (CTBL-CHRTBL)/8
+
+	IF VFC OR IVC
+	SUBTTL High Level Keyboard Input
+	PAGE
+
+;	**********************************
+;	*	KEYBOARD WORKSPACE       *
+;	**********************************
+
+;VFC workspace, used if IVC
+VFCW:
+VFCST:	DEFB 0			;Initial status of VFC
+LASVR:	DEFW 0			;Last screen address
+CURSR:	DEFW 0			;Cursor address
+MLOCK:	DEFW 0			;Top of screen
+KPOS:	DEFW 0			;Current send position
+PRGKEY:	DEFW 0			;Address of programable key table
+CURTYP:	DEFW 0			;Normal cursor
+STATE1:	DEFB 0			;Option bits
+KCHR:	DEFB 0			;Key character store
+SEND:	DEFB 0			;Number of characters during send
+SPARE:	DEFW 0			;Key repeat counter
+ESCST:	DEFB 0			;ESC status
+ESCTYP:	DEFB 0			;ESC type
+EDCHR:	DEFB 0			;Character to initiate editing
+ROW:	DEFB 0			;Row store
+PIXEL:	DEFB 0			;Pixel store
+
+;STATE1 bit allocation		   RESET(default)	SET
+INV	EQU 0	;Invert video		OFF		ON
+MCR	EQU 1	;Master cursor control	ON		OFF
+CSR	EQU 2	;Cursor enable		OFF		ON
+AVA	EQU 3	;Key available		NO		YES
+PRG	EQU 4	;Programable key state	OFF		ON
+EDM	EQU 5	;Edit mode		1		2
+ERR	EQU 6	;Cursor/pixel error	OK		ERROR
+SMD	EQU 7	;Send mode	      SCREEN	    KEY TABLE
+
+;Staus of Video send and edit
+KBMODE:	DEFB 0			;Bit 0 = send, Bit 1 = Ed mode, Bit 2 = Suppress
+SND	EQU 0
+ED2	EQU 1
+SUP	EQU 2
+
+;Positions in keyboard buffer
+WRPOS:	DEFW KEYBUF		;Write position
+RDPOS:	DEFW KEYBUF		;Read position
+
+;Get keyboard entry
+KEYBD:	LD HL,KBMODE
+	BIT SND,(HL)		;Test for video line send
+	JR Z,NOTVID		;No
+	PUSH HL
+	CALL RDKEY		;Get next from buffer
+	POP HL
+	CP CR
+	RET NZ
+	RES SND,(HL)		;Stop send mode
+	RET
+
+NOTVID:	BIT ED2,(HL)		;Test for ed mode 2
+	LD DE,CUR2		;Fixed edit cursor
+	JR NZ,EDMODE		;Yes so get edited line
+ESCCOD:	CALL KYBDST
+	CALL Z,KPROMP		;Key not there so prompt and wait
+	CALL PROGK		;Character there so test against prog tab
+	LD HL,EDCHR
+	CP (HL)			;Is this edit key ?
+	RET NZ			;No
+	LD DE,CUR1
+EDMODE:	CALL INLIN		;Get edit line
+	CALL CUROFF
+	RET
+
+;Obtain edit buffer
+INLIN:	CALL CURON		;Enable cursor
+MORLIN:	CALL KYBDST		;Wait for entry
+	JR Z,MORLIN
+	CALL PROGK		;Test for programming
+	LD HL,EDCHR
+	CP (HL)
+	JR NZ,NOTED		;Not edit key
+	LD A,(KBMODE)
+	XOR 00000010B		;Flip ed2 bit
+	LD (KBMODE),A
+	BIT 1,A
+	LD A,CR
+	RET Z
+	LD DE,CUR2
+	JR INLIN		;Start ed mode 2
+NOTED:	CP CTLC			;Return if CTRL C
+	RET Z
+	CP CTLS			;Return if CTRL S
+	RET Z
+	CP CTLQ			;Return if CTRL Q
+	RET Z
+	PUSH AF
+	CALL CRTA		;Echo to screen
+	POP AF
+	CP CR			;CR terminates
+	JR NZ,MORLIN
+	
+;Editing finished get the cursor line
+EDOVER:	CALL INFILL		;Put CRT line into buffer
+	LD HL,KBMODE		;Suppress output
+	SET SND,(HL)
+	SET SUP,(HL)
+	LD A,CX			;Delete CP/M input buff
+	RET
+
+;Get next character from key buffer
+PROGK:
+	IF ESCKEY
+;Get next char from key buffer
+	CALL RDKEY		;Fetch from buffer
+	CP ESC
+	RET NZ			;Not escape so send back
+PROG1:	CALL KYBDST
+	JR Z,PROG1		;Wait for escape code
+
+	ELSE
+
+;Program only if STATE1 says so
+	CALL PROG?		;Only test if prog tab is active
+	JR Z,RDKEY		;It's not
+	ENDIF
+
+REENT:	LD DE,(RDPOS)
+	LD HL,(PRGKEY)		;Get key table
+
+	IF ESCKEY
+;Set bit 7 of escape code
+	LD A,(DE)
+	SET 7,A
+	LD (DE),A
+	ENDIF
+
+;Search for match in programmable key table
+NXTPRG:	LD A,(DE)		;Character in key buffer
+KLOOP:	INC (HL)
+	JR NZ,NOTEND		;Not end of string
+	DEC (HL)
+	INC HL
+	JR NXTPRG		;Loop to next
+NOTEND:	DEC (HL)
+	JR Z,RDKEY		;End of table no match
+	CP (HL)			;Test against buffer
+	INC HL
+	JR Z,KMATCH		;Character match
+	XOR A			;Dummy character
+	JR KLOOP		;Get to end of current
+
+;Match found, move programmed string to key buffer
+;First find string length
+KMATCH:	LD B,0			;Initialise B
+MLOOP:	LD A,(HL)
+	INC A
+	JR Z,MDONE		;End of string
+	DEC A
+	JR Z,MDONE		;End of table
+	INC B
+	INC HL
+	JR MLOOP		;Look at next
+;String length in B
+MDONE:	DEC HL			;Back to last character
+	LD A,B
+	OR A
+	JR Z,RDKEY		;No string !!
+MVLOOP:	LD A,(HL)
+;Insert a key at RDPOS
+	LD DE,(RDPOS)
+	LD (DE),A
+	DEC DE
+	LD A,LOW (KEYBUF-CODEB-1)
+	CP E
+	JR NZ,BAKOK
+	LD DE,KEYBUF+KBFLEN-1	;Point at last character
+BAKOK:	LD (RDPOS),DE
+	DEC HL
+	DJNZ MVLOOP
+	CALL RDKEY		;Bump RDPOS
+
+	IF NOT ESCKEY
+	JR REENT		;Re-enter key table
+	ENDIF
+
+;Get key character from buffer
+RDKEY:	LD HL,(RDPOS)
+	LD A,(HL)		;Get character
+	PUSH AF
+	INC HL
+	LD A,LOW (KEYBUF+KBFLEN-CODEB)	;Position passed end
+	CP L
+	JR NZ,FREOK
+	LD HL,KEYBUF
+FREOK:	POP AF
+	LD (RDPOS),HL
+
+	IF ESCKEY
+	CP 0FEH			;Change 0FEH to 0
+	RET NZ
+	XOR A
+	ENDIF
+
+	RET
+
+;Wait for key
+KPROMP:
+KP1:	CALL KYBDST
+	JR Z,KP1
+	RET
+
+;Test for suppression
+SUPP?:	LD HL,KBMODE
+	BIT SND,(HL)
+	JR NZ,NOSEND		;Send mode
+	BIT SUP,(HL)
+	RET Z			;Send OK
+	LD A,C
+	CP CR
+	RES SUP,(HL)		;If CR clear video send mode
+	RET Z
+	SET SUP,(HL)
+NOSEND:	POP HL			;Clear stack
+	RET
+	ENDIF
+
+	IF MKBD
+	SUBTTL MAP Keyboard input
+	PAGE
+
+;	*********************************
+;	*	KEYBOARD ROUTINES       *
+;	*********************************
+
+	DSEG			;Device initialisation is banked
+
+;	*	Initialise CPU keyboard       *
+
+INITK:
+;Set up keyboard interrupts via CTC channel 3
+	LD A,11010111B		;Interrupts, Counter, Count follows, Reset
+	OUT (CPCTC+3),A
+	LD A,1			;Divisor
+	OUT (CPCTC+3),A
+	LD HL,KEYINT		;Vector into table
+	LD (CPCTCV+6),HL
+	RET
+
+	CSEG
+
+;Get keyboard status
+KYBDST:	LD HL,(WRPOS)
+	LD DE,(RDPOS)		;Look in the key buffer
+	XOR A
+	SBC HL,DE
+	RET Z			;Return Z, 00
+	DEC A
+	RET			;Return NZ,0FFH
+
+;Service keyboard interrupt
+KEYINT:	PUSH AF
+	PUSH HL
+	LD HL,(WRPOS)
+	IN A,(KBDP)
+
+	IF BREAK NE 0
+	CP BREAK			;Test for break
+	JR Z,KBREAK
+	ENDIF
+
+	IF ESCKEY
+	AND 7FH
+	ENDIF
+
+	LD (HL),A
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,ONOK
+	LD HL,KEYBUF
+ONOK:	LD (WRPOS),HL
+KRET:	POP HL
+	POP AF
+	EI
+	RETI
+
+	IF BREAK NE 0
+;Stop
+KBREAK:	LD A,(BRKFLG)
+	OR A
+	JP Z,?WBOOT			;Ok to break
+	LD A,0FFH
+	LD (BRKFLG),A			;Tell disk routine to break on exit
+	JR KRET
+	ENDIF
+
+	ENDIF
+
+	IF IKBD
+
+	SUBTTL IVC/SVC Keyboard input
+	PAGE
+
+;	*********************************
+;	*	KEYBOARD ROUTINES       *
+;	*********************************
+
+	DSEG			;Device initialisation is banked
+
+;	*	Initialise CPU keyboard       *
+
+INITK:	RET			;Nothing to do
+
+	CSEG
+
+;Get keyboard status
+KYBDST:	CALL SCAN		;Look for key
+	LD HL,(WRPOS)
+	LD DE,(RDPOS)		;Look in the key buffer
+	XOR A
+	SBC HL,DE
+	RET Z			;Nothing in buffer, look at IVC
+	DEC A
+	RET			;Return NZ,0FFH
+
+SCAN:	LD A,ESC		;Test for character
+	CALL CRTA
+	LD A,"k"
+	CALL CRTA
+	CALL VDUIC
+	OR A
+	RET Z			;Nothing there
+
+;	*	Get keyboard character       *
+
+	LD A,ESC		;Get character
+	CALL CRTA
+	LD A,"K"
+	CALL CRTA
+	CALL VDUIC		;Get the returned character
+;Insert a key at WRPOS
+	LD HL,(WRPOS)
+	LD (HL),A
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FORWOK
+	LD HL,KEYBUF
+FORWOK:	LD (WRPOS),HL
+	RET
+
+	ENDIF
+
+	IF VKBD
+	SUBTTL VFC Keyboard
+	PAGE
+
+;	****************************
+;	*	VFC KEYBOARD       *
+;	****************************
+
+	DSEG
+
+INITK:	RET			;No initialisation required
+
+	CSEG
+
+;	*	Get keyboard status       *
+
+;Get keyboard status
+KYBDST:	CALL SCAN		;Look for key
+	LD HL,(WRPOS)
+	LD DE,(RDPOS)		;Look in the key buffer
+	XOR A
+	SBC HL,DE
+	RET Z			;Nothing in buffer, look at IVC
+	DEC A
+	RET			;Return NZ,0FFH
+
+SCAN:	LD HL,KBDST
+	CALL GOVFC
+	RET NC			;Nothing there
+
+;	*	Get keyboard character       *
+
+;Cancel internal VFC programmable PRGKEY and EDIT
+	LD HL,EDCHR
+	LD A,(HL)
+	PUSH AF
+	LD (HL),0FFH
+	PUSH HL
+	LD HL,STATE1
+	BIT PRG,(HL)		;Save current PRGKEY state
+	PUSH AF
+	RES PRG,(HL)
+	PUSH HL
+	LD HL,KBDIN
+	CALL GOVFC
+;Insert a key at WRPOS
+	LD HL,(WRPOS)
+	LD (HL),A
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FORWOK
+	LD HL,KEYBUF
+FORWOK:	LD (WRPOS),HL
+	POP HL			;Restore STATE 1
+	POP AF
+	JR Z,WASOFF		;PRGKEY was off anyway
+	SET PRG,(HL)
+WASOFF:	POP HL			;Restore Edit key
+	POP AF
+	LD (HL),A
+	RET
+
+	ENDIF
+
+	IF NKBD
+	SUBTTL Nascom Keyboard
+	PAGE
+
+;	*******************************
+;	*	NASCOM KEYBOARD       *
+;	*******************************
+
+	DSEG
+
+INITK:	RET			;No initialisation required
+
+	CSEG
+
+;	*	Get keyboard status       *
+
+;Get keyboard status
+KYBDST:	CALL SCAN		;Look for key
+	LD HL,(WRPOS)
+	LD DE,(RDPOS)		;Look in the key buffer
+	XOR A
+	SBC HL,DE
+	RET Z			;Nothing in buffer
+	DEC A
+	RET			;Return NZ,0FFH
+
+;Scan for a key, and put it in buffer if one there
+SCAN:	CALL KBD		;Scan for new key
+	JR NC,RK2		;No new key pressed
+;New key pressed
+	LD HL,KLONG
+	LD (KCNT),HL
+	JR CFOUND
+;No new key pressed
+RK2:	LD HL,(KCNT)
+	DEC HL
+	LD (KCNT),HL		;Decrement key count
+	LD A,H
+	OR L
+	RET NZ			;Not repeat
+;Test and clear table
+	LD HL,KMAP+1
+	LD BC,0800H
+;Set up mask in D
+RK3:	LD D,0FFH
+	LD A,L
+	CP LOW KMAP+5-CODEB
+	JR NZ,RK5
+	LD D,0BFH
+RK5:	CP LOW KMAP+8-CODEB
+	JR NZ,RK6
+	LD D,0C7H
+;Test for key down
+RK6:	LD A,(HL)
+	AND D
+	JR Z,RK7
+	LD C,1
+;Clear keys down
+	LD A,D
+	CPL
+	AND (HL)
+	LD (HL),A
+;Next row
+RK7:	INC HL
+	DJNZ RK3
+	LD A,C
+	OR A
+	RET Z			;Not a repeat
+;Repeat speed
+	LD HL,KSHRT
+	LD (KCNT),HL
+	CALL KBD		;Get the key
+
+;Insert a key at WRPOS
+CFOUND:	LD HL,(WRPOS)
+	LD (HL),A
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FORWOK
+	LD HL,KEYBUF
+FORWOK:	LD (WRPOS),HL
+	RET
+
+;Keyboard routine
+;Reset KBD counter
+KBD:	LD A,(PORT0)
+	XOR 2
+	OUT (KBDP),A
+	LD A,(PORT0)
+	NOP			;Delay
+	NOP
+	OUT (KBDP),A
+	NOP			;Delay
+	NOP
+;Store row 0 in map
+	LD HL,KMAP
+	IN A,(KBDP)
+	CPL
+	LD (HL),A
+
+;Scan 8 rows
+	LD B,8
+;Increment KBD counter
+KSC1:	LD A,(PORT0)
+	XOR 1
+	OUT (KBDP),A
+	LD A,(PORT0)
+	OUT (KBDP),A
+	NOP
+	NOP
+	INC HL
+;Get row status
+	IN A,(KBDP)
+	CPL
+	AND 7FH
+	LD D,A
+;If map diffrent find out why
+	XOR (HL)
+	JR NZ,KSC2
+;Scan next row
+KSC1A:	DJNZ KSC1
+;No key pressed
+KSC8:	OR A
+	RET
+
+;Wait to debounce
+KSC2:	XOR A
+KSC3:	DEC A
+	PUSH AF
+	POP AF
+	PUSH AF
+	POP AF
+	JR NZ,KSC3
+;Get row again
+	IN A,(KBDP)
+	CPL
+	AND 7FH
+	LD E,A
+;E = New state
+	LD A,D
+;A = Old state
+	XOR (HL)
+;A = Changes
+; Find changed bit
+	LD C,-1
+	LD D,0
+	SCF
+KSC4:	RL D
+	INC C
+	RRA
+	JR NC,KSC4
+;C = Column changed
+;D = Mask with 1 at change
+	LD A,D
+	AND E
+	LD E,A
+;E = New state, masked by change
+; If map state and new state equal, ignore
+	LD A,(HL)
+	AND D
+	CP E
+	JR Z,KSC1A
+;Update map
+	LD A,(HL)
+	XOR D
+	LD (HL),A
+;If new state is 0, then key released,
+; so ignore it
+	LD A,E
+	OR A
+	JR Z,KSC1A
+
+;VALUE = SRRRRCCC
+; S    = 1 If shift
+; RRRR = 9 - Row number
+; CCC  = Column number
+	LD A,(KMAP)
+	AND 10H
+	OR B
+	ADD A,A
+	ADD A,A
+	ADD A,A
+	OR C
+
+;Search table
+	CALL KSE
+	JR Z,KSC5
+;Check for unshifted
+	AND 7FH
+	CALL KSE
+	JR NZ,KSC8
+;Set A to ASCII value
+KSC5:	LD A,C
+
+;Support lower case
+	LD HL,KMAP
+	CP "A"
+	JR C,K20
+	CP "Z"+1
+	JR NC,K20
+;It is a letter
+	BIT 4,(HL)
+;1 = Shift down
+	JR Z,K7
+	CCF
+;Test option
+K7:	LD A,(KOPT)
+	BIT 0,A
+	LD A,C
+	JR Z,K8
+	CCF
+K8:	JR C,K20
+	ADD A,20H
+K20:
+
+;@ key
+;If @ and shift down, then normal
+	CP "@"
+	JR NZ,K30
+	BIT 4,(HL)
+	JR NZ,K35
+
+;If not N1 and @ entered, make into TAB
+K30:	CP "@"
+	JR NZ,K35
+	LD A,TAB
+
+;Control key
+K35:	BIT 3,(HL)
+	JR Z,K40
+	CP CR
+	JR NZ,K38
+;Flip upper/lower case
+K36:	LD A,(KOPT)
+	XOR 01H
+	LD (KOPT),A
+K37:	OR A	;Ignore input
+	RET
+;Make control character
+K38:	CP 60H
+	JR C,K39
+	SUB 20H
+K39:	XOR 40H
+
+;Graphic key
+K40:	LD HL,KMAP+5
+	BIT 6,(HL)
+	JR Z,K60
+	XOR 80H
+
+K60:	SCF
+	RET
+
+;Search keyboard table
+KSE:	LD HL,KTABE-1
+	LD BC,KTABE-KTAB
+	CPDR
+	RET
+
+;Keyboard table
+KTAB:	DEFB 0FFH,0FFH,0FFH,0FFH	;00
+	DEFB 0FFH,0FFH,0FFH,0FFH	;04
+	DEFB 008H,0FFH,08EH,0C6H	;08 BS,LF,SU
+	DEFB 088H,009H,0B6H,0FFH	;0C CS,CR,SD
+	DEFB 0FFH,0FFH,0FFH,0FFH	;10
+	DEFB 0FFH,0FFH,0BEH,0AEH	;14 SL,SR
+	DEFB 0FFH,00EH,0FFH,089H	;18 CH,ESC
+	DEFB 03EH,02EH,046H,036H	;1C LRUD
+	DEFB 014H,09CH,09BH,0A3H	;20   "#
+	DEFB 092H,0C2H,0BAH,0B2H	;24 $%&'
+	DEFB 0AAH,0A2H,098H,0A0H	;28 ()*+
+	DEFB 029H,00AH,021H,019H	;2C ,-./
+	DEFB 01AH,01CH,01BH,023H	;30 0123
+	DEFB 012H,042H,03AH,032H	;34 4567
+	DEFB 02AH,022H,018H,020H	;38 89:;
+	DEFB 0A9H,08AH,0A1H,099H	;3C <=>?
+	DEFB 00DH,02CH,041H,013H	;40 @ABC
+	DEFB 03BH,033H,043H,010H	;44 DEFG
+	DEFB 040H,02DH,038H,030H	;48 HIJK
+	DEFB 028H,031H,039H,025H	;4C LMNO
+	DEFB 01DH,024H,015H,034H	;50 PQRS
+	DEFB 045H,035H,011H,02BH	;54 TUVW
+	DEFB 044H,03DH,03CH,01EH	;58 XYZ[
+	DEFB 09EH,016H,09AH,096H	;5C \]^_
+KTABE:
+;Nascom keyboard workspace
+PORT0:	DEFB 0			;Copy of PORT 0
+KMAP:	DEFS 9,0		;Keyboard status map (NKBD)
+KCNT:	DEFW 0			;Repeat counter
+KOPT:	DEFB XKOPT		;Upper/lower toggle
+	ENDIF
+
+	IF VFC
+
+	SUBTTL VFC Video
+	PAGE
+
+;	*******************************
+;	*	VIDEO WORKSPACE       *
+;	*******************************
+
+;	******************************
+;	*	VIDEO ROUTINES       *
+;	******************************
+
+	DSEG
+
+;Initialise VFC
+INITV:	LD IX,VFCW
+	LD A,(VFCSLT)
+	LD H,A
+	LD L,0
+	LD A,INITM		;Initial VFC status
+	OR H			;Now position + initial status
+	XOR EVMASK		;Switch EPROM/VRAM enable bits
+	OUT (CNTRL),A		;Bring in the VFC
+	LD BC,VFCCLR
+	ADD HL,BC
+	CALL IPCHL
+RESETV:	LD A,(VFCST)		;VFC status with EPROM and VRAM off
+	OUT (CNTRL),A		;Switch card out
+	IN A,(VSWICH)		;Switch to alternate video
+	LD HL,PRGTAB
+	LD (PRGKEY),HL		;Set internal key table
+	LD A,00010100B
+	LD (STATE1),A
+	RET
+
+	CSEG
+
+;Put CRT line into key buffer
+INFILL:	CALL VDUIL		;Set up for line return
+	LD HL,(WRPOS)
+	PUSH HL			;Save start of line
+GETLIN:	LD HL,KBDST
+	CALL GOVFC		;See if there is a character to be returned
+	LD A,CR			;Terminator
+	JR Z,GOTLIN		;End of line
+	LD HL,KBDIN
+	CALL GOVFC		;Get the character to be returned
+GOTLIN:	PUSH AF
+;Insert a key at WRPOS
+	LD HL,(WRPOS)
+	LD (HL),A
+	PUSH AF
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FOREOK
+	LD HL,KEYBUF
+FOREOK:	POP AF
+	LD (WRPOS),HL
+	POP AF
+	CP CR			;Indicates end of line
+	JR NZ,GETLIN
+	POP HL			;Start of line
+	LD (RDPOS),HL		;Update RDPOS
+	RET
+
+;Return NZ if prog tab is active
+PROG?:	LD A,(STATE1)
+	BIT PRG,A
+	RET
+
+;Turn on cursor
+CURSON:	LD A,(KBMODE)
+	BIT ED2,A
+	LD DE,CURN
+	JR Z,CURON
+	LD DE,CUR2
+	JR CURON
+
+;Turn cursor off
+CUROFF:	LD DE,CURX
+;Turn cursor on
+CURON:	PUSH AF
+	LD A,ESC		;Define cursor
+	CALL CRTA
+	LD A,"Y"
+	CALL CRTA
+	LD A,D
+	CALL CRTA
+	LD A,E
+	CALL CRTA
+	POP AF
+	RET
+
+;Prepare to get line
+VDUIL:	LD A,ESC
+	CALL CRTA
+	LD A,"Z"
+	CALL CRTA
+	RET
+
+;***************************
+;*	OUTPUT TO VFC      *
+;***************************
+;Send character in A to CRT
+CRTA:	LD C,A
+	JR CRTC
+
+;Test if console output is permitted
+VIDEO:	CALL SUPP?		;Test for suppression, no return if suppressed
+;Send character in C to CRT
+CRTC:	PUSH HL
+	LD HL,VIDOUT
+	CALL GOVFC
+	POP HL
+	RET
+
+GOVFC:	CALL BIGSTK		;Make sure of stack position
+	PUSH DE
+	PUSH BC			;Save registers
+	PUSH IX
+	LD IX,VFCW		;Initialise IX
+
+	IF G813
+;G813 RAM is not write protected by RAMDIS
+	PUSH BC
+	LD A,(VFCSLT)
+	LD B,A
+	LD C,0FEH		;B=VFC location C=G813 mapper port
+	LD A,(VFCSLT+1)
+	ADD A,10H		;Any non 0 bank will do
+	OUT (C),A		;Take out G813 RAM
+	POP BC
+	ENDIF
+
+	LD A,(VFCSLT)		;Location for paging in VFC
+	OR (IX+VFCST-VFCW)	;Current VFC status
+	XOR EVMASK		;Set VRAM and EPROM enable bits
+	OUT (CNTRL),A		;Bring in VFC
+	AND 0F0H		;Mask 4k SLOT
+	LD D,A
+	LD E,0			;DE = address offset
+	ADD HL,DE
+	CALL IPCHL
+;Goto EPROM routine
+;DE holds address offset, C holds output char if video
+	PUSH AF			;Save returned character and flags
+	LD A,(IX+VFCST-VFCW)	;VFC status with EPROM and VRAM off
+	OUT (CNTRL),A		;VFC out
+
+	IF G813
+	LD A,(VFCSLT)
+	LD B,A
+	LD C,0FEH		;B=VFC location C=G813 mapper port
+	LD A,(VFCSLT+1)
+	OUT (C),A		;Take out G813 RAM
+	ENDIF
+
+	POP AF
+	POP IX
+	POP BC
+	POP DE
+	RET			;Via RETSP
+
+	ENDIF
+
+	IF IVC
+	SUBTTL IVC/SVC Video
+	PAGE
+
+;	******************************
+;	*	VIDEO ROUTINES       *
+;	******************************
+
+	DSEG
+
+;Initialise IVC/SVC
+RESETV:
+INITV:	LD HL,PRGTAB
+	LD (PRGKEY),HL		;Set internal key table
+	LD A,00010100B
+	LD (STATE1),A
+	RET
+
+	CSEG
+
+;Put CRT line into key buffer
+INFILL:	CALL VDUIL		;Set up for line return
+	LD HL,(WRPOS)
+	PUSH HL			;Save start of line
+GETLIN:	CALL VDUIC		;Read key
+	PUSH AF
+;Insert a key at WRPOS
+	LD (HL),A
+	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FOREOK
+	LD HL,KEYBUF
+FOREOK:	LD (WRPOS),HL
+	POP AF			;Recover char
+	CP CR			;Indicates end of line
+	JR NZ,GETLIN
+	POP HL			;Start of line
+	PUSH HL	
+;Look for CP/M prompts
+	INC HL
+	LD A,(HL)		;CP/M prompt pos 2
+	CP ">"
+	LD A,2
+	JR Z,PROMPT
+	INC HL
+	LD A,(HL)		;CP/M prompt pos 3
+	CP ">"
+	LD A,3
+	JR Z,PROMPT
+	INC HL
+	LD A,(HL)		;CP/M prompt pos 4
+	CP ">"
+	LD A,4
+	JR Z,PROMPT
+;Look for utility prompts
+	POP HL
+	PUSH HL
+	LD A,(HL)
+	LD B,A
+	LD HL,PRMTAB
+NXTPRM:	LD A,(HL)
+	INC HL
+	OR A
+	JR Z,GOTST		;End of prompt table
+	CP B
+	JR NZ,NXTPRM		;Search all of table
+UTLPRM:	LD A,1
+PROMPT:	POP HL			;Recover start
+	LD B,A
+BUMP:	INC HL
+	LD A,LOW (KEYBUF-CODEB+KBFLEN)	;Position after KEYBUF
+	CP L
+	JR NZ,FOROK
+	LD HL,KEYBUF
+FOROK:	DJNZ BUMP
+	PUSH HL
+GOTST:	POP HL
+	LD (RDPOS),HL		;Update RDPOS
+	RET
+
+PRMTAB:	DEFB "*-.#:",0		;Position 1 prompts
+
+;Return NZ if prog tab is active
+PROG?:	LD A,(STATE1)
+	BIT PRG,A
+	RET
+
+;Turn on cursor
+CURSON:	LD A,(KBMODE)
+	BIT ED2,A
+	LD DE,CURN
+	JR Z,CURON
+	LD DE,CUR2
+	JR CURON
+
+;Turn cursor off
+CUROFF:	LD DE,CURX
+;Turn cursor on
+CURON:	PUSH AF
+	LD A,ESC		;Define cursor
+	CALL CRTA
+	LD A,"Y"
+	CALL CRTA
+	LD A,D
+	CALL CRTA
+	LD A,E
+	CALL CRTA
+	POP AF
+	RET
+
+;	*	Input a character from IVC       *
+
+VDUIC:	IN A,(PVDUS)		;Check status
+	RLA
+	JR C,VDUIC
+	IN A,(PVDUD)		;Input character
+	RET
+
+;Prepare to get line
+VDUIL:	LD A,ESC
+	CALL CRTA
+	LD A,"Z"
+	CALL CRTA
+	RET
+
+;	****************************
+;	*	OUTPUT TO IVC      *
+;	****************************
+
+;Test if console output is permitted
+VIDEO:	CALL SUPP?		;Test for suppression, no return if suppressed
+;Send character in C to CRT
+CRTC:	LD A,C
+;Output character in A to CRT
+CRTA:	PUSH AF
+VDU1:	IN A,(PVDUS)	;Check status
+	RRA
+	JR C,VDU1
+	POP AF
+	OUT (PVDUD),A	;Output character
+	RET
+
+	ENDIF
+
+;Provide video reset routine for terminal systems
+	IF NOT (VFC OR IVC)
+RESETV:	RET
+	ENDIF
+
+	SUBTTL Serial Input/Output
+	PAGE
+
+	IF MAP
+;	*****************************
+;	*      SERIAL ROUTINES      *
+;	*****************************
+
+	DSEG			;Device initialisation is banked
+
+;	*	SIO channnel A       *
+
+INITSA:	LD HL,SMODEA
+	CALL INITB		;Get baud
+	JR NC,NOBDA		;No baud
+		IF SIOCHA EQ SLOW	;If CTC 0 clocked at 1Mhz
+		SRL H
+		RR L			;Divide by 2
+		ENDIF
+	LD A,L
+	LD (DIV0),A		;Save divisor
+	LD HL,CPCTC0		;Initialise CTC 0
+	CALL INITDV
+NOBDA:	LD HL,REG4A
+	LD BC,REG3A
+	CALL INITMK		;Do masks
+	LD HL,CPSIOA		;Initialise SIO A
+	CALL INITDV
+	RET
+
+;	*	SIO channnel B       *
+
+INITSB:	LD HL,SMODEB
+	CALL INITB		;Get baud
+	JR NC,NOBDB		;No baud
+		IF SIOCHB EQ SLOW	;If CTC 1 clocked at 1Mhz
+		SRL H
+		RR L			;Divide by 2
+		ENDIF
+	LD A,L
+	LD (DIV1),A		;Save divisor
+	LD HL,CPCTC1		;Initialise CTC 1
+	CALL INITDV
+NOBDB:	LD HL,REG4B
+	LD BC,REG3B
+	CALL INITMK		;Do masks
+	LD HL,CPSIOB		;Initialise SIO B
+	CALL INITDV
+	RET
+
+;Initialise device with stream pointed to by HL
+INITDV:	LD C,(HL)		;Get port
+	INC HL
+	LD B,(HL)		;Get length of stream
+	INC HL
+	INC B
+	DEC B			;Test B
+	RET Z			;Nothing to send
+NEXBYT:	LD A,(HL)
+	INC HL
+	OUT (C),A		;Send bytes
+	DJNZ NEXBYT
+	RET
+
+;Get baud rate and masks from character table pointed to by HL
+;Return D=Clock rate mask, E=Auto Enable mask, A=CTC divisor
+;Returns NC if no baud
+INITB:	LD A,(HL)		;Mode
+	AND MBXNXF
+	LD E,20H		;Auto enables
+	JR NZ,AUTOE
+	LD E,0			;No enables
+AUTOE:	INC HL
+	LD A,(HL)		;Get baud rate
+	OR A
+	LD H,A			;Default baud rate
+	LD L,A
+	LD D,A			;Default *1 mode
+	RET Z			;Assume external clock (NC)
+	LD B,A
+	CP B600
+	LD D,0C0H		;*64 mode
+	JR C,MODEE
+	CP B19200
+	LD D,40H		;*16 mode
+	JR C,MODEE
+	LD D,0			;*1 mode
+MODEE:	LD HL,BTABLE-2
+LOOPB:	INC HL
+	INC HL
+	DJNZ LOOPB
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A			;Divisor in HL
+	SCF			;Show baud rate got
+	RET
+
+;Put Clock rate mask on (HL) and Enable mask on (BC)
+INITMK:	LD A,(HL)		;Get REG 4
+	AND 5FH			;Clear clock bits
+	OR D			;Add new
+	LD (HL),A
+	LD A,(BC)		;Get REG 3
+	AND 0DFH		;Clear auto enables
+	OR E			;Add new
+	LD (BC),A
+	RET
+
+;Baud table, sets divisor for CTC
+BTABLE:
+;*64 SIO mode
+	DEFW 625		;50
+	DEFW 417		;75 Minimum baud rate for 1Mhz clock
+	DEFW 284		;110
+	DEFW 233		;134.5 Minimum baud rate for 2Mhz clock
+	DEFW 208		;150
+	DEFW 104		;300
+;*16 SIO mode
+	DEFW 208		;600
+	DEFW 104		;1200
+	DEFW 69			;1800
+	DEFW 52			;2400
+	DEFW 35			;3600
+	DEFW 26			;4800 Maximum *16 mode for 1Mhz clock
+	DEFW 17			;7200
+	DEFW 13			;9600 Maximum *16 mode for 2Mhz clock
+;*1 SIO mode (Transmit only)
+	DEFW 104		;19200
+
+PORTI:
+;Port initialisation table
+;First byte defines port location of device
+;Second bytes indicates how many bytes to send
+;On board CTC channel 0
+CPCTC0:	DEFB CPCTC		;CTC port
+	DEFB 3
+	DEFB LOW (CPCTCV-CODEB)	;Interrupt vector
+	DEFB 01000111B		;Counter mode, Count follows, Reset channel
+DIV0:	DEFB 34H		;Divisor
+
+;On board CTC channel 1
+CPCTC1:	DEFB CPCTC+1		;CTC port
+	DEFB 2
+	DEFB 01000111B		;Counter mode, Count follows, Reset channel
+DIV1:	DEFB 1AH		;Divisor
+
+;On board SIO channel A
+CPSIOA:	DEFB CPSIO+2		;Channel A command register
+	DEFB S200-S100
+S100:	DEFB 18H		;Reset the channel
+	DEFB 4			;Register 4
+REG4A:	DEFB 11000100B		;X64 clock, 1 stop, no parity
+	DEFB 3			;Register 3
+REG3A:	DEFB 11000001B		;8 bits Rx enabled
+	DEFB 5			;Register 5
+	DEFB 11101010B		;DTR, 8 bits, Tx enabled, RTS
+S200:	DEFS 13-(S200-S100),0	;Max count
+
+;On board SIO channel B, include interrupt vector here
+CPSIOB:	DEFB CPSIO+3		;Channel B command register
+	DEFB S400-S300
+S300:	DEFB 18H		;Reset the channel
+	DEFB 2			;Register 2
+	DEFB LOW (CPSIOV-CODEB)	;Interrupt vector
+	DEFB 4			;Register 4
+REG4B:	DEFB 11000100B		;X64 clock, 1 stop, no parity
+	DEFB 3			;Register 3
+REG3B:	DEFB 11000001B		;8 bits Rx enabled
+	DEFB 5			;Register 5
+	DEFB 11101010B		;DTR, 8 bits, Tx enabled, RTS
+S400:	DEFS 15-(S400-S300),0	;Max count
+
+	CSEG
+
+;Serial input status, return NZ if char available
+CPISTA:	LD C,CPSIO+2
+	JR SIOIST
+CPISTB:	LD C,CPSIO+3
+SIOIST:	IN A,(C)
+	RRCA
+	JR C,READY		;Available
+	JR NREADY
+
+;Serial input
+CPSINA:	LD C,CPSIO+2
+	JR SIOIN
+CPSINB:	LD C,CPSIO+3
+SIOIN:	CALL SIOIST
+	JR Z,SIOIN		;Wait for character
+	DEC C
+	DEC C
+	IN A,(C)
+	RET
+
+;Serial output status, return 0 busy 0FFH free
+CPOSTA:	LD C,CPSIO+2
+	JR SIOOST
+CPOSTB:	LD C,CPSIO+3
+SIOOST:	IN A,(C)
+	AND 4
+	JR Z,NREADY
+READY:	XOR A			;Free, return 0FFH NZ C
+	DEC A
+	RET
+NREADY:	XOR A			;Busy, return 00 Z NC
+	RET
+
+;Serial output
+CPOUTA:	LD A,CPSIO+2
+	JR SIOOUT
+CPOUTB:	LD A,CPSIO+3
+SIOOUT:	LD B,C
+	LD C,A
+SWAIT:	CALL SIOOST
+	JR Z,SWAIT		;Wait until free
+	DEC C
+	DEC C
+	OUT (C),B
+	RET
+	ENDIF
+
+	IF G811 OR G813
+;	*************************
+;	*	SERIAL IO       *
+;	*************************
+
+PORTI:
+UARTH:	DEFB SETU		;8250 parameters
+UARTM:	DEFB MODEU		;RS232/Cassette
+
+	DSEG			;Device initialisation is banked
+
+;	*	Initialise serial       *
+
+;Intialise 8250
+INITSA:	LD A,(UARTM)
+	OUT (MCRG),A		;Set mode
+	LD A,83H		;Divisors
+	OUT (LCRG),A
+	LD A,(SBAUD)
+	OR A
+	JR Z,NOBD		;No baud
+	ADD A,A
+	LD E,A
+	LD D,0
+	LD HL,BTABLE-1
+	ADD HL,DE		;Get to right place in baud table
+	LD A,(HL)
+	DEC HL
+	OUT (BAUDL),A		;Baud rate high byte
+	LD A,(HL)
+	OUT (UARTD),A		;Baud rate low byte
+NOBD:	LD A,(UARTH)
+	OUT (LCRG),A		;Set line control
+	RET
+
+	CSEG			;Device IO is common
+
+;	*	Serial input status       *
+
+CPISTA:	IN A,(UARTS)
+	RRA			;Test bit 0
+	JP NC,NREADY		;No character
+	JP READY		;Signal availability
+
+;	*	Serial input       *
+
+CPSINA:	IN A,(UARTD)		;Get the character
+	AND 7FH			;Strip parity
+	RET
+
+;	*	Serial output status       *
+
+CPOSTA:	LD A,(SMODE)
+	AND MBXNXF		;XON XOFF enabled?
+	JR Z,NOHAND		;No
+;Serial output handshake status
+	IN A,(PHAND)		;Check handshake
+	BIT 4,A			;Test CTS
+	JR Z,NREADY
+;Serial output buffer status, return 0 busy 0FFH free
+NOHAND:	IN A,(UARTS)		;Check serial port
+	BIT 5,A
+	JR Z,NREADY
+READY:	XOR A			;Free, return 0FFH NZ
+	DEC A
+	RET
+NREADY:	XOR A			;Busy, return 00 Z
+	RET
+
+;	*	Serial output       *
+
+CPOUTA:	LD A,C
+	OUT (UARTD),A
+	RET
+
+;8250 baud table
+BTABLE:	DEFW 09C4H	;50
+	DEFW 0683H	;75
+	DEFW 0470H	;110
+	DEFW 03A1H	;134.5
+	DEFW 0341H	;150
+	DEFW 01A1H	;300
+	DEFW 00D0H	;600
+	DEFW 0068H	;1200
+	DEFW 0045H	;1800
+	DEFW 0034H	;2400
+	DEFW 0023H	;3600
+	DEFW 001AH	;4800
+	DEFW 0011H	;7200
+	DEFW 000DH	;9600
+	DEFW 0007H	;19200
+	ENDIF
+
+	IF NAS
+;	*************************
+;	*	SERIAL IO       *
+;	*************************
+
+PORTI:
+PARITY:	DEFB SRLOP		;Parity
+
+	DSEG			;Device initialisation is banked
+
+;	*	Initialise serial       *
+
+INITSA:	RET			;Nothing to initialise
+
+	CSEG			;Device IO is common
+
+;	*	Serial input status       *
+
+CPISTA:	IN A,(UARTS)
+	RLA			;Test bit 7
+	JP NC,NREADY		;No character
+	JP READY		;Signal availability
+
+;	*	Serial input       *
+
+CPSINA:	IN A,(UARTD)		;Get the character
+	AND 7FH			;Strip parity
+	RET
+
+;	*	Serial output status       *
+
+CPOSTA:	LD A,(SMODE)
+	AND MBXNXF		;XON XOFF enabled?
+	JR Z,NOHAND		;No
+;Serial output handshake status
+	IN A,(PHAND)		;Check handshake
+	RLA			;Test bit 7
+	JR NC,NREADY	
+;Serial output buffer status, return 0 busy 0FFH free
+NOHAND:	IN A,(UARTS)		;Check serial port
+	BIT 6,A
+	JR Z,NREADY
+READY:	XOR A			;Free, return 0FFH NZ
+	DEC A
+	RET
+NREADY:	XOR A			;Busy, return 00 Z
+	RET
+
+;	*	Serial output       *
+
+CPOUTA:	LD A,C
+	OUT (UARTD),A
+	RET
+
+;Set parity if required
+PARIT:	LD A,(PARITY)
+	SRL A
+	RET NC			;No parity
+	JR NZ,PARITE		;Parity even
+;Set 'C' with parity odd
+PARITO:	LD A,C
+	OR A
+	RET PO
+	JR SETPAR
+;Set `C' with PARITY EVEN
+PARITE:	LD A,C
+	OR A
+	RET PE
+SETPAR:	XOR 80H
+	LD C,A
+	RET
+	ENDIF
+
+	SUBTTL Parallel Output
+	PAGE
+
+;		*******************************
+;		*      PARALLEL ROUTINES      *
+;		*******************************
+
+	DSEG			;Device initialisation is banked
+
+;	*	Initialise PIO for printer ops if required       *
+
+INITP:	LD A,(PPORT)		;Initialise PIO ?
+	OR A
+	RET Z			;No
+	LD A,11111111B
+	OUT (PDATA),A		;Set A lines
+	OUT (PDATB),A		;B lines 0FFH
+	OUT (PCTRLB),A		;B port mode 3
+	XOR A
+	OUT (PCTRLB),A		;Outputs
+	DEC A
+	OUT (PCTRLA),A		;A port mode 3
+	LD A,11110001B		;Inputs except STROBE,HOLD,RD
+	OUT (PCTRLA),A
+	CALL STROBE		;Send a strobe
+	RET
+
+	CSEG
+
+PARALL:	CALL PARST
+	JR Z,PARALL
+	LD A,C
+	OUT (PDATB),A		;Output character
+STROBE:	LD A,0FDH		;Strobe
+	OUT (PDATA),A		;Strobe low
+	NOP
+	NOP
+	LD A,-1
+	OUT (PDATA),A		;Strobe high
+	RET
+
+;Parrallel status
+PARST:	IN A,(PDATA)		;Read Status
+	RRCA
+	JR C,NREADY
+	JR READY
+

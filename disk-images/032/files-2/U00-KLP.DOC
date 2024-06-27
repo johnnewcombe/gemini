@@ -1,0 +1,747 @@
+                        Kenilworth Label Processor.
+
+                            Version 2.0  14/10/86
+                                     for
+                              Becker Paint Ltd
+
+
+
+
+
+
+
+
+
+
+                                  OPERATORS
+
+                                   MANUAL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+17th DECEMBER 1986.
+.paŠ
+                         Kenilworth Label Processor.
+
+                            Version 2.0  14/10/86
+
+  
+
+                 CONTENTS.                           PAGE.
+
+
+               1) Overview.                        
+                                    
+                                    
+               2) Label Printing.                  
+                                    
+                                    
+               3) Utilities.                       
+                 a) Label Composition.             
+                 b) Print Label Details.           
+                 c) Symbol Editor.                 
+                 d) Font Editor.                   
+                 e) Database Editor.               
+                                    
+                                    
+               4) Disk Files.                      
+                                    
+                                    
+               5) Text Entry Editing Commands.          
+
+.paŠ
+1).                         Overview
+
+Thå concepô oæ thå Kenilwortè Labeì Processoò ió thaô iô ió verù mucè likå á 
+Worä  Processoò  iî  thaô á label¬  likå á standarä letter¬  caî  easilù  bå 
+designeä anä storeä foò printinç wheneveò required¬ anä wheî printing¬ itemó 
+likå Datå anä Batcè Numbeò caî bå inserted®   Also¬  likå mosô oæ thå betteò 
+Worä Processors¬  iô workó oî thå WYSIWYG‚ principle¬  (i.e®  Whaô Yoõ Seå Ió 
+Whaô  Yoõ Get)®   Thió ió achieveä bù havinç á  second¬  colour¬  screeî  tï 
+displaù thå labeì on.
+
+Thå  colouò  screeî useó colouò aó aî indicatoò only®  Thió versioî  oæ  thå 
+labeì processoò doeó noô prinô iî colour.
+
+1)   Thå  Labeì  outlinå anä labeì areá boxeó arå showî iî  BLUE®   Anythinç 
+     showî iî thió colouò ió noô printeä oî thå label.
+
+2)   Thå Texô anä Symboló tï bå printeä arå showî iî GREEN.
+
+3)   Variablå areaó tï bå inpuô aô prinô timå arå iî CYAN (pale blue).
+
+4)   Datá  thaô ió beinç inpuô ió showî iî REÄ untiì accepteä  aó  permanenô 
+     wheî iô changeó tï GREEN.
+
+Á brieæ outlinå oæ thå program'ó maiî sectionó follows:
+
+Label Parameter Design.
+Thió ió wherå thå sizå oæ thå labeì anä itó areaó witè thå typå oæ datá theù 
+contaiî ió laiä down®   Thió ió calleä á DESIGN®  Aô thå momenô thió parô oæ 
+thå  prograí  ió  noô  availablå  tï  thå  operatoò  buô  modificationó  anä 
+additionaì designó caî bå donå bù uó quitå quickly.
+
+Composition of Label Contents.
+Here¬  á  desigî ió selecteä anä labeló witè differenô contentó arå  createä 
+anä  storeä  aó  required®   Thå  areaó oî á labeì  arå  designateä  iî  thå 
+Parameteò  Desigî  tï  contaiî eitheò texô oò symbols®   Symboló  havå  beeî 
+designeä  bù uó buô theù caî bå modifieä oò addeä tï bù  thå  operator¬  seå 
+Symboì  Editoò below®   Thå Fonô (typå style© foò thå texô haó beeî designeä 
+bù  uó  anä  ió  calleä ME² oî thå disk®   Iô ió  baseä  oî  á  fonô  calleä 
+Microgramá  Extended®   Again¬  thió caî bå modifieä oò ne÷ fontó createä bù 
+thå operator¬ seå Fonô Editoò below®  Iî areaó containinç Text¬ partó caî bå 
+seô  aó Variablå witè nï contentó buô jusô thå maximuí numbeò oæ  characteró 
+stipulated®   Thå contentó oæ theså partó arå filleä iî aô prinô time®   Thå 
+Texô  caî bå eitheò freå texô typeä iî bù thå operatoò oò  Standarä  Phraseó 
+selecteä froí á database®  Seå Databaså Editoò below.
+
+Print Label Details.
+Thió  allowó  thå  labeì designeò tï prinô thå basiã  labeló  foò  referencå 
+purposes®  Thå ideá ió tï prinô theí alì froí firsô tï lasô ontï plaiî papeò 
+foò  filing®   Thå labeì ió printed¬  witè thå boø anä labeì outlineó unlesó 
+thió optioî ió turneä off¬ alonç witè á listinç oæ anù phraseó selecteä froí Šthå  database®   Anù lateò changeó oò additionó caî bå printeä anä addeä  tï 
+thå file.
+.paŠSymbol Editor.
+Á symboì ió storeä aó á serieó oæ lineó (vectors© anä filleä encloseä areas® 
+Thå Symboì Editoò allowó yoõ tï desigî anä modifù á symbol¬  companù Logï oò 
+anù otheò graphiã item®   Iô ió onlù á simplå editoò givinç yoõ thå  abilitù 
+tï Movå thå cursor¬ Dra÷ lineó anä Filì encloseä Areas.
+
+Font Editor.
+Á  characteò ió alsï storeä aó á serieó oæ vectoò instructions¬  iî á  smalì  
+matriø  oæ 1¸ bù 15®   Thå fonô editoò ió foò changinç theså vectoró iî  thå 
+supplieä fonô oò foò creatinç á ne÷ one®  
+
+Database Editor.
+Therå  ió  á databaså supplieä containinç thå Risë anä Safetù  phrases®   Iô 
+currentlù  haó abouô 16° entrieó anä thå maximuí iô caî holä ió  300®   Thió 
+caî  bå  increaseä iæ requireä buô iô wilì eventuallù bå  opeî  ended®   Thå 
+safetù phraseó arå prefixeä bù aî "S"¬  thå risë phraseó bù aî "R¢ anä  somå 
+generaì  purposå  oneó bù á "D"®   Thå Databaså Editoò allowó yoõ tï  changå 
+theså oò adä tï them®   Theså phraseó arå onlù takeî froí thå databaså  wheî 
+composinç  thå labeì contentó anä noô aô prinô time®   Thió meanó thaô iæ  á 
+databaså  entrù  ió  changed¬  á changå wilì not‚ bå madå iî  labeló  alreadù 
+composed®  Iô woulä bå necessarù tï looë througè thå printouô oæ eacè  labeì 
+anä  changå  thoså  thaô needeä it®  Automatiã replacemenô haó  á  potentiaì 
+probleí iæ á phraså waó increaseä iî length®   Iæ iô jusô fitteä oî á  labeì 
+iî  itó olä forí theî therå coulä bå á jumblå oæ wordó oî toğ oæ eacè  otheò 
+iæ thå ne÷ lengtè waó automaticallù inserted.
+
+Label Printing.
+Finally¬  wå  havå  thå maiî part®   Afteò á labeì desigî ió  selected¬  thå 
+operatoò  wilì selecô thå basiã labeló required¬  filì iî thå variablå  datá 
+anä indicatå ho÷ manù copieó arå required®  Iî thió waù á queuå oæ labeló tï 
+bå printeä wilì bå formed®  Printinç caî bå interrupteä aô anù timå anä wilì 
+stoğ  aô thå enä oæ thå currenô label®   Iô wilì theî bå possiblå tï  changå 
+thå  ordeò  oò  quantitù oæ thå labeló iî thå queuå anä tï bå  ablå  tï  adä 
+anotheò onå tï thå queue.
+.paŠ2)®                         Label Printing.
+
+Wheî  switcheä   on¬  thå  computeò wilì displaù á menõ  oæ  options®  Presó 
+<RETURN¾ foò LabelPrinting®  Selecô thå labeì desigî tï bå used®  Thå screeî 
+shoulä  changå tï thaô aó iî Fig.1®   Therå arå fouò blanë optionó oî  thió 
+screen¬  F0¬  F2¬ Fµ anä F6®  Iæ therå ió á prinô queuå alreadù oî disë thaô 
+haó  noô beeî printeä then¬  instead¬  yoõ wilì seå thå screeî aó iî  Fig.² 
+witè theså optionó available.
+
+Selecô  optioî  F± tï creatå á ne÷ prinô queue®   Iæ yoõ havå tï  breaë  ofæ 
+creatinç á prinô queuå withouô startinç thå printinç theî uså optioî F4®  Oî 
+returninç  eitheò selecô optioî F° tï prinô whaô yoõ havå donå oò optioî  F² 
+tï continuå to¬  adä to¬  oò amenä thå queue¬ theî optioî F° tï prinô it®  Á 
+descriptioî oæ thå optionó iî numericaì ordeò ió giveî below.
+
+Option F0.  Print Labels in Label Print Queue.
+Thå  printeò  instructionó  giveî herå applù tï  thå  PRINTRONIØ  P300®  Thå 
+operatioî oæ thå EPSOÎ shoulä bå morå straighô forward®   Yoõ wilì bå  askeä 
+tï  indicatå  whicè printeò ió beinç useä anä tï presó thå keù markeä  "ESC¢ 
+wheî  thå printeò ió oî line®   Beforå doinç thió makå surå thå printeò  haó 
+thå  correcô  labeì stocë loaded®  Seå pagå 9-1° oæ  thå  Printeò  Referencå 
+Manuaì  oî  ho÷ tï seô thå toğ oæ form®   Therå arå somå  smalì  differenceó 
+betweeî  thå manuaì anä thå printeò aó thå manuaì haó noô caughô uğ witè thå 
+latesô versioî oæ thå printer®   Somå experimentinç wilì bå necessarù aó  tï 
+whicè  parô  oæ  thå  labeì ió seô againsô whicè parô oæ  thå  toğ  oæ  forí 
+referencå marë (pagå 9© beforå rotatinç thå verticaì positioî knoâ backwardó 
+(pagå 10)® Wheî thió haó beeî done¬ seô thå formó thicknesó adjustmenô leveò 
+tï ³ oî thå scalå (pagå 6)® Thió shoulä bå sufficienô buô iæ smudginç occuró 
+oî thå labeló theî movå thå pointeò neareò tï thå 6®   Afteò closinç thå liä 
+yoõ  wilì neeä tï presó thå bottoí righô buttoî markeä "CLEAR¢ tï removå thå 
+printer'ó messagå display:
+                         FAULÔ CONDITION
+                         PLATEÎ OPEÎ                
+Thå printeò ió puô oî linå bù pressinç thå toğ buttoî oî thå printeò  markeä 
+"OÎ  LINE¢  nexô tï thå poweò light®   Thå messagå oî thå printer'ó  displaù 
+shoulä changå from:
+                         OFÆ LINE
+                         READY
+tï somethinç like:
+                         OÎ LINE
+                         DĞ AÔ 1° CPI
+
+Whilå  thå  labeló arå beinç printeä thå commanä screeî displayó  thå  prinô 
+queuå anä indicateó thå labeì beinç printed¬  thå numbeò printeä sï faò  anä 
+thå  numbeò lefô tï print®   Aô thå samå timå á picturå oæ thå labeì wilì bå 
+displayeä oî thå colouò screen.
+
+Afteò á labeì haó beeî printeä thå prograí lookó tï seå iæ anù keù  - excepô 
+thå CTRL¬ SHIFÔ anä CAPÓ LOCË - haó beeî pressed®  Iæ so¬ theî printinç wilì 
+bå stoppeä anä thå screeî wilì bå aó iî Fig.2.
+.paŠOption F1. Create New Print Queue.
+Thió  optioî  ió  noô availablå iæ á prinô queuå  exists®  Thå  screeî  wilì 
+displaù  aó iî Fig.3®   Á lisô oæ thå basiã labeló createä foò thå selecteä 
+desigî thaô arå oî drivå Â wilì bå listed®  Iæ therå arå toï manù tï sho÷ oî 
+onå  screen¬  pressinç anù keù excepô ESÃ wilì displaù thå nexô  page®   ESÃ 
+wilì  freezå  thå  lisô aô thaô poinô foò yoõ tï typå thå namå  oæ  thå  onå 
+required®   Thå  pagå  containinç  thå labeì requireä doeó noô  havå  tï  bå 
+displayeä foò thaô labeì tï bå selected®   Tï re-displaù thå lisô oæ  labeló 
+aô anù time¬  presó F5® Iæ yoõ havå somå labeló oî anotheò drivå oò á floppù 
+disë  theî optioî F³ wilì allo÷ yoõ tï changå thå drivå thå labeló arå takeî 
+from®  
+
+Iæ thå labeì containó anù Variablå areas¬  no÷ ió thå timå yoõ wilì bå askeä 
+tï filì theí iî theî presó thå RETURÎ oò ENTEÒ key®  Thå datá yoõ typeä wilì 
+no÷  bå  showî oî thå colouò screeî iî red®   Yoõ wilì bå  askeä  "Amenä  oò 
+Accept"®   Iæ yoõ wanô tï changå whaô yoõ havå typed¬ presó F2®  Iæ iô ió OË 
+theî  presó  F8®   Thå colouò displaù wilì no÷ changå thå reä intï greeî  tï 
+sho÷ iô ió accepted®   Iô cannoô bå changeä afteò thió point®   Iæ á mistakå 
+ió detecteä theî yoõ wilì jusô havå tï saù "0¢ foò thå numbeò oæ copieó  anä 
+dï  iô  again®   Datá  wilì bå requesteä foò eacè oæ thå partó  declareä  aó 
+Variablå wheî thå labeì contentó werå created®   Iæ yoõ wanô tï leavå onå oæ 
+theí blanë jusô presó thå RETURÎ keù followeä bù thå F¸ key.
+
+Wheî  alì oæ thå variablå partó havå beeî done¬  yoõ wilì bå askeä  foò  thå 
+numbeò oæ copieó required® Á maximuí oæ 1´ differenô labeló arå permitteä iî 
+á queue¬ anä thå maximuí numbeò oæ copieó oæ anù onå labeì ió 32000.
+
+Wheî  á queuå haó beeî completeä yoõ caî returî tï thå maiî menõ (Fig.2© bù 
+pressinç F´ oò yoõ caî amenä thå queuå bù pressinç F2.
+
+Option F2. Add to, Amend or Examine Print Queue.
+Yoõ shoulä enteò thå numbeò oæ thå entrù iî thå queue¬  showî oî thå lefô oæ 
+thå screen¬  thaô yoõ wanô tï changå oò jusô presó  thå ESÃ keù iæ yoõ  onlù 
+wanteä tï looë aô thå queue® 
+
+Thå  optionó  yoõ  havå arå showî iî Fig.4®   Thå numbeò oæ thå  entrù  yoõ 
+selecô wilì bå indicateä witè á ">¢ anä highlighting®  Thió ió thå onå  thaô 
+wilì  bå  deleted¬  thå  quantitù  tï prinô amended¬  oò  moveä  tï  anotheò 
+position®   Iæ  yoõ selecô F³ tï movå yoõ wilì bå askeä "Enteò  Positioî  tï 
+movå to"® 
+
+Iæ  yoõ selecô F´ tï inserô aî entry¬  iô woulä bå inserteä aô thaô positioî 
+anä  thå  onå alreadù therå anä alì thoså belo÷ iô woulä bå moveä  dowî  onå 
+place.
+@@@
+Changinç thå quantitù tï prinô tï ° ió thå samå aó deletinç it.
+
+Option F3. Change Disk Drive containing Labels.
+Thå labeì designó arå alì kepô oî drivå Â buô thå individuaì labeló  createä 
+caî  iæ  requireä bå storeä oî otheò drives®   Therå shoulä bå nï  technicaì 
+reasoî  foò  thió  beinç necessarù aó therå ió plentù oæ rooí  oî  drivå  B®  ŠTherå could¬ however¬ bå otheò companù reasons.
+.paŠOption F4. Exit Program WITHOUT printing Label Print Queue.
+If¬  afteò creatinç á prinô queue¬  oò afteò havinç stoppeä printing¬ yoõ dï 
+noô wanô tï starô printinç immediatelù theî thió ió thå waù out®   Thå prinô 
+queuå ió saveä aó iô standó aô thaô moment¬  namely¬ iæ á prinô ruî haä beeî 
+interrupteä afteò 5° ouô oæ 7µ oæ thå currenô labeì haä beeî  printed¬  theî 
+thå prinô queuå woulä bå saveä showinç 2µ tï print.
+
+Option F5. Delete Label Print Queue.
+This¬ quitå simply¬ doeó whaô iô says®  Wheî á prinô queuå ió createä á lisô 
+oæ thå labeló tï bå printeä ió saved®   Alsï á copù oæ eacè labeì - buô witè 
+thå  variablå datá includeä iî iô - ió saved®   Wheî printing¬  theså copieó 
+arå deleteä oî completion®  Thió optioî deleteó thå queuå lisô anä alsï eacè 
+oæ thå labeì copies.
+
+Option F6. List Contents of Label Print Queue on Printer.
+Thió  maù noô bå requireä verù ofteî buô iæ yoõ dï uså iô theî  thå  printeò 
+musô  havå plaiî papeò iî it¬  noô labels®   Iô ió á harä copù oæ thå  prinô 
+queuå thaô yoõ seå wheî usinç optioî F2.
+.paŠ3)®                             Utilities.
+
+a© Label Composition.
+
+DataEntry.“  Thå  firsô  requiremenô ió tï choså onå oæ  thå  labeì  designó 
+available®  Afteò  doinç so¬  thå commanä screeî wilì displaù á lisô oæ  thå 
+labeló oî thå disk®  Iæ onå oæ thoså oî thå lisô ió choseî iô wilì bå loadeä 
+anä  displayeä  oî  thå colouò screen¬  otherwiså thå  commanä  screeî  wilì 
+indicatå  thaô á ne÷ onå ió beinç created®  Beforå composinç  á  label¬  thå 
+followinç musô bå selected:
+
+a©   Aî areá oî thå labeì tï starô enterinç datá - usinç F1.
+b©   Á Font¬ ME² ió thå default®  Tï change¬ uså F2.
+c©   Á scalå foò thå text¬ 0.5° ió thå default® Tï changå uså F3.
+d©   Á Pen®  Peî shapå ± ió thå default®  Tï changå uså F4.
+
+
+Pressinç F± tï selecô aî areá wilì displaù thå areá numberó iî eacè areá  oî 
+thå  colouò  screen®  Thå areá selecteä wilì bå showî oî thå commanä  screeî 
+undeò thå worä "Area".
+
+Iæ  yoõ  presó F² yoõ wilì bå askeä tï enteò thå scalå  required®   É  woulä 
+suggesô  yoõ uså 0.5° foò smalì texô anä 1.0° anä 1.5° foò anythinç  larger¬ 
+buô anù scalå caî bå useä froí 0.0± whicè wilì bå toï smalì tï bå clear¬  tï 
+9.9¹  whicè  wilì bå toï largå tï fiô oî mosô  labels®   Somå  scaleó  prinô 
+cleareò  thaî  otheró duå tï roundinç factoró iî thå scaling®   Á changå  oæ 
+0.0± uğ oò dowî caî sometimeó makå á biç difference.
+
+Characteró  witè á scalå oæ 0.8° oò largeò usuallù looë betteò iæ  theù  arå 
+thicker®   Selectinç  á  peî  shapå doeó thió anä Fig.¶ showó  thå  commanä 
+screeî yoõ geô wheî pressinç F4.
+
+Iæ  thå areá selecteä ió á Texô areá theî thå nexô stagå ió tï presó Fµ  foò 
+Texô  Entry®   Somå oæ thå functioî keù optionó arå noô availablå  anä  somå 
+havå changed®   Thå defaulô entrù optioî ió tï uså Standarä Phraseó froí thå 
+database®   Thå F° keù wilì togglå betweeî thaô anä Freå Text®   Thå currenô 
+labeì  namå  ió  stilì  showî oî thå thirä linå beneatè F°  oî  thå  commanä 
+screen®  Thå maximuí entrù linå lengtè permitteä ió 12µ characteró buô aó  á 
+linå  caî  bå starteä aô anù positioî oî thå linå iî thå areá oî thå  colouò 
+screen¬ therå ió iî effecô verù littlå limitatioî oî whaô yoõ caî puô oî thå 
+label®   Iæ thå texô entereä ió toï lonç foò thå linå theî iô wilì bå brokeî 
+aô thå enä oæ thå lasô worä thaô wilì fiô anä continueä oî thå nexô linå  oò 
+lineó  aó required®   Iæ difficultù ió encountereä fittinç somethinç theî  á 
+smalì changå iî scalå sizå oò á smalleò peî shapå shoulä bå tried®  Aó therå 
+ió rooí oî thå commanä screen¬  thå ediô facilitieó arå displayed® Wheî theù 
+cannoô be¬ referencå caî bå madå tï sectioî µ oæ thió manual.
+.paŠAfteò  thå  texô  haó beeî typeä iî oò á databaså keù worä  foò  á  standarä 
+phrase¬  thå  texô  wilì  bå displayeä oî thå colouò  screeî  iî  red®   Thå 
+operatoò caî theî movå thå cursoò anä presó thå RETURÎ keù tï re-positioî iô 
+iæ required®  Hå caî changå thå Font¬ Scalå oò Peî  bù pressinç F2,F³ oò F4® 
+Hå  caî alsï re-ediô thå linå bù pressinç F6¬  abandoî thå entrù bù pressinç 
+F· oò accepô iô bù pressinç F¸ whereupoî iô wilì changå froí reä tï green.
+
+Iæ  thå  areá selecteä ió á symboì areá theî Fµ oî thå commanä  screeî  wilì 
+havå "Symboì Select¢ belo÷ iô noô "Texô Entry"®  Wheî pressed¬  thå nameó oæ 
+anù symboló oî drivå Â wilì bå displayeä foò selection®   Thå symboì wilì bå 
+displayeä  oî thå colouò screeî iî reä anä thå operatoò onlù haó thå  optioî 
+oæ rejectinç iô bù pressinç F· oò acceptinç iô bù pressinç F8.
+
+VariableParts
+Partó  oæ thå labeì foò whicè thå datá ió entereä aô prinô timå arå inserteä 
+oî  thå  labeì  bù pressinç F8®  Yoõ wilì bå askeä tï enteò  thå  numbeò  oæ 
+characteró  requireä  betweeî ± anä thå maximuí possiblå usinç  thå  currenô 
+scalå anä pen®  "@"'ó wilì bå displayeä iî reä foò yoõ tï accept¬  rejecô oò 
+changå thå Font¬  Scalå anä Pen®  Theså arå theî fixeä anä cannoô bå changeä 
+aô prinô time¬ iô wilì onlù bå possiblå tï enteò datá foò thå line.
+
+LabelEditing.
+Thå  contentó  oæ á labeì caî bå changeä bù pressinç thå F¶ key®  Usinç  thå 
+arro÷ keyó aó instructeä wilì movå thå cursoò arounä thå labeì oî thå colouò 
+screeî  tï  eacè entrù iî turn¬  iî thå ordeò thaô theù werå  entered.‚   Thå 
+commanä screeî wilì alsï displaù thå detailó oæ thå entrù thå cursoò ió  at¬ 
+seå Fig.20.
+
+Pressinç  thå  RETURÎ  keù wheî yoõ arå aô thå linå yoõ wisè  tï  ediô  wilì 
+givå yoõ somå functioî keù optionó whicè requirå verù littlå explanation.
+
+F±  wilì  deletå á symboì oò text®   Thå texô "line¢ iô deleteó ió thå  texô 
+displayeä  oî thå commanä screen®   Thió maù bå parô oæ á linå oò morå  thaî 
+onå linå oî thå colouò screen.
+
+F2¬ F³ anä F´ wilì permiô changinç oæ thå Font¬ Scalå anä Pen.
+
+Fµ allowó changeó tï bå madå tï thå text®   Iô caî onlù bå changeä likå freå 
+text®   Iô  ió  noô possiblå tï selecô á differenô Standarä Phraså froí  thå 
+database¬ yoõ woulä neeä tï typå iô iî full.
+
+F¶ ió foò movinç text®  Iô ió onlù possiblå tï movå iô withiî thå samå area®  
+Yoõ  movå thå cursoò tï wherå thå texô ió tï bå moveä tï anä  presó  RETURN®  
+Thå originaì iî greeî ió deleteä anä iô ió writteî iî reä aô thå cursor® Yoõ 
+caî theî makå furtheò adjustmentó tï itó positioî followeä bù pressinç F· tï 
+ignorå thå movå oò F¸ tï accepô it® Iæ á loô oæ texô haä beeî writteî iî thå 
+samå placå theî deletinç onå wilì partiallù deletå thå otheò texô oî toğ  oæ 
+it®   Usinç F° tï redra÷ thå screeî wilì curå thió anä doublå checë thaô yoõ 
+havå goô everythinç correct.
+.paŠOî  completioî  oæ texô oò variablå entrù anä labeì edit¬  thå functioî  keù 
+F·  ió  useä tï exiô froí thå currenô label®   Pressinç iô wilì  changå  thå 
+commanä screeî anä givå yoõ somå savinç options®  F· wilì savå thå labeì yoõ 
+havå  beeî creatinç oò changinç keepinç thå samå labeì name®  F¸  wilì  alsï 
+savå  iô buô wilì asë yoõ foò anotheò name®  Thió meanó thaô thå labeì whoså 
+namå yoõ originallù selected¬  wilì noô bå changed® F¹ wilì savå nothinç anä 
+leavå everythinç aó iô waó beforå yoõ started®  
+
+Wheî  yoõ selecô á labeì namå aô thå start¬  á copù oæ iô ió madå foò yoõ tï 
+worë on®   Consequently¬   thå renamå optioî ió verù usefuì wheî yoõ wanô tï 
+creatå á ne÷ basiã labeì thaô ió verù mucè likå onå alreadù done®  Onlù wheî 
+yoõ uså F· tï "Savå Label¢ doeó thå originaì geô storeä aó á backuğ anä  thå 
+copù  takå itó place®   (Seå sectioî ´ oî Disë Fileó).
+
+b)® Prinô Labeì Details.
+Thió  ió tï allo÷ thå labeì designeò tï prinô thå basiã labeló foò referencå 
+purposes®   Thå ideá ió tï prinô onå oæ eacè oî plaiî papeò anä filå theí aó 
+á referencå manual®   Thå labeì ió printeä witè thå areá anä labeì  outlineó 
+unlesó thió ió noô required®  Á lisô oæ alì thå phraseó froí thå databaså ió 
+alsï given®  
+
+Beforå  doinç á printout¬  makå surå thå printeò haó plaiî papeò iî anä  noô 
+blanë  labels®   Yoõ arå firsô requireä tï selecô á labeì desigî froí  thoså 
+available®   Nexô  yoõ havå tï saù whicè typå oæ printeò ió beinç used®   Iæ 
+yoõ picë thå wronç onå thå resulô wilì bå rubbish.
+
+Thå printeò wilì theî advancå thå papeò tï thå toğ oæ thå nexô  sheet®   Yoõ 
+neeä  tï  checë  thaô  thió  ió correcô anä winä thå papeò  iæ  iô  ió  not® 
+Followinç this¬ alì oæ thå labeló foò thå selecteä desigî oî drivå Â wilì bå 
+displayed®  Uså  thå  F° functioî keù iæ yoõ wisè tï uså thå labeló  froí  á 
+differenô drive.
+
+Keù  F²  wilì  selecô iæ thå borderó oæ  thå areá  anä  labeì  outlineó  arå 
+printed®   Iô  giveó á betteò representatioî oæ thå labeì iæ theù arå buô iô 
+takeó longeò tï print® 
+
+Keyó  F³ anä F´ allo÷ yoõ tï specifù wherå iî thå lisô tï starô  anä  finisè 
+printing® Iô defaultó tï Firsô anä Last.
+
+Thå F± keù wilì commencå thå printing®   Witè á loô oæ labels¬ thió coulä bå 
+á lengthù process®  Iô ió noô possiblå tï givå exacô timingó buô iô coulä bå 
+betweeî  ² anä ´ minuteó peò label®   Thå Labeì Processoò ió designeä tï  bå 
+mosô  economicaì aô printinç productioî quantitieó oæ á label¬  noô jusô onå 
+off®  Thå actuaì printinç oæ á labeì shoulä onlù takå ¸ tï 1² seconds® 
+
+Aó á guideline,
+
+a)   Iô  takeó longeò  tï creatå thå datá anä prinô thå datá usinç aî  Epsoî 
+     printeò thaî á Printronix.
+
+b)   Iô  takeó  longeò  tï creatå thå printeò datá iæ thå  bordeò  ió  beinç Š     printed.
+.paŠ
+c© Symbol Editor.
+Thå symboì editoò ió á basiã drawinç routinå foò designinç logoó anä symboló 
+foò labels®  Iô ió easù tï uså aó iô onlù haó threå "abilities¢ sï tï speak¬ 
+namelù  MOVE¬  DRA×  anä  FILL®   Thå linå waó drawî aô thió  aó  anù  otheò 
+additionó woulä starô tï makå iô á CAÄ package¬  pluó makinç iô morå compleø 
+tï use.
+
+Wheî  started¬  á requesô ió madå foò thå drivå holdinç thå  symbols®   Thió 
+wilì  normallù bå drivå "B¢ buô iæ yoõ wisè tï develoğ somå designó buô  noô 
+havå  theí  availablå  foò uså yeô theî iô woulä bå besô tï puô  theí  oî  á 
+floppù disë oî drivå "D".
+
+Afteò  selectinç  á  drivå  á lisô oæ anù symboló  oî  thaô  drivå  wilì  bå 
+displayeä  anä thå operatoò ió requesteä tï enteò á name®   Iô caî eitheò bå 
+onå oî thå lisô tï modifù oò á ne÷ one.
+
+Thå colouò screeî wilì havå twï bluå squares®   Thå largå onå ió thå onå  tï 
+worë on¬  thå otheò ió tï sho÷ thå desigî aô á smalleò sizå aó iô maù appeaò 
+oî  á label®  Thå commanä screeî wilì havå aô thå toğ thå namå oæ thå symboì 
+selected¬ thå cursoò speeä anä thå mode.
+
+Thå  cursoò  speeä ió actuallù thå amounô thå cursoò wilì movå aô  eacè  keù 
+press®   Thió caî bå changeä bù usinç thå F´ anä Fµ functioî keys®   Iô wilì 
+bå  founä besô tï keeğ tï thå samå speeä throughouô thå desigî aó thió  wilì 
+allo÷ yoõ tï joiî lineó easily.
+
+Therå  arå twï modes¬  MOVÅ anä DRAW®   Thå currenô onå ió showî aô thå  toğ 
+righô  oæ thå commanä screen®   Thå onå iô caî bå changeä tï ió showî  undeò 
+thå F° indicatoò oî thå left®   Iî MOVÅ modå thå cursoò ió showî aó á  smalì 
+crosó  whicè caî bå moveä arounä usinç eitheò thå cursoò keyó oò thå numeriã 
+keypaä aô thå righô hanä sidå oæ thå keyboard® Thió keypaä workó aó follows:
+
+¸ ½ UĞ   ² ½ DOWÎ   ´ ½ LEFÔ   ¶ ½ RIGHT
+Thå 7,9,± anä ² keyó givå diagonaì movement® Thå otheró dï nothing.
+
+Iæ DRA× modå ió selecteä bù pressinç functioî keù F0¬ thå cursoò wilì changå 
+froí  á  crosó tï á line®   Thió linå wilì bå froí aî Origiî tï  thå  cursoò 
+position®   Thå  cursoò positioî caî stilì bå changeä bù usinç  thå  numeriã 
+keypaä  oò thå cursoò keys®   Wheî yoõ do¬  onå enä oæ thå linå wilì  remaiî 
+fixeä  aô thå Origiî whilå thå otheò wilì movå aó requested®   Thió ió knowî 
+aó á Rubbeò Banä Cursoò foò obviouó reasons.
+
+Iî MOVÅ modå thå F² keù indicatoò oî thå commanä screeî haó "Set¢ undeò  it®  
+Thió  setó  thå Origiî aó beinç thå cursoò position®   Iî DRA× modå  iô  haó 
+"Accept¢  undeò it®   Thió acceptó thå rubbeò banä cursoò aó á linå tï  dra÷ 
+anä changeó iô tï green®  Thå ne÷ Origiî ió alsï seô tï thå enä oæ thå line.
+
+Iæ á mistakå ió madå theî thå lasô linå drawî caî bå deleteä bù pressinç thå 
+F± functioî key® Furtheò pressinç thió keù wilì continuå tï deletå backwardó 
+througè thå lineó drawî buô NOTE¬  thå Origiî wilì NOÔ bå changed®   Iô wilì Šstilì  bå aô thå poinô wherå thå lasô linå accepteä finished¬  eveî iæ  thaô 
+linå haó beeî deleted.
+.paŠThió ió noô thå normaì methoä tï bå useä tï deletå á linå iî á symboì buô ió 
+jusô  useä tï deletå thå lasô linå wheî á mistakå haó beeî made®   Tï ediô á 
+picturå uså thå F² functioî key®   Thió wilì allo÷ yoõ tï "scan¢ througè thå 
+drawinç  usinç thå lefô anä righô cursoò keyó (anä thå ´ anä ¶ keyó  oî  thå 
+keypad)®  Aó  yoõ  movå through¬  eacè linå wilì changå froí greeî  tï  red®  
+Pressinç thå F± keù wilì deletå thå linå iî reä froí thå drawing®   Nï otheò 
+lineó joineä tï iô wilì bå changed.
+
+Thå  onå  thinç lefô ió FILL®   Thió ió useä tï filì iî witè soliä colouò  á 
+shapå drawî witè lines®   Á worä oæ caution®   Thinë oæ iô aó á tiî oæ painô 
+beinç  poureä intï thió shape®   Iæ twï oæ thå lineó thaô shoulä  bå  joineä 
+don't¬  theî  thå "paint¢ wilì flooä ouô anä filì thå screen¡   Iæ thió doeó 
+happen¬  don'ô panic¬ jusô presó F± tï delete¬ quiô bù pressinç F6¬ savå thå 
+desigî bù pressinç F· anä starô again®   Tï filì aî area¬  gï intï thå  MOVÅ 
+mode¬  movå thå cursoò tï anywherå iî thå areá anä presó F8® Iô ió advisablå 
+tï  leavå  anù  FILLó  untiì afteò alì lineó havå  beeî  drawî  anä  edited®  
+Deletinç á linå boundinç á FILÌ wilì causå thå FILÌ tï flooä thå screen®  
+
+Knowinç  ho÷  thå symboì ió storeä shoulä help®   Supposå yoõ havå á  symboì 
+composeä oæ 1² lineó followeä bù onå FILÌ theù wilì bå storeä aó entrieó  iî 
+á filå iî thå ordeò thaô yoõ diä them®  Saù lineó 6,7,¸ anä ¹ arå thå boundó 
+foò thå filì anä  yoõ wisè tï ediô thå symboì tï deletå linå · anä redra÷ iô 
+witè  á smalì change®   Wheî linå · ió deleteä froí thå lisô alì thå entrieó 
+followinç iô wilì movå bacë one¬ ¸ wilì becomå 7¬ ¹ wilì becomå ¸ anä sï on®  
+Wheî thå ne÷ linå ió drawî iô wilì becomå 1³ oî thå list¬ afteò thå FILÌ no÷ 
+aô  entrù numbeò 12®   Sï no÷ lineó 6,7,¸ anä 1³ wilì bounä thå  FILÌ  whicè 
+wilì  bå donå aô 1² beforå thå areá ió closed®   Iæ yoõ havå tï ediô á  linå 
+nexô tï á FILÌ theî deletå thå FILL¬ ediô thå linå theî redï thå FILL.
+.paŠd© Font Editor
+Thå  Fonô Editoò ió useä tï creatå á ne÷ Fonô oò modifù aî existinç one®   Á 
+Fonô ió jusô anotheò namå foò á characteò set®   Therå ió á fonô oî thå disë 
+calleä  ME² whicè shoulä bå suitablå foò mosô purposes®   However¬  yoõ  maù 
+wanô texô iî Greeë oò  Russian®   Iî whicè caså yoõ wilì neeä tï creatå  thå 
+requireä seô oæ characters.
+
+Eacè  characteò  ió storeä aó á serieó oæ entrieó oæ eitheò MOVEó oò  LINEs®  
+Iî plotteò termó á MOVÅ ió witè thå PEÎ UĞ anä á LINÅ ió witè thå PEÎ  DOWN®  
+Á  maximuí oæ 3° entrieó ió alloweä foò á character®   Thió musô includå thå 
+initiaì MOVÅ tï thå positioî tï starô thå characteò anä á finaì MOVÅ tï  thå 
+lasô positioî foò thå widtè oæ thå characters.
+
+Á Fonô haó á Baså Line®   É woulä suggesô µ aó beinç thå ideal®  Thió ió thå 
+linå oî thå paper¬  sï tï speak¬  belo÷ whicè yoõ puô thå descendinç parô oæ 
+"y¢ anä "g¢ etc.
+
+Á  characteò ió composeä iî á matriø oæ 1¸ bù 1¸ buô duå tï thå aspecô ratiï 
+oæ thå colouò boarä thå highô ió 1.¸ timeó thå width®   Yoõ woulä bå adviseä 
+tï ploô ouô youò characteró oî grapè papeò beforå usinç thå Fonô Editoò  anä 
+tï accounô foò thå ± º  1.¸ aspecô ratiï iô woulä looë betteò iæ yoõ useä 1¸ 
+widå  bù 3¶ higè squares®   Althougè 1¸ ió giveî aó thå maximuí  width¬  thå 
+Labeì  Processoò  assumeó thaô alì thå characteró iî á fonô uså   á  uniforí 
+widtè oæ 1µ pluó onå foò á gap®  Thió numbeò ió useä tï calculatå thå numbeò 
+oæ characteró thaô caî bå printeä oî á line®  Iæ yoõ desigî á fonô differinç 
+froí  thió yoõ maù havå problems®   Yoõ wilì noticå iæ yoõ looë aô thå   ME² 
+fonô  thaô  thå  lasô  MOVÅ  ió alwayó tï 1µ acrosó  anä  µ  up®   Thå  nexô 
+character'ó positioî ió calculateä froí thió point.
+
+Oî enterinç thå Fonô Editor¬  yoõ wilì bå askeä foò thå Drivå anä Filå  Namå 
+oæ  thå  Fonô tï bå edited®   Iæ thå onå yoõ givå existó iô wilì bå  loaded¬ 
+otherwiså á ne÷ onå wilì bå started®  Yoõ wilì theî bå askeä tï typå thå keù 
+yoõ wisè tï edit®  Whaô yoõ desigî foò thió keù ió whaô wilì bå displayeä oî 
+thå  colouò  screeî anä printeä oî thå labeì foò thió  key®   Whaô  wilì  bå 
+displayeä  oî  thå commanä screeî durinç labeì creatioî wilì bå  thå  normaì 
+letteò  foò  thaô key®   Iæ yoõ creatå á Greeë fonô yoõ wilì neeä á lisô  oæ 
+whicè keù giveó whaô Greeë letteò oò sticë labeló oî thå keù tops.
+
+Thå colouò screeî wilì sho÷ thå characteò desigî iî threå sizeó tï givå  yoõ 
+somå  ideá oæ whaô iô wilì looë likå smaller®   Thå largeò oæ thå threå wilì 
+alsï displaù á reä doô tï indicatå thå peî position.
+
+Thå commanä screeî wilì displaù acrosó thå toğ thå namå oæ thå characteò seô 
+beinç edited¬  thå characteò beinç edited¬ thå ascié codå foò thaô characteò 
+anä  thå baså linå foò thå characteò set®  Belo÷ thió ió á lisô oæ  options®  
+Yoõ wilì firsô havå tï saù whetheò iô ió á MOVÅ oò á LINÅ bù pressinç "M¢ oò 
+"L"®   Nexô yoõ wilì enteò thå positioî acrosó anä uğ tï movå oò dra÷ á linå 
+to®  Yoõ caî movå uğ anä dowî thå lisô bù usinç thå uğ anä dowî cursoò keys® 
+Thå linå yoõ arå oî caî bå changeä bù firsô pressinç thå "M¢ oò "L¢ key®  Aî 
+entrù  oî  thå lisô caî bå deleteä bù pressinç "D¢ anä onå caî  bå  inserteä 
+betweeî otheró bù pressinç thå "I¢ key®  Afteò á fe÷ changeó á characteò maù Šlooë  á biô oæ á mess®   Pressinç "R¢ tï redra÷ wilì removå anù  odä  lines®  
+Wheî yoõ arå satisfieä anä havå donå thå lasô MOVÅ tï 1µ acrosó µ uğ yoõ caî 
+presó  "E¢ tï savå it®  Yoõ caî theî eitheò starô anotheò letteò oò exiô thå 
+currenô characteò seô bù pressinç ESC®  
+
+Afteò  creatinç á ne÷ characteò seô iô woulä bå advisablå tï creatå á  dummù 
+labeì  containinç alì thå characteró iî threå sizeó tï seå whaô thå  printeò 
+makeó oæ them®   Duå tï variouó roundinç erroró wheî re-scalinç yoõ maù havå 
+tï  compromiså  witè thå desigî sï thaô iô lookó betteò iî  thå  scalå  mosô 
+commonlù  used¬  buô dï noô forget¬  whaô iô lookó likå oî thå labeì ió morå 
+importanô  thaî  whaô  iô  ió likå oî  thå  colouò  screen®   Therå  caî  bå 
+differenceó betweeî printeró duå tï thå thicknesó oæ thå pins.
+.paŠe© Database Editor
+Thå  Labeì Processoò Versioî ² ió equipeä witè á databaså whicè caî storå  á 
+maximuí  oæ  30° phraseó abouô halæ oæ whicè arå useä foò thå Standarä  Risë 
+anä  Safetù Phrases®  Tï thió yoõ caî adä anù otheró thaô yoõ finä  yoõ  uså 
+frequentlù oò deletå anù thaô yoõ neveò use® 
+
+Thå openinç menõ giveó yoõ thå optioî tï Add¬  Delete¬ Amend¬ Print¬ Lisô oò 
+Exit®   Thå firsô threå worë iî á similaò manner®  Yoõ arå firsô askeä foò á 
+keù foò thå phrase®   Wheî adding¬  iô wilì noô leô yoõ havå duplicatå keys® 
+Iô wilì theî displaù á blanë linå (maximuí lengtè 12µ characters© foò yoõ tï 
+enter®   Wheî  deletinç  oò amending¬  iô wilì telì yoõ iæ thå keù doeó  noô 
+exist¬ otherwiså iô wilì displaù thå phraså anä asë iæ iô ió thå one®  Iæ iô 
+ió yoõ caî thå deletå oò amenä it® 
+
+Á totaì oæ 30° amendmentó anä deletionó caî bå donå aô onå time®   Eacè  onå 
+ió printeä ouô aó yoõ dï iô oî thå printeò sï makå surå yoõ havå iô switcheä 
+oî  anä havå plaiî paper¬  noô labels¬  iî it®   Thió ió thå onlù recorä yoõ 
+wilì  havå oæ anù changeó yoõ make®   Wheî yoõ havå finisheä yoõ caî  selecô 
+thå optioî tï Lisô thå affecteä labels®   Wheî amendinç anä deleting¬ á lisô 
+ió  kepô oæ thå keyó oæ thå databaså entrieó changed®   Thió lisô haó tï  bå 
+compareä  witè  labeló  tï seå whicè oneó contaiî  thå  amendeä  oò  deleteä 
+entrieó beforå yoõ caî dï anù furtheò changes®  Yoõ wilì havå tï selecô eacè 
+desigî  iî turî anä thå drivå thå labeló arå on®   Yoõ wilì theî bå giveî  á 
+printouô  showinç thå affecteä labeló anä thå relevanô keys®   Dï noô forgeô 
+anù labeló yoõ maù havå storeä oî floppù disks.
+
+Therå  maù bå nï neeä tï dï anythinç buô iæ á phraså haó beeî  deleteä  froí 
+thå database¬ iô wilì stilì prinô oî anù labeì alreadù createä anä wilì neeä 
+tï bå deleteä froí thaô label®   Alsï iæ á phraså haó beeî lengtheneä oò thå 
+wordó altered¬ whaô useä tï fiô maù noô dï sï no÷ anä wilì neeä lookinç at.
+
+Remember¡  Thió  prograí doeó NOÔ makå anù changeó tï labeló thaô havå  beeî 
+created®  Yoõ havå tï gï througè anä removå anù deleteä phraseó oò deletå aî 
+olä phraså anä inserô thå ne÷ versioî anä makå iô fit®   Unfortunatly¬  thió 
+ió onå placå wherå therå ió nï substitutå foò youò owî computer¬  Thå Brain¬ 
+wheî makinç decisions.
+
+Yoõ  dï noô havå tï lisô thå affecteä labeló immediately¬  buô yoõ wilì havå 
+tï  dï sï thå nexô timå yoõ uså thå Databaså Editoò beforå doinç  anù  Adds¬ 
+Amendó oò Deletes
+
+Thå  Prinô optioî wilì leô yoõ lisô tï thå screeî oò printeò thå contentó oæ 
+thå database®   Thå keyó wilì bå printeä iî alphabeticaì order®   Thió meanó 
+thaô keyó usinç numberó wilì noô bå iî numericaì order®   Foò instancå  theù 
+wilì gï R1¬  R1° tï R1¹ theî R2¬  R2° anä sï on®  Wheî printeä oî thå screeî 
+theù  wilì  bå pageä anä yoõ wilì havå tï presó á keù tï geô thå nexô  page®  
+Oî thå printeò theù wilì bå printeä non-stoğ buô makå surå yoõ havå papeò iî 
+thå printeò anä noô labeló beforå doinç it!
+.paŠ4)®                         Disk Files
+
+File Extensions.
+Onå  oæ thå parameteró seô uğ iî á labeì desigî ió tï allocatå á twï  letteò 
+suffiø  tï eacè design®   Aó supplieä tï yoõ thå smalì labeì haó thå  suffiø 
+"AB¢ anä thå widå labeì "AA"®  
+
+Thió suffiø ió useä tï indicatå whicè labeì desigî anù disë fileó belonç to®  
+Theù arå useä aó thå lasô twï letteró oæ thå threå letteò filå extension®  
+
+Wheî thå firsô letteò ió "L¢ iô indicateó iô ió á createä label®   Oî thå  Â 
+drivå yoõ wilì seå manù fileó finishinç witè ".LAA¢ anä ".LAB"®  
+
+Thå firsô letteò "B¢ ió useä foò backupó tï modifieä labels®  Iæ foò examplå 
+yoõ choså labeì "003¢ tï modifù theî wheî yoõ savå iô thå copù yoõ havå beeî 
+workinç  oî becomeó "003.LAA¢ anä thå originaì "003.LAA¢ becomeó  "003.BAA"®  
+Theså  caî bå eraseä froí drivå Â everù sï ofteî wheî iô ió obviouó thå  ne÷ 
+versioî ió correct® Typå "ERÁ *.BAA¢ oò "ERÁ *.BAB¢ tï eraså theí all®  
+
+Thå  firsô  letteò "Q¢ ió associateä witè thå prinô queue®   Iæ wå takå  thå 
+smalì labeì desigî aó aî example¬  thå filå containinç thå lisô oæ labeló tï 
+bå  printeä anä thå quantitieó ió calleä "MASTER.QAB"®   Á copù oæ  eacè  oæ 
+theså  labeló ió madå whicè containó thå filleä iî variablå partó anä  woulä 
+bå  calleä foò instancå "003.QAB¢ buô therå coulä bå á requiremenô tï  prinô 
+twï lotó oæ labeì 00³ witè differenô Batcè Numberó oò Quantities®  Tï enablå 
+thió  tï  bå possiblå aó yoõ cannoô havå twï fileó oî á disë witè  thå  samå 
+name¬  eacè labeì filå foò thå queuå ió prefixeä witè á number¬ ± tï 14¬ anä 
+á "/"®   Foò thió reasoî createä labeì nameó arå restricteä tï µ characters®  
+Tï keeğ tracë oæ whaô numberó havå beeî used¬ á filå calleä "NUMBERS.QAB¢ ió 
+created®  Alì theså fileó arå eraseä oî completioî oæ á prinô run.
+
+Anù Fontó arå oî drivå Â witè thå extensioî ".CHR".
+
+Anù Symboì designó arå oî drivå Â witè thå extensioî ".SYM".
+
+Anù labeì designó arå oî drivå Â witè thå extensioî ".DSN".
+.paŠProgram Files
+
+Alì thå programó arå helä oî drivå C® Theù arå aó follows:
+
+MENU.COM       Thió  ió thå maiî menõ prograí thaô ió executeä automaticallù 
+               bù CP/Í wheî thå systeí ió switcheä oî oò Reseô ió pressed.
+
+ULP.COM        Thió ió thå prograí thaô printó thå labeló anä ió calleä witè 
+               optioî ± oî thå maiî menu.
+
+ULC.COM        Thió  ió  useä  tï creatå á labeì anä ió  accesseä  froí  thå 
+               utilitieó menõ aó arå thå nexô four.
+
+ULM.COM        Thió  ió  tï  prinô eacè oæ thå labeló anä  thå  detailó  foò  
+               referencå purposes.
+
+FONTEDIT.COM   This is the Font Editor.
+
+SYMBEDIT.COM   This is the Symbol Editor.
+
+PHRASES.COM    This is the Database Editor.
+
+CONLTOS.COM    Thió haó beeî lefô oî thå disë iî caså yoõ finä á uså foò it®  
+               Iô wilì creatå á smalì labeì filå froí á largå one®   Iæ  yoõ 
+               requirå  thå  samå labeì iî botè sizes¬  creatå thå widå  onå 
+               firsô  anä ruî thió program®  Theî dï anù amendmentó  oî  thå 
+               smalì  labeló iô haó creates¬  iæ thå lineó dï noô fiô aó yoõ 
+               woulä like® Thió prograí ió noô oî anù menu¬ yoõ wilì neeä tï 
+               executå iô froí CP/M
+.paŠData Files.
+
+Datá  fileó arå helä mainlù oî drivå Â buô thió caî changå dependinç oî  thå 
+prograí versioî anä whaô drivå yoõ maù havå selected®  Somå oæ theså maù  bå 
+transient¬ onlù beinç createä bù á prograí anä maybå deleteä beforå thå end.
+
+RISKSAFT.DAT   Thió  ió  thå databaså oæ Risë anä Safetù Phraseó  associateä 
+               witè Versioî ² oæ thå Labeì Processor®   Iô shoulä alwayó  bå 
+               oî drivå B.
+
+DUMP6.DAT,     Theså fileó arå createä anä useä durinç Labeì  Printing®   P± 
+P1.DAT,        anä  P² arå thå screeî dumpó oæ thå  label®   DUMP¶ ió thå  Ğ 
+P2.DAT         printeò  datá createä froí P± anä P2®  Theså arå oî thå  Worë 
+               Drivå whicè ió usuallù drivå M®   Theù arå oæ nï significancå 
+               afteò printinç otheò thaî thå facô thaô theù coulä bå useä tï 
+               investigatå whù á labeì diä noô prinô correctly®  Theù alwayó 
+               relatå  tï thå lasô labeì printed®   Beinç oî drivå  M¬  theù 
+               wilì  disappeaò  wheî thå computeò ió switcheä  off®   Iæ  aî 
+               occasioî  ariseó  wheî iô ió felô theù arå needeä  theî  savå 
+               theí tï anotheò drivå beforå switchinç off®   P² wilì onlù bå 
+               therå foò labeló requirinç twï screens.
+
+CHANGES.DAT    Thió  containó  á  lisô oæ anù databaså  entrieó  deleteä  oò 
+               amendeä  tï checë whicè labeló contaiî thoså entries®   Iô ió 
+               deleteä wheî yoõ dï noô wanô tï dï anù morå checks® Iô shoulä 
+               bå oî drivå B.
+.paŠ5).                    Text Entry Editing Commands.
+Wheneveò therå ió rooí oî thå commanä screeî anä thå entrù ió foò morå  thaî 
+onå  characteò  theî  á helğ menõ oæ thå editinç commandó ió  giveî  aô  thå 
+bottoí  oò  thå screen®   Thió ió á descriptioî oæ theí iî caså yoõ neeä  tï 
+refeò tï them® Thå "^¢ characteò meanó holä thå Ctrì keù dowî whilå pressinç 
+thå letteò following.
+
+^A = Start of Line.
+     This will move the cursor to the start of the line.
+
+^F = End of Line.
+     Thió  wilì movå thå cursoò tï thå positioî afteò thå lasô characteò  oî 
+     thå line.
+
+^V = Toggle Insert on/off.
+     Witè  Inserô on¬  characteró caî bå inserteä iî thå middlå oæ texô  anä 
+     anythinç  tï thå righô wilì bå moveä alonç tï makå room®   Witè  Inserô 
+     off¬  anù characteró typeä iî thå middlå oæ texô wilì overtypå anythinç 
+     alreadù  there®   Á messagå shoulä appeaò oî thå screeî sayinç  "INSERÔ 
+     MODE¢  oò  "OVERWRITÅ MODE¢ oò somethinç likå "INSERÔ  ON¢  oò  "INSERÔ 
+     OFF"®  Iô wilì depenä oî thå screeî spacå available.
+
+^Y = Kill to end of line.
+     Thió  wilì deletå anù characteró froí thå cursoò positioî tï thå enä oæ 
+     thå line®   Iô wilì onlù deletå thå wholå linå iæ thå cursoò ió aô  thå 
+     beginninç oæ thå line.
+
+Del= Deletå character.
+     Thå  "Del¢  keù  wilì deletå thå characteò undeò thå  cursoò  anä  movå 
+     everythinç  froí thå righô tï filì iî thå space®  Thå cursoò remainó iî 
+     thå samå place.
+
+Back Spacå Deleteó characteò tï lefô anä moveó cursor.
+     Thå "Bacë Space¢ keù moveó thå cursoò anä thå characteò undeò iô tï thå 
+     lefô deletinç thå characteò there®  Likå thå "Del¢ key¬  alì characteró 
+     oî thå righô arå moveä lefô tï filì iî thå space.
+
+Left & Right cursor arrows move one character at a time.
+     Uså theså keyó tï movå alonç á linå withouô deletinç anything.
+
+Afteò enterinç thå text¬ pressinç thå RETURÎ keù wilì accepô iô anä continuå 
+tï thå nexô stage®   Iî mosô cases¬ pressinç thå ESÃ keù insteaä oæ enterinç 
+texô wilì allo÷ yoõ tï escapå wheî yoõ dï noô wanô tï continue®  Thió ió noô 
+alwayó thå case¬  sometimeó yoõ maù havå tï presó á functioî keù foò "Exit"® 
+Thå instructionó oî thå commanä screeî shoulä telì you.
+.paŠ

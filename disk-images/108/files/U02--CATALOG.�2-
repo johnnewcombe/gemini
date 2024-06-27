@@ -1,0 +1,21 @@
+
+
+UK User Group Volume 2.
+
+ED111 Macro Text Editor by David Back.
+US Group Catalogue.
+
+		-CATALOG.02-    CONTENTS OF CP/MUGUK VOL.  02-
+
+2.1	13k	CCP.ASM		Source of the CCP of ICOS-80, a CP/M lookalike.
+2.2	80k	CPMLIB.DOC	US Library catalogue.
+2.3	2k	CRCK.COM	CRC check program from US Vol.50.
+2.4	78k	ED111.ASM	Source of powerful macro text editor.
+2.5	13k	ED111.COM	Command file of above.
+2.6	4k	ED111.IMP	Implementation notes.
+2.7	1k	EDIT.MAC	Macros for above.
+2.8	3k	HELP.MAC	Macro information for above
+2.9	33k	TEXTED.DOC	Extensive documentation for above.
+2.10	1k	UK2.DOC		Comments on programs.
+2.11	1k	CRCKLST.CRC	CRC's for files on disk
+

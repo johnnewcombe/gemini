@@ -1,0 +1,69 @@
+PROCEDURE display_files(ext : str3; dn : integer; drv : char);
+Var
+  dma : string[129]; {Location to store portion of DIR read in}
+  filename : string[12];
+  fcb : array[1..12] of byte absolute $5c;  {Location filename is stored}
+  x,j,entry,k,count  :integer;
+  prog : string[12];
+  drivenum : char;
+  xx : FILE;
+
+procedure printit;                    {x = the number (0 - 3) of the}
+ begin                                {entry in the DMA. Each entry }
+   entry:=(x*32)+1;                   {uses 32 bytes. The first 12  }
+   prog:=copy(dma,entry+1,8);         {give the drive, name & extension.}
+   write(prog:10);
+ end;
+
+
+BEGIN
+assign(xx,drv+':Z.Z'); close(xx);
+dma:='';
+for j:=1 to 129 DO
+  dma:=dma+' ';
+drivenum:=chr(ord(drv)-$40);
+gotoxy(5,dn);
+ filename:='????????'+ext;
+ fcb[1]:=ord(drivenum);             {First byte indicates drive, 0=A etc.}
+ for x:=2 to 12 do
+  fcb[x]:=ord(filename[x-1]);  {Put filename in fcb}
+ x:=bdos($1a,addr(dma)+1);     {Tell CP/M where to put portion of DIR}
+                               {First byte of a string address contains}
+                               {its length. }
+ x:=bdos($11,$5c);             {Find first entry}
+ if x<>255 THEN                {If x=255 then no entry found}
+ begin
+   printit;
+   count:=1;                   {Set up count to print 4 on a line}
+   repeat
+     if count MOD 7=0 THEN     {If 7 printed do a linefeed}
+     begin
+      writeln;write('    ');
+      IF count MOD (24-dn)*7=0 THEN   {If max lines start again}
+      begin
+        write('Press any key to display more, or <ESC> to select.');
+        read(kbd,ans);
+        if ans=#27 then exit;
+        for k:=0 to 24-dn do
+        begin
+          gotoxy(1,dn+k);clreol;
+        end;
+        gotoxy(5,dn);
+      end;
+
+     end;
+     x:=bdos($12);             {Find next entry ......}
+     if x<>255 THEN
+      printit;
+     count:=count+1;
+   until x=255;                {.... until no more found}
+ end
+ ELSE
+ begin
+   gotoxy(1,10);
+   write('No files of extension ',ext,' found on drive ',drv,'.');
+ end;
+END;
+
+
+

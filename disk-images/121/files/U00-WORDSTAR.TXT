@@ -1,0 +1,38 @@
+Address may be start of a string
+ThosÂ† marke‰† @¿† arÂ oÊ thÂ format:- 1sÙ bytÂ numbeÚ oÊ† byteÛ† thaÙ ç
+follow, 2nd + bytes actual string
+Those marked \\ are not required by memory mapped systems
+0232 Number of screen lines
+0233 Screen width
+0235 Cursor positioning @@\\
+0248 Offset to add to line number when cursor positioning E.G 20H\\
+0249 Offset to add to column number whenN cursor positioning\\
+0250 Erase to end of line @@\\
+0257 Delete line and scroll up @@\\
+025E Insert line @@\\
+0267 Inverse on @@\\
+026E Inverse off @@\\
+0275 Terminal initialisation @@
+027E Terminal close down @@
+0287 User terminal initialisation sub-routine jump
+028A  "     "        close down       "         "
+028D 0 permit last character on sreen 0FFH don't \\
+028E Delay after cursor positioning
+028F Other delays
+0290 0 use BIOS 0FFH use memory mapped screen
+0291 Address of memory mapped screen
+0293 0FFH bit 7 produces inverse 0 it doesn't
+0294 0FFH WS blinks cursor via bit 7 0 it doesn't
+02B5 0FFH WS blinks cursor on inverse 0 it doesn't
+02A3 SWIN sub-routine
+02A9 SWOUT sub-routine
+02AF Short delays
+02B0 Medium short delays
+02B1 Medium long delays
+02B2 Long delays
+03F8 DISK FILE OUTPUT default set 00 or 0FFH
+03F9 USE FORM FEEDS default    "   "     "
+03FA SUPRESS PAGING default
+03FB PAUSE BETWEEN PAGES default
+03D3 OMIT PAGE NUMBERS default
+0360 Initial help level

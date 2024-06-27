@@ -1,0 +1,23 @@
+
+
+
+
+                       ASHOW CURRENT ASSIGNMENTN
+
+               If  the "C" command is entered in answer to  the 
+          system prompt "*", the computer will list the current 
+          assignment of the system. 
+               The  current assignment of a system is a list of 
+          FORMATS allocated to FLOPPYS and addressed as DRIVES.  
+          For example, a Superbrain (FORMAT) could be allocated 
+          to  FLOPPY  3  and addressed as  DRIVE  H:.  In  this 
+          example  the operator would simply put  a  Superbrain 
+          disk into FLOPPY 3 and refer to it as DRIVE H:.
+
+                              SYNTAX :-
+
+                                 C
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+
+

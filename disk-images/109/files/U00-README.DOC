@@ -1,0 +1,105 @@
+
+This disk  has a 58k CPM on.  It is the latest Lucas BIOS Ver 3.2 
+but it also includes CCPZ, BDOSZ and MDISK. This last item is the 
+software  that  will use the extra 192k of RAM on the MAP80  256k 
+RAM Card as a memory Disk.   CCPZ, BDOSZ and MDISK have also been 
+patched into MOVCPM. To avoid confusion with your standard MOVCPM 
+it  has been renamed.   There is one version called  MOVGEM,  use 
+this  for  most purposes creating a 58k system but as  there  are 
+some  conflicts between XBASIC and BDOSZ there is  another  named 
+MOVGEN use it to create a 55k system if you are using XBASIC.  On 
+the  disk  is a program called AVCMOD.COM.   This is  a  modified 
+version  of Ver 2.7 of AVCTXTS.   The CPM has been setup to  call 
+this automatically and AVCMOD then calls a program called SD wich 
+stands  for  Super  Directory".   This displays the files on  the 
+current user area in alphabetical order with file sizes. There is 
+also a copy of AVCTXT to use instead with the 55k system.
+
+
+There  are  some  CPM  utilities  on the 58k  disk:
+
+FORMAT  and CONFIG
+          These  must be used with the new CPM.   Rename them  or 
+          erase all your old versions for safety. 
+
+BCOM      This is a Binary Compare program.   It will compare the 
+          bytes of two programs and display the differences.   It 
+          is useful if you think a file has not copied correctly, 
+          or  to find where serial numbers are stored if you have 
+          two copies of a program.  The format is:- 
+               BCOM d:fileone.ext d:filetwo.ext
+
+ERASE     This is used to erase a list of files. The format is:
+               ERASE d:fileone.ext filetwo.ext..............
+
+FINDBAD   This  will find any bad sectors on a disk and put  them 
+          all into one file called UNUSED.BAD.   It allows you to 
+          continue using a disk with physical damage on it.
+
+LIST      This is like the CPM "TYPE" except the output is  paged
+          to the printer. 
+
+LISTMEM   This  will  list  the first 80 bytes from  a  specified 
+          memory location.  The format is:-
+                LISTMEM xxxx 
+          where xxxx is an address from 0000 to FFFF.
+
+MFT       This stands for Multi File Transfer.  It will ONLY copy 
+          from  the  logged on drive.   The  default  destination 
+          drive is the other drive in a two drive system.  If you 
+          have  three  drives or a memory drive then you need  to 
+          specify the destination drive if it is not the default.
+          The format is:-
+
+               MFT d:fileone.ext filetwo.ext filethree.ext.......
+ŠNSWP      This stands for New Sweep.   There used to be a program 
+          called Sweep.   NSWP is shorter and faster.  You use it 
+          to  tag files for copying or erasing.   It is  able  to 
+          copy between different User numbers.  PIP can only copy 
+          from not to a different User area.
+
+PIP       This  is not the standard PIP.   You are able to log  a 
+          new  disk if you change them by pressing "R".  Also  by 
+          pressing "Q" you can repeat the last PIP command.
+
+SERIAL    This just displays the CPM serial number in decimal.
+
+SPZ       This  is  a Disk Doctor configured for a  Nascom.  (See 
+          also DU on the UTILITIES disk).  They both allow you to 
+          read  any sector on the disk,  modify it and  write  it 
+          back.   They  are  both  very  useful but  as  well  as 
+          repairing a disk you can also destroy it if you do  not 
+          know what you are doing.  DU is very useful if you have 
+          lost  or damaged the directory or part of a file.   You 
+          can "Yank" sectors from disk into memory one after  the 
+          other until you have got all you can salvage, then copy 
+          it down to 100 hex and save it to a new disk.
+
+SUB       This  is  a bug free version of SUBMIT.
+
+UNERASE   This allows you to unerase an erased file if it has not 
+          been copied over.
+
+UNLOAD    This  will convert a .COM file into an Intel HEX format 
+          file.   It can then be copied to another computer using 
+          PIP where it can be converted back again with LOAD.
+          The format is:- UNLOAD d:filename 100
+
+VERIFY    This verifies a disk.
+
+VFILES    This verifies each of the files on a disk.
+
+WORDS     This will count the number of words in a text file.  It 
+          will  give  different number to SPELSTAR  as  spellstar 
+          does not count single letter words.  The format is:-
+               WORDS d:filename.ext
+
+UNSPOOL   A  very useful program that will print a text file as a 
+          background job while you run another program.   If your 
+          printer  has a large buffer it does not  stop  printing 
+          even  when your other program accesses the  disk.   The 
+          format is:-  UNSPOOL d:filename.ext.
+
+STATUS, DISKSTAT Difficult to describe, just execute them and you 
+          will see what they give you.
+

@@ -1,0 +1,761 @@
+VER	DEFL 4			;Version 4 module
+
+	SUBTTL User Function routines
+	PAGE
+
+	CSEG
+
+USERF:	RET			;Nothing here yet
+
+	SUBTTL Pointers
+	PAGE
+
+;Pointers to useful locations
+POINTR:	DEFW DBASE		;Disk data tables
+	DEFW NDRVF*256+NDRVW	;Number of Winchesters + Number of floppies
+	DEFW IASSG		;Initial IO assignment
+	DEFW PORTI		;Initialisation data sent to serial
+	DEFW WRKSPC		;Data
+
+	IF VFC OR IVC
+	DEFW VFCW		;VFC workspace, used by IVC too
+	ELSE
+	DEFW 0
+	ENDIF
+
+	IF MAP
+	DEFW INTVEC		;Interrupt vectors
+	ELSE
+	DEFW 0
+	ENDIF
+
+	DEFW DISPT		;Dispatch tables
+	DEFW PRGTAB		;Programmable key table
+	DEFW BUFF80		;128 byte buffer in common memory
+	DEFW CURBNK		;Bank info
+	DEFW BVERS		;4byte BIOS version
+	DEFW USRSTK		;User stack address
+	DEFW 0
+	DEFW 0
+	DEFW 0
+
+BVERS:	VNMAC			;4byte BIOS version
+	IF MAP
+	DEFB "M"		;CPU
+	ENDIF
+	IF G813
+	DEFB "3"		;CPU
+	ENDIF
+	IF G811
+	DEFB "1"		;CPU
+	ENDIF
+	IF NAS
+	DEFB "N"		;CPU
+	ENDIF
+
+	IF VFC
+	DEFB "V"		;VFC video
+	ENDIF
+	IF IVC
+	DEFB "I"		;IVC video
+	ENDIF
+	IF NOT (IVC OR VFC)
+	DEFB "S"		;Terminal
+	ENDIF
+
+	IF MKBD
+	DEFB "M"		;MAP keyboard
+	ENDIF
+	IF VKBD
+	DEFB "V"		;VFC keyboard
+	ENDIF
+	IF IKBD
+	DEFB "I"		;IVC/SVC keyboard
+	ENDIF
+	IF NKBD
+	DEFB "N"		;Nascom keyboard
+	ENDIF
+	IF NOT (MKBD OR VKBD OR IKBD OR NKBD)
+	DEFB "S"		;Terminal
+	ENDIF
+
+	SUBTTL Boot routines
+	PAGE
+
+	DSEG			;This part can be banked
+
+;Initial entry point for system startup.
+?BOOT:	DI
+	LD SP,(@MXTPA)
+;Place the VFC in 4k slot below the resident BIOS
+;This slot must be common memory
+	LD HL,CODEB
+	LD A,H
+	AND 0F0H
+	SUB 10H
+	LD (VFCSLT),A
+	REPT 4
+	RRCA
+	ENDM
+	LD (VFCSLT+1),A
+
+;Find out how much additional memory is being used as data areas
+;There are three kinds
+;HASH TABLES, normally allocated by GENCPM where they are placed in bank 2 plus
+;DIRECTORY BUFFERS, always allocated in bank 0 (user coded elsewhere ?????)
+;DATA BUFFERS, allocated in common or banks 2 plus
+;Memory not used by buffers is allocated to virtual disk.
+;It is possible to override this search and reserve additional memory for
+; user requirements by selecting memory requirements in RESRV
+	LD A,(RESERV)
+	OR A			;Test for user override
+	JP NZ,UOVER
+	LD B,16			;16 drives
+	LD HL,DRVTBL		;Drive table
+NDRIVE:	LD E,(HL)
+	INC HL
+	LD D,(HL)
+	INC HL
+	PUSH DE
+	EXX
+	POP DE
+	LD A,D
+	OR E			;See if valid drive
+	JR Z,NXTDRV
+	PUSH DE
+	POP IX			;IX to DPH
+	LD E,(IX+12)
+	LD D,(IX+13)
+	PUSH DE
+	POP IY			;IY to DPB
+;Test HASH buffers
+	LD L,(IX+22)
+	LD H,(IX+23)		;Hash table address
+	INC HL
+	LD A,H
+	OR L
+	JR Z,NOHASH		;No hash table
+	DEC HL
+	EX DE,HL		;Calculate end of table
+	LD L,(IY+7)
+	LD H,(IY+8)		;DRM
+	INC HL
+	ADD HL,HL
+	ADD HL,HL		;*4
+	ADD HL,DE		;End of hash table
+	LD A,(MAXBNK)		;Bank so far
+	CP (IX+24)		;Test against hash bank
+	JR C,NEWHSH		;New top
+	JR NZ,NOHASH		;Hash bank is less
+;Bank is the same
+	EX DE,HL
+	LD HL,(MAXADR)
+	OR A
+	SBC HL,DE		;Address larger?
+	EX DE,HL
+	JR NC,NOHASH		;No
+NEWHSH:	LD A,(IX+24)
+	LD (MAXBNK),A		;New bank
+NEWADR:	LD (MAXADR),HL		;New address
+NOHASH:	LD L,(IX+20)
+	LD H,(IX+21)		;DTABCB
+	PUSH HL
+	LD L,(IX+18)
+	LD H,(IX+19)		;DIRBCB
+	CALL TSTBCB
+	POP HL
+	CALL TSTBCB
+NXTDRV:	EXX
+	DJNZ NDRIVE		;Do all drives
+
+;Calculate bank boundary and bank size
+	LD A,(MAXBCB)
+	AND 0F0H		;Start of 4k block
+	ADD A,10H		;Next 4k block
+	LD H,A
+	LD L,0
+	LD (BNKBDY),HL
+	LD DE,BASBNK
+	OR A
+	SBC HL,DE		;Bank size
+	LD A,H
+	REPT 4
+	SRL A
+	ENDM			;Convert to 4k blocks
+	LD (BNKSIZ),A
+
+;Calculate tracks to reserve from maxima found
+	LD A,(MAXBNK)
+	LD B,A
+	LD HL,BNKSIZ
+	LD A,(HL)
+	XOR A
+	DEC B			;Remove bank 1
+GOREV:	ADD A,(HL)
+	DJNZ GOREV
+	LD C,A
+	LD HL,(MAXADR)
+	LD DE,-BASBNK
+	ADD HL,DE		;Take off common
+	DEC HL			;In case it's a 4k boundary
+	LD A,H
+	LD B,4
+GORESV:	SRL A			;Upper nibble to lower
+	DJNZ GORESV
+	INC A			;Next 4k
+	ADD A,C
+	LD (RESERV),A	
+
+UOVER:	CALL VINIT		;Initialise memory
+	LD SP,BIGSP
+	CALL INIBIG
+	CALL DEVINI		;Initialise all IO devices
+	CALL INIT		;Additional system initialization
+	CALL CLEAN		;Initialise disk devices
+	CALL LDCCP		;Fetch CCP for first time
+	JP BOOT1
+
+;Test a BCB to find highest memory utilisation
+TSTBCB:	INC HL
+	LD A,H
+	OR L
+	RET Z			;No BCB
+	DEC HL
+	PUSH HL
+	POP IX
+NXTBCB:	LD E,(IX)		;Get address of BCB
+	LD D,(IX+1)
+	LD A,D
+	OR E
+	RET Z			;Last BCB
+	LD HL,MAXBCB
+	LD A,(HL)		;Current highest
+	CP D			;Test for highest BCB
+	JR NC,NOTMAX		;Lower
+	LD (HL),D		;Update highest
+NOTMAX:	PUSH DE
+	POP IX			;IX points to head of BCB
+	LD HL,64		;Calculate sector size
+	LD B,(IY+15)		;PSH
+	INC B
+SECZ:	ADD HL,HL
+	DJNZ SECZ
+	LD E,(IX+10)
+	LD D,(IX+11)
+	ADD HL,DE
+	LD A,(MAXBNK)
+	CP (IX+12)
+	JR C,NEWBCB		;Bank is higher
+	JR NZ,NOBCB		;Bank is lower
+	EX DE,HL
+	LD HL,(MAXADR)
+	OR A
+	SBC HL,DE
+	EX DE,HL
+	JR NC,NOBCB
+NEWBCB:	LD A,(IX+12)
+	LD (MAXBNK),A
+	LD (MAXADR),HL
+NOBCB:	LD DE,13
+	ADD IX,DE
+	JR NXTBCB
+
+MAXBNK:	DEFB FDBANK		;Start bank for VDISK
+MAXADR:	DEFW FDADR		;Start address for VDISK
+
+;Initialise all I/O devices
+DEVINI:	LD B,MAXDEV
+NEXINI:	LD DE,INITAB-2		;Point to initialising table
+	CALL DISPAT
+	DJNZ NEXINI		;Do all devices
+	RET
+
+IASSG:				;Initial IO assignments
+	DEFW CONSIN		;Initial console in
+	DEFW CONSOT		;Initial console out
+	DEFW AXIN		;Initial auxillary in
+	DEFW AXOUT		;Initial auxillary out
+	DEFW LSTOUT		;Initial list out
+IASSE:
+
+INIT:	LD HL,IASSG		;Initial assignments
+	LD DE,@CIVEC		;..to SCB
+	LD BC,IASSE-IASSG
+	LDIR
+	LD HL,WELCOM
+	CALL PMSG		;Print welcome message
+	RET
+
+;Load the CCP from the last 4k of the system tracks on the first logical floppy
+LDCCP:	LD C,NDRVW		;First floppy
+	CALL ?SELDK		;Select DISK
+	LD BC,BSECT
+	CALL ?SETSC		;Select SECTOR
+	LD E,(HL)
+	INC HL			;Get translate table address
+	LD D,(HL)
+	CALL ?SCTRN		;Set TRANSLATION
+	LD BC,BASBNK
+	CALL ?SETDM		;Set DMA address
+	LD A,2
+	CALL ?SETBK		;Select DMA bank
+	LD BC,BTRACK
+	CALL ?SETRK		;Select TRACK
+	LD C,BNUM
+	CALL ?MULIO		;Set sector count
+	CALL ?READ		;Read the sectors
+	LD HL,0
+	LD (MULCNT),HL		;Clear multi counters
+	RET
+
+	CSEG			;Boot loading most be done from resident memory
+	PAGE
+
+;Bank information
+DEFSIZ	EQU HIGH ((BONDARY-BASBNK)/16)
+MAXBCB:	DEFB 0			;Highest BCB found
+SRCDES:	DEFW 0FFFFH		;XMOVE destination and source banks
+CURBNK:	DEFB 0			;Bank for processor operations
+BNKBDY:	DEFW BONDARY		;Base address of common memory
+BNKSIZ:	DEFB DEFSIZ	 	;Bank size in 4k blocks
+BNKLOG:	DEFB 0FFH		;Bank log
+VFCSLT:	DEFW 0			;Location for paging in VFC
+
+	IF VRTRK NE 0
+	SHOW RESERVED_USER_BLOCKS,VRTRK,DEC
+	SHOW BANK_BOUNDARY,BONDARY,HEX
+	SHOW BANK_SIZE,DEFSIZ,DEC
+	ENDIF
+
+;Entry for system restarts.
+?WBOOT:	DI
+	LD SP,BIGSP
+	CALL INIBIG		;Enter and initialise local stack
+	LD A,-1
+	LD (BNKLOG),A		;Corrupt bank log
+	INC A			;Select bank 0
+	LD (BRKFLG),A		;Clear break flag
+	CALL ?BKSEL		;Page 0 for initialisation
+	CALL RESETV		;Reset VFC
+	LD HL,0
+	LD (MULCNT),HL		;Cancel countdown and multi count
+	CALL CLEARF		;Clear FDC
+	LD A,(@CRDSK)		;Clear direct BIOS call selects
+	LD C,A
+	CALL ?SELDK
+;Cold boot enters common memory here
+BOOT1:	CALL SETJPS
+	CALL RLCCP		;Load the CCP
+	LD SP,80H
+	LD A,0FFH
+	LD (BIGLOG),A		;Initialise local stack
+	CALL SETI		;Set interrupts
+	JP CCP
+
+SETJPS:	LD A,1			;Select TPA page
+	CALL ?BKSEL
+	LD A,0C3H		;JP code
+	LD (0),A
+	LD (5),A
+	LD HL,WBOOT
+	LD (1),HL		;BIOS warm start entry
+	LD HL,(@MXTPA)
+	LD (6),HL		;BDOS system call entry
+	RET
+
+BRKFLG:	DEFB 0
+BIGLOG:	DEFB 0FFH
+
+;Initialise local stack
+INIBIG:	LD A,0FFH
+	LD (BIGLOG),A
+;Take on local BIOS stack
+BIGSTK:	PUSH HL
+	LD HL,BIGLOG
+	INC (HL)
+	LD (HL),0		;Big log active
+	POP HL
+	JR Z,NEWBIG		;New entry
+	RET			;Already in
+NEWBIG:	LD (BIGSP-6),HL		;HL on new stack
+	POP HL			;Calling address
+	LD (BIGSP-4),HL		;Put it on new stack
+	LD HL,OLDSP		;Exit via here
+	LD (BIGSP-2),HL
+	LD (SPSTOR),SP		;Save SP
+	LD SP,BIGSP-6		;Set up to new stack
+	POP HL			;Recover HL
+	RET
+
+OLDSP:	PUSH AF
+	LD A,0FFH
+	LD (BIGLOG),A		;Reset stack log
+	POP AF
+	LD SP,(SPSTOR)		;Recover old stack
+	RET
+
+SPSTOR:	DEFW 0			;Saved SP
+
+;Print message @<HL> up to a null saves <BC> & <DE>
+PMSG:	PUSH BC
+	PUSH DE
+MSGL:	LD A,(HL)
+	OR A
+	JR Z,MSGOUT
+	LD C,A
+	PUSH HL
+	CALL ?CONOT
+	POP HL
+	INC HL
+	JR MSGL
+MSGOUT:	POP DE
+	POP BC
+	RET 
+
+;Call routine in HL
+IPCHL:	JP (HL)
+
+	SUBTTL Workspace
+	PAGE
+
+WRKSPC:
+;System options
+RESERV:	DEFB VRTRK		;Reserved 4k tracks in vdisk
+;Printer options
+PPORT:	DEFB PIO		;PIO base address
+
+KEYBUF	EQU $+INTSIZ		;Space for internal stack
+BIGSP	EQU KEYBUF
+KBFLEN	EQU VIDWID+1		;Length of key buffer
+BUFF80	EQU KEYBUF+KBFLEN
+STKBOT	EQU BUFF80+80H		;Bottom of users stack
+BUFTOP	EQU STKBOT+USRSIZ	;Space for user stack
+
+;Buffers will overwrite cold boot initialisation
+
+	SUBTTL Memory Initialisation
+	PAGE
+
+	IF MAP OR G813
+;	**************************
+;	*	4K MAPPING       *
+;	**************************
+
+;Memory initialisation and the sign on messages are only required at
+; cold boot time, they overlay the buffers and are destroyed
+
+VINIT:	XOR A			;Clear tracks counter
+	EX AF,AF'
+	LD BC,PPAG		;B = slot 0, c=mapping port
+	LD E,10H		;Array 1 block 0
+	LD HL,0000H		;Address to be tested
+NXT64:	OUT (C),E		;Select 4k into 1000
+	CALL TSTRAM		;See if RAM is there
+	JR NZ,MAPTOP		;End of RAM reached
+	LD A,10H		;Next array
+	ADD A,E
+	LD E,A
+	IF MAP
+	JR Z,MAPTOP		;Back to first 64k
+	ELSE
+	JP M,MAPTOP		;G813 can only address 1/2 Mb
+	ENDIF
+	JR NXT64		;Check next 64k array
+
+;End of RAM found alternate A holds number of 4K tracks
+MAPTOP:	LD A,(RESERV)		;Get reserved tracks
+	LD (DP999+13),A	;Initialise VDISKs DPB
+	LD D,A
+	EX AF,AF'		;Get tracks
+	SUB D			;Take off reserved
+	LD HL,0			;No allocation yet
+	JR C,NOVIR		;No drive P
+	JR Z,NOVIR		;No drive P
+;A holds tracks for drive P
+	RLA			;Convert to allocation blocks in HL
+	LD L,A			;Lower 8 bits
+	RL H			;9th bit to H
+	DEC HL			;Convert to vdsm
+	LD (DP999+5),HL	;Put in dpblk
+;Now initialise Vdisk if required
+	LD A,D			;Reserved tracks
+	LD HL,0			;Base address
+	ADD A,10H		;Add in first page
+	OUT (C),A		;Select directory sector
+	LD (HL),15		;Undelete Map.Ram
+	INC HL			;Point to 1st FCB
+	PUSH HL			;Save position in case setrun
+	LD DE,RUNMES		;Point to sample FCB
+	LD BC,11		;Length of file name
+CHKRUN:	LD A,(DE)		;Get sample
+	CPI			;Compare it with vdisk
+	INC DE
+	JR NZ,SETRUN		;Map.Ram not there
+	JP PE,CHKRUN		;Not finished yet
+	LD BC,20		;Rest of FCB
+	XOR A
+CHKFCB:	CPI			;Check rest of fcb
+	JR NZ,SETRUN		;fcb is corrupt
+	JP PE,CHKFCB
+	POP DE			;Clear stack
+	JR ENDVIR
+SETRUN:	LD HL,RUNMES
+	POP DE			;Pick up start + 1
+	LD BC,11		;Shift in sample name
+	LDIR
+	XOR A			;Clear fcb
+	LD B,20
+CLRFCB:	LD (DE),A
+	INC DE
+	DJNZ CLRFCB
+	LD HL,32		;FCB length
+	EX DE,HL
+	LD A,0E5H		;Deleted file indicator
+	LD B,0+(64*DALV)-1	;Files in (2k*allocation)-1
+DELETE:	LD (HL),A		;Delete all files
+	ADD HL,DE
+	DJNZ DELETE
+	JR ENDVIR
+
+;No RAM, no space, system too small...So no virtual disk
+NOVIR:	LD (DP999+5),HL		;No virtual disk
+	LD (VENTRY),HL		;Kill drive table entry
+	XOR A
+	LD (SIGN1),A		;Kill vdisk message
+;End of vdisk set restore memory
+ENDVIR:	XOR A
+	LD BC,PPAG		;Slot 0 + ppag
+	OUT (C),A		;Restore to normal
+	LD B,10H
+	INC A
+	OUT (C),A
+	RET
+	ENDIF
+
+	IF NAS OR G811
+;	**************************
+;	*	32k PAGING       *
+;	**************************
+
+VINIT:	LD C,PPAG		;C=paging port
+	LD E,PAGE0+2		;First vdisk array
+	LD HL,0			;Address tested
+	XOR A			;Clear track counter
+	EX AF,AF'
+	LD B,15			;Maximum 15*64k arrays (1Mb system)
+NXT64:	OUT (C),E		;Select next array
+	CALL TSTRAM		;Look for RAM
+	JR NZ,MAPTOP		;No RAM there
+	INC E			;Next 64k array
+	INC E
+	DJNZ NXT64		;Look for up to 15 arrays
+
+;End of RAM found alternate A holds number of 4K tracks
+MAPTOP:	LD A,(RESERV)		;Get reserved tracks
+	LD (DP999+13),A	;Initialise VDISK's DPB
+	LD D,A
+	EX AF,AF'		;Get tracks
+	SUB D			;Take off reserved
+	LD HL,0			;No allocation yet
+	JR C,NOVIR		;No drive P
+	JR Z,NOVIR		;No drive P
+;A holds tracks for drive P
+	RLA			;Convert to allocation blocks in HL
+	LD L,A			;Lower 8 bits
+	RL H			;9th bit
+	DEC HL			;Convert to vdsm
+	LD (DP999+5),HL	;Put in dpblk
+;Now initialise Vdisk if required
+	LD A,D			;Reserved tracks
+	LD HL,0			;Base address
+	LD B,3			;Divide by 8
+TRLOOP:	SRL A
+	RR H			;Carry into H
+	DJNZ TRLOOP
+	SRL H			;Complete making address
+	ADD A,PAGE0+2		;Add in base bank
+;HL points to track after paging, A holds bank
+	OUT (PPAG),A		;Get vdisk
+	LD (HL),15		;Undelete Map.Ram
+	INC HL			;Point to 1st FCB
+	PUSH HL			;Save position in case setrun
+	LD DE,RUNMES		;Point to sample FCB
+	LD BC,11		;Length of file name
+CHKRUN:	LD A,(DE)		;Get sample
+	CPI			;Compare it with vdisk
+	INC DE
+	JR NZ,SETRUN		;Map.Ram not there
+	JP PE,CHKRUN		;Not finished yet
+	LD BC,20		;Rest of FCB
+	XOR A
+CHKFCB:	CPI			;Check rest of fcb
+	JR NZ,SETRUN		;fcb is corrupt
+	JP PE,CHKFCB
+	POP DE			;Clear stack
+	JR ENDVIR
+SETRUN:	LD HL,RUNMES
+	POP DE			;Pick up start + 1
+	LD BC,11		;Shift in sample name
+	LDIR
+	XOR A			;Clear fcb
+	LD B,20
+CLRFCB:	LD (DE),A
+	INC DE
+	DJNZ CLRFCB
+	LD HL,32		;FCB length
+	EX DE,HL
+	LD A,0E5H		;Deleted file indicator
+	LD B,0+(64*DALV)-1	;Files in (2k*allocation)-1
+DELETE:	LD (HL),A		;Delete all files
+	ADD HL,DE
+	DJNZ DELETE
+	JR ENDVIR
+
+;No RAM, no space, system too small...So no virtual disk
+NOVIR:	LD (DP999+5),HL	;No virtual disk
+	LD (VENTRY),HL		;Kill drive table entry
+	XOR A
+	LD (SIGN1),A		;Kill vdisk message
+;End of vdisk set restore memory
+ENDVIR:	XOR A
+	OUT (PPAG),A		;Bank 0
+	RET
+	ENDIF
+
+TSTRAM:	LD D,(HL)		;See if RAM present at HL
+	LD A,D
+	CPL
+	LD (HL),A
+	CP (HL)
+	LD (HL),D
+	RET NZ			;No RAM
+	EX AF,AF'		;Increment track counter
+	ADD A,16		;Tracks per page
+	EX AF,AF'
+	RET
+
+;Sample FCB of Map.Ram
+RUNMES:	DEFB "Map     "
+	DEFB "R"+80H
+	DEFB "am"
+
+	SUBTTL Welcome Message
+	PAGE
+
+;Sign on message, only used during cold boot
+WELCOM:
+	IF IVC
+	DEFB ESC,"E"
+	ENDIF
+
+	IF VFC OR IVC
+	DEFB ESC,"=",20H+3,20H+40
+	VERNUM
+RRR	DEFL 20H+8		;Initialise row
+CCC	DEFL 20H		;Initialise column
+	DEFB ESC,"=",RRR,CCC	;Position cursor
+
+	DEFB ESC,"M",CLS	;Clear Loader map messages
+	DEFB ESC,"O"
+
+	ELSE
+
+	DEFB CR,LF,"MAP 80 SYSTEMS LTD"
+	DEFB CR,LF,"BIOS Version "
+	VERNUM
+	DEFB CR,LF
+
+	ENDIF
+
+DN	DEFL 0			;Initialise drive label
+
+	IF DRVW
+;Winchester message
+	REPT NDRVW
+
+	IF VFC OR IVC
+CCC	DEFL 20H+26
+	DEFB ESC,"=",RRR,CCC	;Position cursor
+	ENDIF
+
+	DEFB "A"+DN,":    "
+	WINMES
+
+	IF VFC OR IVC
+CCC	DEFL 20H+44
+	DEFB ESC,"=",RRR,CCC	;Position cursor
+	ENDIF
+
+	DEFB "WINCHESTER"
+
+	IF VFC OR IVC
+RRR	DEFL RRR+1
+	ELSE
+	DEFB CR,LF
+	ENDIF
+
+DN	DEFL DN+1
+	ENDM
+	ENDIF
+
+FN	DEFL 1
+;Main floppies message
+	REPT NDRVF
+;;Get Floppy assignment
+	MLAB1 FL.,FASG,%FN
+;;Get drive type and format
+	MLAB2 DT.,FPPY,%FL.,FM.,FORM,%FN
+
+	IF VFC OR IVC
+CCC	DEFL 20H+26
+	DEFB ESC,"=",RRR,CCC	;Position cursor for drive
+	ENDIF
+
+	DEFB "A"+DN,":"
+
+	IF FM. NE NULLF
+	DEFB " F","0"+FL.," "	;Print floppy number
+	DRVMES DT.		;Print drive type
+	ENDIF
+
+	IF VFC OR IVC
+CCC	DEFL 20H+44
+	DEFB ESC,"=",RRR,CCC	;Position cursor for format
+	ELSE
+	DEFB " - "		;Space before format
+	ENDIF
+
+	FRMMES FM.		;Print format
+
+	IF VFC OR IVC
+RRR	DEFL RRR+1
+	ELSE
+	DEFB CR,LF
+	ENDIF
+
+DN	DEFL DN+1
+FN	DEFL FN+1
+	ENDM
+
+;Virtual disk message
+CCC	DEFL 20H+(VIDWID-(W21-W20))/2
+	DEFB CR,LF
+SIGN1:
+	IF VFC OR IVC
+	DEFB ESC,"=",RRR,CCC
+	ENDIF
+
+W20:	DEFB "P: VIRTUAL DISK"
+W21:	DEFB CR,LF,LF
+	DEFB 0
+CBEND:				;End of cold boot
+
+;Bump to end of buffers
+	IF BUFTOP GT CBEND
+	DEFS BUFTOP-CBEND,0C7H
+	ENDIF
+
+;Users stacK
+USRSTK:
+	SHOW USER_STACK_SPACE,USRSTK-STKBOT,DEC
+

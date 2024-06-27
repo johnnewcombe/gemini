@@ -1,0 +1,358 @@
+
+; BINARY TO HEX-ASCII FORMATTER
+;
+;SYNTAX IS AS FOLLOWS:
+;
+;HEXDUMP FILENAME.COM FILENAME.HEX
+;
+;CONVERTED FROM CDL Z80 MNEMONICS TO INTEL 8080
+;BY DEREK FORDRED, CP/M UK USER GROUP.
+;WILL ASSEMBLE WITH ASM.COM.
+;
+;HEX RECORDS CHANGED FROM 24 BYTES TO 16 TO BE
+;SAME AS CP/M HEX FILE FORMAT.
+;
+;       SYSTEM EQUATES
+;
+READBL  EQU       20      ;READ SECTOR
+FCB     EQU       5CH     ;INPUT FILE FCB
+COFN    EQU       2       ;CONSOLE CHARACTER WRITE
+BDOS    EQU       5       ;DOS ENTRY POINT
+SDMA    EQU       26      ;SET DMA FUNCTION
+DWRIT   EQU       21      ;WRITE SECTOR FUNCTION
+BUFF    EQU       80H     ;READ BUFFER ADDRESS
+WTFN    EQU       9       ;CONSOLE BUFFERED WRITE
+WBOOT   EQU       0       ;WARM BOOT
+CONZ    EQU       26      ;EOF MARKER
+CLSFN   EQU       16      ;CLOSE FILE
+LOGIN   EQU       14      ;LOG-IN DISK
+SEARCH  EQU       17      ;SEARCH FOR FILE
+DELETE  EQU       19      ;DELETE FILE
+MAKEF   EQU       22      ;CREATE FILE
+OPENF   EQU       15      ;OPEN FILE
+START   EQU       100H    ;WORK FILE START ADDRESS
+;
+;
+        ORG     100H
+;
+        LXI     SP,STKTOP
+        LXI     B,33    ;GET HEX FCB
+        LXI     H,FCB+16;AND MOVE IT
+        LXI     D,FCBH
+	CALL	MOVIT	;BLOCK MOVE
+        LXI     B,3     ;MOVE HEX EXT.
+        LXI     H,HEXT
+        LXI     D,FCBH+9
+	CALL	MOVIT	;BLOCK MOVE
+        MVI     B,8
+        LXI     H,FCB+17;CHECK FOR CONSOLE
+AGAIN:  MOV     A,M     ;OR FILE OPERATION
+        CPI     ' '
+        JNZ     AFORT
+        INX     H
+	DCR	B
+	JNZ	AGAIN	;LOOP
+        JMP     RDOPEN
+;
+;
+AFORT:  XRA     A
+        STA     CONTST  ;SET FLAG FOR HEX FILE
+;
+;       SET UP HEX FILE
+;
+        LDA     FCBH    ;GET DRIVE
+        MVI     D,0
+        MOV     E,A
+        MVI     C,LOGIN
+        CALL    BDOS
+        LXI     D,FCBH  ;SEARCH FOR FILE
+        MVI     C,SEARCH
+        CALL    BDOS
+        CPI     255
+        JZ      MAKE    ;SEE IF FILE EXISTS
+        LXI     D,FCBH
+        MVI     C,DELETE
+        CALL    BDOS    ;ERASE FILE
+MAKE:   LXI     D,FCBH
+        MVI     C,MAKEF ;CREATE FILE
+        CALL    BDOS
+        CPI     255
+        JNZ     OPENZ
+        LXI     D,DIREM ;ERROR DETECTED
+        MVI     C,WTFN
+        CALL    BDOS
+        JP      WBOOT
+OPENZ:  LXI     D,FCBH
+        CALL    SETUP
+        XRA     A
+        STA     FCBH+32 ;INIT. SECTOR COUNT
+        STA     WTPTR   ;INIT. POINTER
+;
+;       OPEN READ FILE
+;
+RDOPEN: LXI     D,FCB
+        CALL    SETUP
+        XRA     A
+        STA     FCB+32  ;INIT. SECTOR COUNT
+        MVI     A,80H
+        STA     RIBP    ;INIT POINTER
+;
+;       BINARY TO HEX-ASCII CONVERSION
+;
+        LXI     H,START
+	SHLD	PTR	;INIT. POINTER
+WRITE:  CALL    CRLF    ;WRITE CRLF
+        MVI     C,11    ;TEST TO ABORT
+        CALL    BDOS
+        ANI     1
+        JZ      OKNOW
+        MVI     C,1
+        CALL    BDOS
+        ANI     127
+        CPI     3       ;ABORT
+        JNZ     OKNOW
+        LXI     D,ABORT
+        MVI     C,WTFN
+        CALL    BDOS
+        JMP     WBOOT
+;
+;
+OKNOW:  MVI     C,':'   ;START OF RECORD CUE
+        CALL    PRINT   ;PRINT IT
+        CALL    PIMP	;DO CHECKSUM
+        LDA     EOFLG   ;CHECK FOR EOF
+        CPI     0
+        JZ      WRITE   ;GET NEXT RECORD
+        CALL    CRLF
+        MVI     C,':'
+        CALL    PRINT
+        MVI     B,10
+SST:    MVI     C,'0'
+        CALL    PRINT
+	DCR	B
+        JNZ     SST
+        CALL    CRLF
+        JMP     CLOSE   ;FINISHED
+PIMP:   MVI     D,0     ;INIT CHECKSUM
+        MVI     B,16    ;16 BYTES PER RECORD
+        MOV     A,B     ;FILE LENGTH
+        CALL    PBYTE   ;PRINT IT
+        LHLD    PTR     ;GET ADDRESS
+        MOV     A,H
+        CALL    PBYTE   ;HIGH BYTE FIRST
+        MOV     A,L
+        CALL    PBYTE   ;LOW BYTE NEXT
+        XRA     A       ;FILE TYPEEQU0
+        CALL    PBYTE   ;PRINT IT
+W3:     CALL    READ    ;GET DATA BYTE
+        CALL    PBYTE   ;PRINT IT
+        INX     H       ;ADVANCE ADDRESS
+	SHLD    PTR
+	DCR	B
+        JNZ     W3      ;DEC FILE COUNT
+        XRA     A
+        SUB     D       ;CALC. CHECKSUM
+        JMP     PBYTE   ;PRINT IT, RETURN
+;
+;       WRITE A SINGLE BYTE
+;
+PBYTE:  PUSH    PSW     ;NIBBLE AT A TIME
+        RRC
+        RRC
+        RRC
+        RRC
+        CALL    CONV
+        CALL    PRINT   ;PRINT IT
+        POP     PSW     ;NEXT NIBBLE
+        PUSH    PSW     ;SAVE FOR CHECKSUM
+        CALL    CONV
+        CALL    PRINT   ;PRINT IT
+        POP     PSW
+        ADD     D       ;ADD TO CHECKSUM
+        MOV     D,A     ;UPDATE CHECKSUM
+        RET
+;
+;       CONVERT ASCII TO HEX
+;
+CONV:   ANI     0FH     ;LOW NIBBLE ONLY
+        ADI     90H
+        DAA
+        ACI     40H
+        DAA
+        MOV     C,A
+        RET
+;
+;       CRLF
+;
+CRLF:   MVI     C,0DH
+        CALL    PRINT
+        MVI     C,0AH
+;
+;       CONSOLE AND FILE
+;       CHARACTER WRITE
+;
+PRINT:  PUSH    PSW     ;SAVE ENVIRONMENT
+        PUSH    B
+        PUSH    D
+        PUSH    H
+        LDA     CONTST  ;TEST FLAG
+        CPI     0
+        JZ      DISKWR  ;FILE ACCESS
+        MVI     D,0
+        MOV     E,C     ;CHAR. IN C
+        MVI     C,COFN
+        CALL    BDOS    ;PRINT TO CRT
+PREXIT: POP     H       ;RESTORE ENVIRONMENT
+        POP     D
+        POP     B
+        POP     PSW
+        RET
+;
+;
+DISKWR: LDA     WTPTR   ;GET POINTER
+        CPI     80H     ;CHECK FOR ROLLOVER
+        JNZ     WTBYT
+        CALL    DISKCR
+        XRA     A
+WTBYT:  MOV     E,A     ;WRITE BYTE AT
+        MVI     D,0     ;BUFF+A
+        INR     A
+        STA     WTPTR   ;UPDATE POINTER
+        LXI     H,WTBUF
+        DAD     D
+        MOV     M,C     ;WRITE CHAR TO BUFF
+        JMP     PREXIT  ;DONE
+;
+;       WRITE   SECTOR
+;
+DISKCR: PUSH    B
+        LXI     D,WTBUF
+        MVI     C,SDMA
+        CALL    BDOS    ;SET WRITE DMA
+        LXI     D,FCBH
+        MVI     C,DWRIT ;WRITE SECTOR
+        CALL    BDOS
+        PUSH    PSW
+        LXI     D,BUFF  ;RESET DMA ADDRESS
+        MVI     C,SDMA
+        CALL    BDOS
+        POP     PSW
+        CPI     0       ;CHECK FOR ERROR
+        JZ      BNC2
+        LXI     D,WEMS1
+        MVI     C,WTFN
+        CALL    BDOS    ;WRITE ERROR MESSAGE
+        JMP     WBOOT
+;
+;
+BNC2:   POP     B
+        RET
+;
+;       CLOSE THE FILE
+;
+CLOSE:  LDA     CONTST  ;TEST FLAG
+        CPI     0
+        JNZ     WBOOT   ;DONE IF CONSOLE
+        MVI     B,10    ;WRITE EOF MARKER
+OVAGN:  MVI     C,CONZ
+        CALL    PRINT
+	DCR	B
+        JNZ     OVAGN
+        CALL    DISKCR  ;FINAL SECTOR
+        LXI     D,FCBH
+        MVI     C,CLSFN ;CLOSE FILE
+        CALL    BDOS
+        CPI     255     ;CHECK FOR ERRORS
+        JNZ     WBOOT   ;NO ERROR, DONE.
+        LXI     D,CLEER
+        MVI     C,WTFN
+        CALL    BDOS
+        JMP     WBOOT
+;
+MOVIT:	MOV	A,M
+	STAX	D
+	INX	H
+	INX	D
+	DCR	C
+	JNZ	MOVIT
+	RET
+;
+;
+;
+;
+;       SET UP FILES TO OPEN
+;
+SETUP:  MVI     C,OPENF
+        CALL    BDOS
+        CPI     255     ;CHECK FOR ERRORS
+        RNZ
+        LXI     D,OPNM
+        MVI     C,WTFN
+        CALL    BDOS
+        JMP     WBOOT
+;
+;       READ A CHARACTER
+;
+READ:   PUSH    H
+        PUSH    D
+        PUSH    B
+        LDA     EOFLG
+        CPI     0
+        JNZ     OUT1
+        LDA     RIBP    ;GET POINTER
+        CPI     80H
+        JNZ     TEMP
+        LXI     D,FCB
+        MVI     C,READBL
+        CALL    BDOS    ;READ NEW SECTOR
+        CPI     0
+        JZ      BNC1
+        CPI     1       ;ERROR DETECTED
+        JNZ     ALTER   ;EOF?
+        MVI     A,1     ;YES, SET FLAG
+        STA     EOFLG
+        JMP     OUT1
+;
+;
+ALTER:  LXI     D,RDERRM
+        MVI     C,WTFN
+        CALL    BDOS
+        JMP     WBOOT
+;
+;
+BNC1:   XRA     A
+TEMP:   MOV     E,A     ;READ BYTE FROM
+        MVI     D,0     ;BUFF+A
+        INR     A
+        STA     RIBP    ;UPDATE POINTER
+        LXI     H,BUFF
+        DAD     D
+        MOV     A,M     ;GET BYTE
+OUT1:   POP     B
+        POP     D
+        POP     H
+        RET
+;
+;       STORAGE AND BUFFER
+;
+PTR:	DW	0000H	;BUFFER POINTER
+RIBP:   DB      80H     ;READ POINTER
+EOFLG:  DB      0       ;EOF FLAG
+CONTST: DB      1       ;CONSOLE FLAG
+WTPTR:  DB      0       ;WRITE POINTER
+WTBUF:  DS      128     ;WRITE BUFFER
+FCBH:   DS      33      ;FCB FOR HEX FILE
+HEXT:   DB      'HEX'   ;DEFAULT EXTENSION
+STACK:  DS      64      ;STACK AREA
+STKTOP  EQU     $
+;
+;       ERROR MESSAGES
+;
+WEMS1:  DB      0DH,0AH,'ERROR ON CLOSING FILE', 0DH,0AH,'$'
+CLEER:  DB      0DH,0AH,'ERROR ON CLOSING FILE', 0DH,0AH,'$'
+RDERRM: DB      0DH,0AH,'ERROR ON READING FILE', 0DH,0AH,'$'
+DIREM:  DB      0FH,0AH,'NO MORE DIRECTORY SPACE', 0DH,0AH,'$'
+OPNM:   DB      0DH,0AH,'ERROR ON OPENING FILE', 0DH,0AH,'$'
+ABORT:  DB      0DH,0AH,'...ABORTED', 0DH,0AH,'$'
+        END
+

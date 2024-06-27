@@ -1,0 +1,92 @@
+
+Procedure Create_new;
+begin
+ repeat
+  s:='';
+  clrframe(11,25);
+  repeat
+   repeat
+    gotoxy(1,8); clreol;
+    write('Enter Drive for Design Files: [A,B,C,D,M] ');
+    getinput(1,43,8,s,'c',fin,1);
+   until s in ['A'..'E','M'];
+   labeldrive:=s+':';
+   gotoxy(70,3);write(labeldrive);
+   gotoxy(1,8);clreol;
+   Write('Enter Design Name: ');
+   gotoxy(1,10);label_name:='';
+   write('Design files on ',labeldrive);
+   display_files('DSN',11,labeldrive[1]);
+   getinput(8,20,8,label_name,'c',fin,1);
+   assign(paramf,labeldrive+label_name+'.DSN');
+   {$I-} reset(paramf); {$I+}
+   x:=ioresult;
+   if x= 0 then
+   begin
+    close(paramf);
+    gotoxy(30,8);lowvideo;
+    write('This design already exists.');clreol;
+    normvideo;
+    delay(3000);
+   end;
+  until x<>0;
+  clrframe(10,25);
+  print_header;
+  assign(tempf,'M:TEMP.DSN');
+  rewrite(tempf);
+
+  ll:=1;
+  fl:=1;
+  cl:=1;
+  gotoxy(14,3);write(label_name);
+  gotoxy(1,8);clreol;
+  write('Two letter extension for design, (AA to ZZ): ');
+  getinput(2,45,8,suffix,'c',fin,1);
+  gotoxy(33,3);write(suffix);
+  dp:='';
+  repeat
+    gotoxy(1,8);clreol;
+    write('Distance from top off one label to the next in inches: ');
+    getinput(5,55,8,dp,'n',fin,1);
+    val(dp,drop,j);
+  until j=0;
+  gotoxy(49,3);write(drop:5:2);
+  param.design_name:=label_name;
+  param.design_suffix:=suffix;
+  param.label_drop:=drop;
+  reset(tempf);
+  write(tempf,param);
+  repeat
+    FillChar(param,sizeof(param),0);
+    cl:=filesize(tempf);
+    seek(tempf,filesize(tempf));
+    gotoxy(4,cl+10);
+    write(cl:2);
+    repeat
+      gotoxy(1,8);clreol;
+      write('Enter Partition or ESC to exit');
+      gotoxy(15,cl+10);
+      read(kbd,ans);
+    until ans in ['1','2',#27];
+    if ans in ['1','2'] then
+     get_params;
+  until ans = #27;
+  close(tempf);reset(tempf);
+  rewrite(paramf);
+  while not eof(tempf) do
+  begin
+    read(tempf,param);
+    if param.partition <> 0 then
+     write(paramf,param);
+  end;
+  close(tempf);
+  close(paramf);
+  repeat
+    gotoxy(1,8);clreol;
+    write('Another design? Y/N  ');
+    read(kbd,ans);
+  until ans in ['Y','y','N','n'];
+ until ans in ['N','n'];
+ ans:='1';
+end; {of create_new}
+

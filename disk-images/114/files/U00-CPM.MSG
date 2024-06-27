@@ -1,0 +1,19 @@
+CP/M Utilities - 
+Directory of files on the disc
+Erase files from the disc
+Change name of files on the disc
+Return to Main Menu
+Number of files = 
+ or <Esc> to return
+Directory of files on the disc
+Return to Main Menu
+Rename File
+Current name is
+Specify CP/M source drive
+Specify Destination CP/M drive
+Hard disc drive
+Memory drive
+Press 'Y' to erase any other to abort
+Now enter new name, ESC aborts
+- *** ERASED ***
+

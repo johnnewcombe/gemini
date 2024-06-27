@@ -1,0 +1,246 @@
+(This is file CATALOG.DOC as at 4/11/81)
+
+This catalogue suite contains the following files:
+CAT.COM
+CAT2.COM
+CATP.COM
+UDCAT.COM
+MAST.CAT
+
+The cataloguing suite is available from the CP/M User's Group Volume  25.  This
+version  of  the cataloguing suite has been modified for use with CP/M 2.2.
+D. R. Hunt. July 1981 and further modified DRH January 1983.
+
+             CP/M DISK CATALOGUING SYSTEM FOR COMPUTER HOBBYISTS
+                           BY WARD CHRISTENSEN
+
+                           -----OVERVIEW-----
+Past History
+         I have always wanted to be able to keep track of where files are on my
+CP/M diskettes. The first step was to make a `DIR' listings  with  the  printer
+on.
+
+        Next I wrote a command called  `MAP'  which  printed  the  disk  extent
+information also (but not any extent past the first). Then I wrote `SMAP' which
+produces a sorted directory listing. This made finding files  in  the  listings
+easier. At this time I also adopted the convention of editing a `dummy' file on
+each disk, called `-DISK.nnn' where nnn is the disk's serial  number.  Later  I
+changed  the  word  `DISK'  to any more meaningful name, such as `-WORK.023' or
+`-CBIOS.019', etc. The important thing was that each started with a  `-'  which
+meant it would sort to the top of the sorted listing.
+
+        Eventually, I wrote `FMAP' which created a  sorted  directory  listing,
+but  also,  if `FMAP *.* F' was typed, wrote `NAMES.SUB' to disk with the names
+of all the files on the disk.
+
+        This file of names then got me thinking about having a master  file  of
+names, or a `master catalogue'.
+
+        That is what I did. I now have 1 disk  file  which  contains  the  file
+names  and  disk  names for every pertinent file I have. I also wrote a command
+which behaves like `DIR' but scans the master catalogue.
+
+More Past History by D. R. Hunt
+
+        I came across this cataloguing suite in the CP/M User's Library about a
+year ago and found it to be very useful. However, it suffered from one drawback
+under CP/M 2.2 and one inconvenience in use. The drawback was that FMAP did not
+remove  system  attribute  bits appended by CP/M 2.2, meaning that bit seven in
+the `file type' would remain set if a file was either set to R/O or  SYS.  This
+could  lead  to  double directory entries, and the display of annoying graphics
+characters during catalogue listings. The inconvenience related to `FMAP' also,
+in  that  `FMAP'  was written as a dual purpose program for either constructing
+the file `NAMES.SUB' to  update  the  catalogue  or  for  displaying  the  disk
+allocation map. This meant that two programs were required to update the master
+catalogue, `FMAP' to produce the intermediate file `NAMES.SUB' and then  `UCAT'
+to update the master catalogue.
+
+        My solution to this problem  was  one  of  expediency,  I  disassembled
+`FMAP' and `UCAT' rewrote the front end of `FMAP', deleting the disk allocation
+map generation section as I went. I then reassembled the lot, linking in `UCAT'
+as  I  went. This produced one catalogue update program which I called `UDCAT'.
+`UDCAT' is not as clever as the combined originals, but as the sole use I  have
+for  the  suite  is  maintaining  the  master  catalogue,  the loss of the disk
+allocation map generator did not matter.
+
+Further history by DRH 24/01/83
+
+        The cataloguing suite has been working perfectly since I last  tinkered
+with  it,  but recently CCPZ and a Winchester have been added to the system. My
+method of working meant that with CCPZ in use, all system files  would  sit  at
+drive  A  (the winnie) user 0. With CCPZ, it was then an easy matter to execute
+all programs from the current user area, CCPZ getting them  in  a  hierarchical
+fashion  usually  ending  on drive A user 0 (where they would usually be kept).
+Unfortunately the cataloguing suite was designed only to work in  user  0,  and
+only  programs  in  user  0 could be catalogued (unless separate catalogues for
+each user area were created, very wasteful of space and inconvenient  to  use).
+So  last  Sunday the source files were attacked again and UDCAT.COM and CAT.COM
+were modified. They now perfom a hierarchical search for MAST.COM.  Firstly,  a
+search  is  made of the current drive and user, if not found, the current drive
+user 0 is tried, if still not found, drive A user 0 is  tried.  If  the  search
+fails  after this, then it gives up. This is consistent with the conventions of
+CCPZ, and is totally transparent in normal use. Other  programs  in  the  suite
+were untouched as with CATP for instance, it was not considered inconvenient to
+revert to user 0 before use.
+
+                         -----PROGRAMS-----
+
+UDCAT.COM       Maintains the master catalogue `MAST.CAT'.
+
+CAT.COM         Allows a `DIR' type search of `MAST.CAT'.
+
+CAT2.COM        `Types' the entire sorted `MAST.CAT'
+
+CATP.COM        Lists the `MAST.CAT' to the printer
+
+MAST.CAT        An embryo master catalogue
+
+              -----INSTALLING THE CATALOGUING SYSTEM-----
+
+1)      Edit  `MAST.CAT' in order to place entries in it for the file names you
+don't want to be placed in the catalogue. I  already  have  ASM.COM,  STAT.COM,
+PIP.COM,  and  others  in  the sample MAST.CAT. Since these are on nearly every
+disk, I therefore don't want them to take room in the catalogue. NOTE you don't
+have  to  edit  the  file  -  you may initially `TYPE' it and decide to take my
+defaults. NOTE The format of the `empty' MAST.CAT is simply  a  list  of  names
+which you don't want put in the catalogue. This may be 1 or more file names. It
+cannot no names. If you want everything catalogued, you must put at  least  one
+name  in  the file, put a name such as `DUMMY.FIL' in the catalogue. The format
+is as follows: Each name is on a separate line. The first name is preceded by a
+`('. The last is followed by `)'. thus:
+(ASM.COM
+PIP.COM
+STAT.COM)
+This means that the three files ASM, PIP and STAT  will  never  appear  in  the
+master catalogue.
+
+2)      Pick a disk which will contain the  master  catalogue  `MAST.CAT'.  You
+must  serial  number  (the  file  type  must contain 3 characters and the first
+character of the file name must be a dash, `-'), all your diskettes, placing  a
+file `-anyname.nnn' on each disk. The UDCAT routine then takes this as the name
+of the disk.
+
+3)      Put the following files on this master disk:
+        -anyname.nnn
+        MAST.CAT
+        UDCAT.COM
+        CATP.COM
+        CAT2.COM
+        CAT.COM
+
+4)      Type: UDCAT [d:]
+This  will  create  a  file called `NAMES.SUB' on the default drive, which is a
+sub-file containing the names of the files on drive [d:]. If the  catalogue  is
+to  be  prepared from the default drive itself, the default drive name [d:] may
+be omitted. UDCAT will then continue to merge the  file  names  in  `NAMES.SUB'
+with  the  names  in MAST.CAT, which must also be in the default drive. It will
+report the names of any files which are added to or deleted from the catalogue.
+It  will  also  report  any  error,  such as inadequate disk space to construct
+`NAMES.SUB' or the new catalogue, also it will report if `MAST.CAT' is  not  in
+the default drive.
+
+               -----USING THE CATALOGUING SYSTEM-----
+
+1)      Whenever you  put  a  new  diskette  into  service  you  must  place  a
+`-anyname.nnn' entry in the directory. `nnn' should be the disk's unique serial
+number. The easiest way to place a `null' file entry in the directory, is to:
+
+SAVE 0 [d:]-anyname.nnn
+
+Which  will  place  `-anyname.nnn'  in  the  disk directory, with no disk space
+allocated to it.
+
+2)      UDCAT [d:] is used to keep the catalogue up to date, as whenever a disk
+is  submitted  to it, it will add or delete the file names found to or from the
+catalogue. Note that MAST.CAT must be in the default drive and that drive  name
+[d:]  must be specified if the disk to be catalogued is in any drive other than
+the default drive.
+
+3)      Use the `CAT' program to scan the catalogue as you would use  `DIR'  to
+scan  the  directory  of  the current disk. The operands of `CAT' are just like
+`DIR' except that there is a second filename.type, namely the disk's  name  and
+serial.  Note  that UDCAT deletes the leading `-' when it places a disk name in
+the directory. Therefore you don't use the `-' when  asking  for  a  particular
+disk.
+
+Examples of `CAT' command requests:
+
+CAT                     lists entire catalogue
+CAT *.* *.002           lists entries for disk 002
+CAT *.ASM               lists all ASM files
+CAT A*.*                lists all files starting with `A'
+CAT *.BAS WORK.*        lists all `BAS' files on any
+                        disk with name `WORK' (any serial)
+Note that what you type following the CAT command appears as the title  of  the
+resultant  listing.  This is particularly useful for keeping hard copy listings
+of your catalogue, for instance, by typing:
+
+        CAT *.* *.* AS OF 02/17/78
+
+this will result in the title:
+
+        FILES: *.* *.* AS OF 12/17/77
+
+appearing on each page of the catalogue listing.
+
+4)      If  you  want to erase something from MAST.CAT you do so by erasing the
+file from the diskette it is on, then cataloguing that disk.  If  you  crash  a
+disk  and want to erase all it's entries from the catalogue, you must prepare a
+blank disk with only the catalogue name of the disk on it and then  submit  the
+new disk to UDCAT. This will erase all the contents of the disk from the master
+catalogue but will leave the original disk name active. To remove the  original
+disk  name,  the  MAST.CAT  file must be edited using `ED' and the name removed
+manually.
+
+EXAMPLE:
+Suppose  disk  `-WORK.023' crashed, and you want to delete all references to it
+from MAST.CAT. (you might first want to do `CAT  *.*  *.023  to  see  what  was
+lost). Prepare a blank disk with the disk name:
+SAVE 0 [d:]-WORK.023
+then submit it to UDCAT
+UDCAT [d:]
+This will delete all entries related to the disk  -WORK.023.  Next  enter  `ED'
+with MAST.CAT as the work file and find the entry -WORK.023. This will be easy,
+as all entries in MAST.CAT are stored alpha-numerically, and as it is the  file
+name  we  are  looking for it will be in its alpha-numeric position immediately
+after the list of flagged entries enclosed in brackets. Use the `K' command  to
+delete the reference to -WORK.023 and the exit, saving the modified MAST.CAT to
+disk.
+
+
+               -------------------------------------------------
+                                  N O T E S
+               -------------------------------------------------
+
+When  updating  MAST.CAT,  the UDCAT program creates a file `NEW.CAT', and only
+when the update appears to be successful, does it do  the  following  functions
+internally:
+
+        ERA MAST.BAK
+        REN MAST.BAK=MAST.CAT
+        REN MAST.CAT=NEW.CAT
+
+Thus, there are 3 versions of the catalogue on your disk at one time: MAST.BAK,
+MAST.CAT,  AND NEW.CAT, so if your disk is low on space, you may sacrifice this
+integrity, and manually ERA MAST.BAK before running  UCAT.  The  program  could
+also be modified, to do the erase first.
+
+        Two utility programs are supplied:
+
+        CATP has much the same effect as
+CAT *.* *.*
+whilst  directing  the  listing  to printer using the ^P switch. The difference
+here is that ^L  is  sent  between  pages,  causing  a  page  eject  to  occur.
+Additional  text may be appended in the command line as with the CAT program so
+that:
+CATP as at 05/11/81
+will  cause  the whole catalogue to be printed, each page being headed with the
+caption, FILES as at 05/11/81.
+
+        CAT2 causes the directory to be dumped to the  monitor,  one  line  per
+catalogue  entry.  Where  two or more entries of the same name are encountered,
+the different disk entries are printed on the same line. The program provides a
+very ready check of which files are backed up and those that are not.
+
+
+

@@ -1,0 +1,240 @@
+	.z80
+	title SETKEY program for the IVC & ROTEC keyboard
+	page	62
+;	This program enables people to set up a custom set
+;	of strings for the programmable function keys on the
+;	ROTEC keyboard.
+;
+;	Invoked by "setkey <name>" where <name>.com will be a
+;	an executable program that will automatically set up
+;	the Key definitions.
+
+clear	equ	1ah
+escape	equ	1bh
+cr	equ	0dh
+lf	equ	0ah
+
+bdos	equ	5
+deffcb	equ	5ch
+
+openf	equ	15
+close	equ	16
+delfil	equ	19
+write	equ	21
+create	equ	22
+setdma	equ	26
+
+signon:	defb	" Function Key File Set-up program Version 0.1",cr,lf,lf
+	defb	"$"
+go:	defb	" Use the EDIT key on the Keyboard to set up the wanted",cr,lf
+	defb	" key definitions. When you have every key defined in the",cr,lf
+	defb	" way you want hit the RETURN key"
+crlf$:	defb	cr,lf,lf,'$'
+done:	defb	'Key file written$'
+noname:	defb	'You have forgotten to include the name of the file that you'
+	defb	cr,lf,'wish to save the function key settings in$'
+ambig:	defb	'Ambiguous file names are not allowed$'
+exists:	defb	'The file already exists - shall I delete it?$'
+cantd:	defb	'I cannot delete the file$'
+cantcr:	defb	'I cannot create the file$'
+cantcl:	defb	'I cannot close the file$'
+werr:	defb	'Disc is full or a Write error occurred$'
+
+savesp:	defs	2
+	defs	32
+stack:
+
+;	CR LF
+
+crlf:	ld	de,crlf$
+
+;	Print a string
+
+print:	ld	c,9
+	jp	5
+
+;	Getvid & Putvid
+
+getvid:	in	a,(0b2h)
+	rlca
+	jr	c,getvid
+	in	a,(0b1h)
+	ret
+
+putvid:	push	af
+pv0:	in	a,(0b2h)
+	rrca
+	jr	c,pv0
+	pop	af
+	out	(0b1h),a
+	ret
+
+;	Start point - Sign on
+
+start:	ld	(savesp),sp	;Save the stack pointer
+	ld	sp,stack
+	ld	de,signon	;Sign on
+	call	print
+
+;	Now check that a file has been specified & make .COM type
+
+	ld	hl,deffcb+1
+	ld	a,(hl)		;Look for a name
+	cp	' '
+	ld	de,noname	;(In case none)
+	jp	z,abort		;Abort if so
+	ld	hl,deffcb+9	;Force extension to..
+	ld	(hl),'C'	;..COM
+	inc	hl
+	ld	(hl),'O'
+	inc	hl
+	ld	(hl),'M'
+	inc	hl
+	ld	(hl),0
+
+;	Check the name is not ambiguous
+
+	ld	hl,deffcb
+	ld	bc,8
+	ld	a,'?'
+	cpir
+	ld	de,ambig
+	jp	z,abort		;Abort if ambiguous
+
+;	See if the file already exists
+
+	ld	de,deffcb
+	ld	c,openf		;Try to open it
+	call	bdos
+	inc	a		;There?
+	jr	z,nofile	;No,skip
+	ld	de,exists
+	call	print		;Delete it?
+wkey:	ld	c,6
+	ld	e,0ffh
+	call	bdos		;Get reply
+	and	5fh
+	jr	z,wkey		;Wait if none
+	cp	'Y'		;Yes?
+	jp	nz,exit		;No, stop
+	call	crlf
+	ld	de,deffcb
+	ld	c,delfil
+	call	bdos		;Delete it
+	inc	a		;succesful?
+	ld	de,cantd	;(In case not)
+	jp	z,abort
+
+;	No file - try to Create it
+
+nofile:	ld	de,deffcb
+	ld	c,create
+	call	bdos
+	inc	a		;Ok?
+	ld	de,cantcr
+	jp	z,abort
+
+;	Get the keyboardbit done
+
+	ld	de,go
+	call	print
+wait:	ld	e,0ffh
+	ld	c,6
+	call	bdos
+	cp	3		;Abort?
+	jp	z,exit
+	cp	cr
+	jr	nz,wait
+
+;	Now read the full table out into memory
+
+	ld	a,escape
+	call	putvid
+	ld	a,'f'		;Function
+	call	putvid
+	ld	a,'?'		;Send table
+	call	putvid
+	ld	hl,ktable	;Store here
+rloop:	call	getvid		;Get the byte
+	ld	(hl),a		;Put in the table
+	inc	hl
+	cp	0ffh		;was it the end?
+	jr	nz,rloop	;no, carry on
+	ld	de,keyprog-1	;Compute length to save
+	or	a
+	sbc	hl,de
+	add	hl,hl		;H now holds no. of sectors
+	ld	b,h		;Move to B
+	inc	b		;Adjust
+
+;	Now try to Write the file out
+
+	xor	a		;Clear NR
+	ld	(deffcb+32),a
+	ld	de,keyprog	;start here
+wloop:	push	bc
+	push	de
+	ld	c,setdma
+	call	bdos
+	ld	de,deffcb
+	ld	c,write
+	call	bdos
+	pop	hl		;Get address back
+	pop	bc
+	or	a		;Successful write?
+	ld	de,werr
+	jp	nz,abort
+	ld	de,128		;Update address
+	add	hl,de
+	ex	de,hl
+	djnz	wloop		;Loop if more
+
+;	File written - now close it
+
+	ld	de,deffcb
+	ld	c,close
+	call	bdos
+	inc	a		;Any error?
+	ld	de,cantcl
+	jr	nz,exit		;No,done
+			
+	ld	de,done
+abort:	call	print		;Print the error message
+exit:	call	crlf
+	ld	sp,(savesp)
+	ret
+
+keyprog:
+; Program to be written to disc
+	.phase	100h	;Loads to the TPA
+	ld	a,escape	;Load the new table.
+	call	chrout
+	ld	a,'f'
+	call	chrout
+	ld	hl,table
+wrloop:	ld	a,(hl)
+	call	chrout
+	inc	hl
+	cp	0ffh
+	jr	nz,wrloop
+	ret
+
+;	Character o/p via direct console I/O
+
+chrout:	push	af
+	push	hl
+	cp	0ffh		;can't o/p 0ffh
+	jr	nz,ch
+	ld	a,0e0h
+ch:	ld	e,a
+	ld	c,6
+	call	5
+	pop	hl
+	pop	af
+	ret
+
+table:
+	.dephase
+ktable:
+
+	end	start

@@ -1,0 +1,193 @@
+	REM CARMAINT Issue 1, 10 Jan. 1981, Copyright K.A.Bennett.
+	VDU.CLEAR.SCR$ = CHR$(126)+CHR$(28)
+	FOR1$ = "&  #####         #####"
+	FOR2$ = "&  #####         #####     &"
+	NAME$  =  "VEHICLES"
+	FILE NAME$(16)
+	IF END #1 THEN 20
+	IF END #2 THEN 20
+	CLOSE 1
+	PRINT VDU.CLEAR.SCR$
+	PRINT TAB(30); "CARMAINT"
+	PRINT
+	PRINT TAB(30); "-------"
+	PRINT
+	PRINT "A PROGRAM TO RECORD THE MAINTENANCE HISTORY FOR MOTOR"
+	PRINT "VEHICLES AND TO PRODUCE A TASK LIST IF REQUIRED."
+	PRINT:	PRINT
+	PRINT TAB(10); "NOTE:"
+	PRINT TAB(15);		"The program assumes that you will do the service"
+	PRINT TAB(15);		"at the current mileage that you enter below."
+	PRINT
+	PRINT
+	PRINT CHR$(7)
+	INPUT "Today's date:";	DAT$
+	PRINT : PRINT:
+20 CONSOLE: PRINT VDU.CLEAR.SCR$
+	PRINT
+	PRINT "The following vehicle records are on file:"
+	IF SIZE("VEHICLES.*") = 0 THEN 300
+	PRINT
+	OPEN "VEHICLES" RECL 16 AS 1
+	READ #1,1;CARS%
+	FOR  R = 2  TO  CARS%	:\
+		READ #1,R;FILE.NAME$	:\
+		PRINT TAB(20);  FILE.NAME$;: NEXT R
+	CLOSE 1
+25 PRINT
+	PRINT CHR$(7)
+	INPUT "Car model (Existing or additional)";CAR$
+	CAR$ = CAR$ + "        "
+	CAR$ = LEFT$(CAR$,8)
+	OPEN "VEHICLES" RECL 16 AS 1
+	READ #1,1;CARS%
+	FOR R = 2 TO CARS%
+		READ #1,R;FILE.NAME$
+		IF FILE.NAME$ = CAR$ THEN GOTO 30 
+	NEXT R
+	PRINT "Not yet on record - Please enter service details." :\
+	PRINT
+	CLOSE 1: GOTO 300
+30 CLOSE 1
+	PRINT
+	INPUT "Current mileage:";MILES
+	PRINT "Choose by number:"
+	PRINT
+	PRINT TAB(30);"Complete schedule for "; CAR$; " (1)"
+	PRINT TAB(30);"Required maintenance at"; MILES; "  (2)"
+	PRINT TAB(30);"Create new vehicle schedule		(3)"
+	PRINT TAB(30);"End the program				(4)"
+	PRINT
+	PRINT
+	PRINT CHR$(7)
+	INPUT "Operation required:"; WORK%
+	IF WORK%	=	4	THEN STOP
+	PRINT
+	INPUT "Do you want a printed output (Y or N)"; PRINT$
+	IF PRINT$	=	"Y"	THEN LPRINTER
+	ON WORK% GOTO 100,200,300
+
+
+100 REM COMPLETE SCHEDULE FOR SELECTED CAR
+	PRINT VDU.CLEAR.SCR$
+	PRINT TAB(10); "Maintenance schedule for ";CAR$;" on ";DAT$
+	OPEN FILE.NAME$ RECL 128 AS 1
+	READ #1,1;TASK%,OLD.DAT$,LAST.DONE
+	CLOSE 1
+	PRINT
+	PRINT TAB(10); "Last service on ";OLD.DAT$;" at";LAST.DONE;"miles."
+	PRINT
+	GOSUB 1.00E10
+	OPEN FILE.NAME$ RECL 128 AS 1
+	FOR R = 2 TO TASK%
+	READ #1,R;TASK$,INTERVAL%,LAST.DONE
+	PRINT USING FOR1$; TASK$; INTERVAL%; LAST.DONE
+	NEXT R
+	FOR I = 1 TO 70: 	PRINT "*";: NEXT I
+	CLOSE 1: CONSOLE
+	PRINT
+	PRINT CHR$(7)
+	INPUT "Another vehicle? (Y) or E to end"; NEXT$
+	IF	NEXT$   =   "Y"   THEN 20
+	STOP
+
+
+200 REM	MAINTENANCE REQUIRED ROUTINE
+	COUNT% = 0
+	PRINT VDU.CLEAR.SCR$
+	INPUT "Is the work required to be completed now? (Y or N)";COMP$
+	IF COMP$ <> "Y" AND  COMP$ <> "N" THEN 200
+	IF PRINT$	=	"Y"	THEN LPRINTER
+	PRINT TAB(10); "Required Maintenance for ";CAR$;" on ";DAT$; " at"; MILES
+	OPEN FILE.NAME$ RECL 128 AS 1
+	READ #1,1;TASK%,OLD.DAT$,LAST.DONE
+	PRINT
+	PRINT TAB(20); "Last service on ";OLD.DAT$;" at";LAST.DONE;"miles."
+	IF COMP$ = "Y" THEN OLD.DAT$ = DAT$:\  LAST.DONE = MILES
+	PRINT #1,1;TASK%, OLD.DAT$, LAST.DONE
+	PRINT
+	GOSUB 1.00E10
+	RECORD.NO%  = 2
+	WHILE RECORD.NO%  <  TASK% + 1
+			READ #1,RECORD.NO%; TASK$, INTERVAL%, LAST.DONE
+			IF 	MILES - LAST.DONE >= INTERVAL% THEN  	GOSUB 1.00E15
+			RECORD.NO%  =  RECORD.NO% + 1
+	WEND
+	CLOSE 1
+	IF COUNT% = 0 THEN 	PRINT "No sevice required at "; MILES
+	FOR I = 1 TO 70:	PRINT "*";: NEXT I
+	CONSOLE:PRINT
+	PRINT CHR$(7)
+	INPUT "Another vehicle? (Y) or E to end";NEXT2$
+	IF	NEXT2$   =   "Y"   THEN 20
+	STOP
+
+300 REM CREATE DATA FILE FOR NEW VEHICLE
+	PRINT VDU.CLEAR.SCR$
+	CONSOLE
+	PRINT TAB(40); "WARNING"
+	PRINT TAB(40); "-------"
+	PRINT
+	PRINT TAB(10); "Do not re-use any name already on the file."
+	PRINT:	PRINT
+	PRINT "Note:  The program will assume that all items were last done"
+	PRINT "       at the miles inserted below. If any item has never been"
+	PRINT "       done insert free service mileage and then increase by"
+	PRINT "       stepping through the intervals using option (2)."
+	PRINT CHR$(7)
+	INPUT "Create new maintenance schedule for vehicle (Up to 8 characters):";FILE.NAME$
+	FILE.NAME$  =  FILE.NAME$ + "        "
+	FILE.NAME$  =  LEFT$(FILE.NAME$,8)
+	PRINT VDU.CLEAR.SCR$
+	PRINT "Start input for ";FILE.NAME$
+	PRINT
+	CREATE FILE.NAME$ RECL 128 AS 1
+	INPUT "Maintenance schedule start date:"; OLD.DAT$
+	PRINT
+	INPUT "Last complete service mileage:";LAST.DONE
+	TASK% = 1
+	RECORD.NO% = 2
+310 PRINT "Describe task number";TASK%
+	INPUT "Description (or E to end task input):"; TASK$
+	IF TASK$	=	"E"	THEN 320
+	TASK$ = TASK$ + "                              "
+	TASK$ = LEFT$(TASK$,30)
+	PRINT
+	INPUT "Service interval (miles):";INTERVAL%
+	PRINT #1,RECORD.NO%;TASK$,INTERVAL%,LAST.DONE
+	TASK% = TASK%+1
+	RECORD.NO%	=	RECORD.NO% + 1
+	PRINT VDU.CLEAR.SCR$
+	GOTO 310
+320 PRINT #1,1;TASK%,OLD.DAT$,LAST.DONE
+	CLOSE 1
+	OPEN "VEHICLES" RECL 16 AS 1
+	IF SIZE("VEHICLES.*") = 0 THEN 325
+	READ #1,1;CARS%
+	CARS%  =  CARS% + 1
+	 PRINT #1,CARS%;FILE.NAME$
+	PRINT #1,1;CARS%
+	CLOSE 1: GOTO 20
+325 PRINT #1,1;2
+	PRINT #1,2;FILE.NAME$
+	CLOSE 1:GOTO 20
+
+
+
+
+1.00E15 REM PRINT ITEMS DUE
+	COUNT% = COUNT% + 1
+	PRINT USING FOR2$;  TASK$; INTERVAL%; LAST.DONE; "***"
+	IF COMP$ = "Y" THEN LAST.DONE  =  MILES
+	PRINT #1,RECORD.NO%; TASK$, INTERVAL%, LAST.DONE
+	RETURN
+
+
+
+
+1.00E10 REM SET OUT HEADINGS
+	FOR I = 1 TO 70:PRINT "*";: NEXT I
+	PRINT TAB(5);"Task                       Interval     Last Service"
+	FOR I = 1 TO 69:PRINT "*";: NEXT I: PRINT "*"
+	RETURN
+

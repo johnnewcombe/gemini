@@ -1,0 +1,23 @@
+
+
+
+
+                       ASHOW AVAILABLE FORMATSN
+
+
+               If  the "S" command is entered in answer to  the 
+          system  prompt "*",  the computer will list  all  the 
+          FORMATS that can be assigned into the system. 
+
+               If  the  S  command is followed by  an  "L"  the 
+          program's  output  to the screen will also go to  the 
+          printer (if connected).
+
+                              SYNTAX :-
+
+                                S{L}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+
+
+

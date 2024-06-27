@@ -1,0 +1,23 @@
+
+
+
+                      ASHOW PARAMETER BLOCK DATAN
+
+               This  command  allows the operator to  list  the 
+          logical information of a FORMAT.  The left portion of 
+          the  screen  shows the values within the actual  disk 
+          parameter  block.  The  right portion of  the  screen 
+          shows the equivalent of a STAT DSK: under CP/M 2.2 or 
+          a  SHOW  [DRIVES] under CP/M Plus.  If  the  operator 
+          types  an "L" after the "P" the system will echo  the 
+          screen output to the printer (if connected).
+
+                              SYNTAX :-
+
+                              P{L}{nn}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+
+
+
+

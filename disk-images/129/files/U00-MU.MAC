@@ -1,0 +1,1167 @@
+	.Z80
+
+VERS	EQU 5			;Version number
+
+;COPYRIGHT (C) MAP 80 SYSTEMS LTD.
+;Version  1.0			 9th February  1983
+;Revision 1.1 			24th July      1983
+;Revision 2.1			 6th September 1983
+;Revision 2.2			28th September 1983
+;Revision 2.3			27th October   1983
+;Revision 2.4			Cancelled
+;Revision 3.0			23rd January   1984
+;Revision 3.1			14th April     1984
+;Revision 3.2			1st  August    1984
+;Revision 3.3			19th December  1984
+;Revision 4.0			29th December  1984
+
+;This file assembles using M80.COM and links using LINK.COM
+;M80 =MU
+;LINK MU[L100]=MU
+
+	.XLIST
+	IF1
+	.PRINTX "*** PASS 1 ***"
+	ENDIF
+
+	IF2
+	.PRINTX "*** PASS 2 ***"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     DATA.MAC .........."
+	INCLUDE DATA		;Data equates
+	IF VER NE VERS
+	.PRINTX "DATA.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   SYSTEM.MAC .........."
+	INCLUDE SYSTEM		;System equates
+	IF VER NE VERS
+	.PRINTX "SYSTEM.MAC is incorrect version"
+	ENDIF
+
+	TITLE MAP 80 SYSTEMS MULTI-UTILITY
+	SUBTTL Additional Equates Required By MU
+	PAGE
+
+	.PRINTX "..........       MU.MAC .........."
+
+VERSION MACRO
+	DEFB VERS+"0",".00"
+	ENDM
+
+RQDF	EQU MAP96D		;Required format
+RQDD	EQU STNDRD		;Drive type
+CPYALL	EQU F			;Set true for total disk copy
+
+;Specify drives which aren't capable of handling the format or don't exist
+DRV1	EQU T			;Good
+DRV2	EQU T			;Good
+DRV3	EQU F			;Drive wrong type or doesn't exist
+DRV4	EQU F			;Drive wrong type or doesn't exist
+
+;Set all drives the same format, regardless of system
+FORM1	DEFL RQDF
+FORM2	DEFL RQDF
+FORM3	DEFL RQDF
+FORM4	DEFL RQDF
+
+;Set all drives the same type, regardless of system
+FPPY1	DEFL RQDD
+FPPY2	DEFL RQDD
+FPPY3	DEFL RQDD
+FPPY4	DEFL RQDD
+
+;Error device reported as a CP/M drive
+DRERR	EQU T
+
+;Number of floppies
+NDRVF	DEFL 4			;Always 4
+
+;Stop Winchester assembly
+DRVW	DEFL 0			;Kill Winchester assembly in FLOPPY (Always 0)
+
+;Make valid drive mask
+VALMSK	DEFL 0			;Valid drives mask
+FN	DEFL NDRVF		;Scan backwards
+
+;Make mask of valid drives
+MAKVAL	MACRO @FN
+VALMSK	DEFL VALMSK+VALMSK
+	IF DRV&@FN
+VALMSK	DEFL VALMSK+1
+	ENDIF
+	ENDM
+
+;Set valid drive bits
+	REPT NDRVF
+	MAKVAL %FN
+FN	DEFL FN-1
+	ENDM
+
+;Shift Winchesters
+	REPT NDRVW
+VALMSK	DEFL VALMSK+VALMSK
+	ENDM
+
+;Get format data
+	MLAB2 SPT,SPT,%RQDF,LGT,LGT,%RQDF	;Secs per trk,Trks per drive
+	MLAB2 SEC,SEC,%RQDF,FTY,FTY,%RQDF	;Sector size,Format type
+	MLAB2 SOF,SOF,%RQDF,SKW,SKW,%RQDF	;Sector offset,Skew factor
+	MLAB2 INV,INV,%RQDF,SDH,SDH,%RQDF	;Invert,Side handling	
+	MLAB2 DEN,DEN,%RQDF,SPS,SPS,%RQDF	;Format density, Secs per side
+	MLAB1 TPS,TPS,%RQDF			;Tracks per side
+
+;Inverted/non-inverted data byte
+	IF INV
+DATA	EQU NOT 0E5H
+	ELSE
+DATA	EQU 0E5H
+	ENDIF
+
+;Number of  sides
+	IF SDH EQ SSID
+SIDES	EQU 1
+	ELSE
+SIDES	EQU 2
+	ENDIF
+
+MASK	DEFL 0			;5" DD
+	IF FTY EQ TP8
+MASK	DEFL MASK OR 20H	;8" DD
+	ENDIF
+
+	IF DEN EQ SDEN
+MASK	DEFL MASK OR 10H	;SD
+	ENDIF
+
+;Produce skew table address for FLOPPY
+	IF SKW GT 1
+	IF SKW EQ SPSK
+	MLAB1 HRDSK,SP,%RQDF		;Special skew
+	ELSE
+	M3LAB HRDSK,K,%SPS,%SKW		;Normal skew
+	ENDIF
+	ELSE
+HRDSK	EQU 0				;No skew
+	ENDIF
+
+	SHOW SECTORS_PER_TRACK________,SPT,DEC
+	SHOW SECTORS_PER_SIDE_________,SPS,DEC
+	SHOW LOGICAL_TRACKS_PER_DRIVE_,LGT,DEC
+	SHOW TRACKS_PER_SIDE__________,TPS,DEC
+	SHOW SECTOR_SIZE______________,SEC,DEC
+
+;Format buffer data
+;5"
+	IF FTY NE TP8
+
+;512 byte sectors, double density
+	IF SEC EQ 512
+G1LEN	EQU 32			;Number of post index filler
+PREADR	EQU 12			;Number of pre address nulls
+PRECRC	EQU 3			;Number of preset CRC bytes
+G2LEN	EQU 22			;Number of post address filler
+GAP2N	EQU 12			;Number of post address nulls
+INTERF	EQU 30			;Number of inter sector filler
+
+FILLER	EQU 4EH			;Filler bytes
+RSTCRC	EQU 0F5H		;Preset CRC
+IDAM	EQU 0FEH		;ID address mark byte
+SECLEN	EQU 2			;Sector length
+WRCRC	EQU 0F7H		;Write CRC bytes
+DAMARK	EQU 0FBH		;Data address mark
+	ENDIF
+
+;256 byte sectors, double density
+	IF SEC EQ 256
+G1LEN	EQU 32			;Number of post index filler
+PREADR	EQU 12			;Number of pre address nulls
+PRECRC	EQU 3			;Number of preset CRC bytes
+G2LEN	EQU 22			;Number of post address filler
+GAP2N	EQU 12			;Number of post address nulls
+INTERF	EQU 30			;Number of inter sector filler
+
+FILLER	EQU 4EH			;Filler bytes
+RSTCRC	EQU 0F5H		;Preset CRC
+IDAM	EQU 0FEH		;ID address mark byte
+SECLEN	EQU 1			;Sector length
+WRCRC	EQU 0F7H		;Write CRC bytes
+DAMARK	EQU 0FBH		;Data address mark
+	ENDIF
+
+;128 byte sectors, single density
+	IF SEC EQ 128
+	ENDIF
+
+	ENDIF
+
+;8"
+	IF FTY EQ TP8
+
+;128 byte sectors, single density
+	IF SEC EQ 128
+G1LEN	EQU 80			;Number of post index filler
+PREADR	EQU 6			;Number of pre address nulls
+PRECRC	EQU 0			;Number of preset CRC bytes
+G2LEN	EQU 11			;Number of post address filler
+GAP2N	EQU 6			;Number of post address nulls
+INTERF	EQU 27			;Number of inter sector filler
+
+FILLER	EQU 0FFH		;Filler bytes
+RSTCRC	EQU 0   		;Preset CRC
+IDAM	EQU 0FEH		;ID address mark byte
+SECLEN	EQU 0			;Sector length
+WRCRC	EQU 0F7H		;Write CRC bytes
+DAMARK	EQU 0FBH		;Data address mark
+	ENDIF
+
+	ENDIF
+
+;Position of first sectors ID address
+FRSTID	EQU FBUFF+G1LEN+PREADR+PRECRC+1
+
+;Length between sectors in format buffer
+BETSEC	EQU PREADR+PRECRC+6+G2LEN+GAP2N+PRECRC+1+SEC+1+INTERF
+
+WBOOT	EQU 0000H
+BDOS	EQU 0005
+
+;COMAND bit allocation
+CPY	EQU 0
+FMT	EQU 1
+VFY	EQU 2
+
+;	**************************************
+;	*	FORMAT SKEW SUB MACROS       *
+;	**************************************
+
+;Initialise sectors
+NEWLAB	MACRO @S
+SECT&@S	DEFL -1
+	ENDM
+
+;Make table
+MAKEB	MACRO @P
+	DEFB SECT&@P
+	ENDM
+
+;Insert sectors
+INSSEC	MACRO @P
+FLAG	DEFL -1
+	IF SECT&@P EQ -1
+SECT&@P	DEFL SN
+FLAG	DEFL 0
+	ENDIF
+	ENDM
+
+;	*********************************
+;	*	FORMAT SKEW MACRO       *
+;	*********************************
+SKWTAB:
+;Main skew factor process
+SKEWF	DEFL 1
+;;Do 5 skew tables
+	REPT 5
+
+;;Initialise sectors
+SN	DEFL 0
+	REPT SPS
+	NEWLAB %SN
+SN	DEFL SN+1
+	ENDM
+
+SN	DEFL 0
+POS	DEFL 0
+
+;;Insert all sectors
+	REPT SPS		;;Skew all sectors
+
+;;Insert the sector
+	REPT SPS		;;Might have to shift all sectors
+	IF POS GE SPS
+POS	DEFL POS-SPS
+	ENDIF
+	INSSEC %POS
+	IF FLAG EQ 0
+	EXITM			;;Inserted so quit
+	ELSE
+POS	DEFL POS+1		;;Shift next position
+	ENDIF
+	ENDM
+
+SN	DEFL SN+1		;;Next sector
+POS	DEFL POS+SKEWF		;;Next position
+	ENDM
+
+;;Make the sector table
+NUM	DEFL 0
+	REPT SPS
+	MAKEB %NUM
+NUM	DEFL NUM+1
+	ENDM
+
+SKEWF	DEFL SKEWF+1		;;Next skew
+	ENDM
+
+	SUBTTL Get user requirements
+	PAGE
+
+;Program starts here
+START:	LD SP,STACK
+	LD HL,SIGNON		;Opening message
+	CALL PMSG
+	LD A,VALMSK
+	CALL DRVMSG
+	LD HL,NULMES
+	CALL CRPMSG
+	LD HL,HRDSK		;Fixed skew or 0
+	LD (SKTAB),HL		;Tell skew to disk routines
+
+;Re-run from here
+RESTRT:	LD SP,STACK		;Just in case
+	CALL CLEAN		;Clean up 2797 and track map
+	LD HL,OPTION		;Print command prompt
+	CALL CRPMSG
+
+;Get commands
+	LD HL,FCV$		;Point at command string
+	LD D,7			;All commands permitted
+	CALL GETINP		;Get input
+	LD (COMAND),A		;Save command mask
+	BIT FMT,A		;Format ?
+	JR Z,NOFORM		;No
+
+;Get skew if format selected
+	LD HL,SKWTAB		;Default skew 0
+	LD A,SKW
+	CP 2
+	JR NC,NOSKE		;Skew is fixed
+	LD HL,SKWMES		;Skew prompt
+	CALL CRPMSG
+GETSKW:	CALL GETCHR
+	LD C,A
+	LD A,C
+	SUB "0"
+	JR C,GETSKW		;Must be 0 to 4
+	CP 5
+	JR NC,GETSKW
+	LD B,A
+	INC B
+	LD HL,SKWTAB-SPS
+	LD DE,SPS
+GOSK:	ADD HL,DE		;Get to skew table
+	DJNZ GOSK
+	CALL ?CONOT
+NOSKE:	LD (SKEW),HL		;Format skew table
+
+NOFORM:	LD A,(COMAND)
+	BIT CPY,A		;Test copy flag
+	JR Z,CPYGOT
+;Get source drive if copy selected
+	LD HL,WSDRV
+	CALL CRPMSG
+	LD HL,DRV$		;Commands string
+	LD D,VALMSK		;Valid drives mask
+GETSRC:	CALL GETCHR		;Get entry
+	LD C,A
+	CALL GETBIT		;Convert it to bit
+	OR A
+	JR Z,GETSRC		;Invalid
+	AND D			;Valid ?
+	JR Z,GETSRC
+	LD (SRCDRV),A		;Source drive
+	CALL ?CONOT
+
+;Prompt for destination/format drive
+CPYGOT:	LD HL,WDDRV
+	CALL CRPMSG
+	CALL COMMES		;Print command messages
+
+;Get /format /copy to /verify drives
+	LD HL,DRV$		;Drives string
+	LD D,VALMSK		;Valid drives
+	CALL GETINP
+	LD (DESDRV),A
+	LD HL,SRCDRV
+	AND (HL)
+	LD (SAMEDR),A
+
+;Prompt ready
+	LD A,(COMAND)
+	LD B,A
+;Insert source message
+	BIT CPY,B		;Test for copy
+	JR Z,INSDM		;Skip insert source message if not copy
+	LD A,(SAMEDR)
+	OR A
+	JR NZ,INSDM		;Skip insert source message if same drives
+	PUSH BC
+INSSM:	LD HL,INSS
+	CALL CRPMSG
+	LD A,(SRCDRV)
+	CALL DRVMSG
+	POP BC
+
+INSDM:	BIT FMT,B
+	JR NZ,DODM		;If format prompt do destination message
+	BIT CPY,B
+	JR Z,DODM		;If not copy do destination message
+	LD A,(SAMEDR)
+	OR A
+	JR NZ,SKPALL		;If copy and same drives skip all
+DODM:	LD HL,INSD
+	CALL CRPMSG
+	CALL COMMES
+	LD HL,INMES
+	CALL PMSG
+	LD A,(DESDRV)
+	CALL DRVMSG		;Print drives in A
+	CALL REDYCR
+SKPALL:	JP DOCOMS
+
+;Get an input line
+GETINP:	EXX
+	LD HL,INPBUF
+	EXX
+	LD E,0
+NXTINP:	CALL GETCHR
+	LD C,A
+	CP CR
+	JR NZ,NOTCR
+	LD A,E
+	OR A
+	JR Z,NXTINP
+	RET
+NOTCR:	CP BS
+	JR NZ,NOTBS
+	LD A,E
+	OR A
+	JR Z,NXTINP
+	LD A,C
+	CALL ?CONOT
+	EXX
+	DEC HL
+	LD A,(HL)
+	EXX
+	LD C,A
+	CALL GETBIT
+	CPL
+	AND E
+	LD E,A
+	JR NXTINP
+NOTBS:	CALL GETBIT
+	AND D
+	OR E
+	CP E
+	JR Z,NXTINP
+	LD E,A
+	LD A,C
+	EXX
+	LD (HL),A
+	INC HL
+	EXX
+	CALL ?CONOT
+	JR NXTINP
+
+;Convert character in C to a bit from string pointed to by HL
+GETBIT:	PUSH HL
+	LD B,0
+NXTBIT:	LD A,(HL)
+	INC HL
+	OR A
+	JR Z,ENDSTR
+	CP C
+	SCF
+	JR Z,MATCH
+	CCF
+MATCH:	RL B
+	JR NXTBIT
+ENDSTR:	POP HL
+	LD A,B
+	RET
+
+;Print command messages
+COMMES:	PUSH BC
+	LD A,(COMAND)		;Get commands
+	LD B,A
+	BIT FMT,B
+	JR Z,NOFRM
+	LD HL,FMSSG
+	CALL PMSG
+NOFRM:	BIT CPY,B
+	JR Z,NOCPY
+	LD HL,CMSSG
+	CALL PMSG
+NOCPY:	BIT VFY,B
+	JR Z,NOVFY
+	LD HL,VMSSG
+	CALL PMSG
+NOVFY:	POP BC
+	RET
+
+;Print drives from string in A
+DRVMSG:	LD HL,ENDRV$-2
+	LD B,8
+ALL8:	RRA
+	JR NC,NODRVE
+	PUSH AF
+	LD C,(HL)
+	CALL ?CONOT
+	POP AF
+NODRVE:	DEC HL
+	DJNZ ALL8
+	RET
+
+SAMEDR:	DEFB 0			;If NZ copying to and from drive A
+SRCDRV:	DEFB 0			;Source drive (name)
+SOURCE:	DEFB 0			;Source drive (actual)
+DESDRV:	DEFB 0			;Destination drives (name)
+DESTIN:	DEFB 0			;Destination drives (actual)
+COMAND:	DEFS 5			;Bit map of commands
+SKEW:	DEFW 0			;Formatter skew table
+INPBUF:	DEFS 8,0
+FCV$:	DEFB "VFC",0
+DRV$:	DEFB "HGFEDCBA",0
+ENDRV$:
+
+;Messages
+SIGNON:
+	IF VFC OR IVC
+	DEFB CLS
+RRR	DEFL 0+20H
+CCC	DEFL 20H+(80-(W2-W1))/2
+	DEFB ESC,"=",RRR,CCC
+	ENDIF
+
+W1:	DEFB "MAP 80 SYSTEMS MULTI UTILITY VERS "
+	VERSION
+W2:	DEFB CR,LF
+RRR	DEFL RRR+1
+
+	IF VFC OR IVC
+CCC	DEFL 20H+(80-(W4+2-W3))/2
+	DEFB ESC,"=",RRR,CCC
+	ENDIF
+
+W3:	DRVMES RQDD
+	DEFB " - "
+	FRMMES RQDF
+	DEFB " on Drives "
+W4:	DEFB 0
+
+OPTION:	DEFB "Enter one or more command(s)",CR,LF
+	DEFB "F)ormat C)opy V)erify"
+	DEFB "? ",0
+SKWMES:	DEFB "Enter sector skew (0-4)? ",0
+WSDRV:	DEFB "Enter Drive to be COPIED FROM ",0
+WDDRV:	DEFB "Enter Drive(s) to be "
+NULMES:	DEFB 0
+FMSSG:	DEFB "/FORMATTED ",0
+CMSSG:	DEFB "/COPIED TO ",0
+VMSSG:	DEFB "/VERIFIED ",0
+INSS:	DEFB "Insert Disk to be COPIED FROM "
+INMES:	DEFB "in ",0
+INSD:	DEFB "Insert Disk(s) to be ",0
+RDYMES:	DEFB "Press ENTER when ready ",0
+FMES:	DEFB "    FORMATTING",CR,LF,0
+VMES:	DEFB "    VERIFYING",CR,LF,0
+CMES:	DEFB "     COPYING",CR,LF,0
+DONEM:	DEFB "     COMPLETE",CR,LF,0
+TRKMES:	DEFB CR,"TRACK ",0
+SECMES:	DEFB "  SECTOR   ",8,8,0
+SIDMES:	DEFB "  SIDE ",0
+BSPC:	DEFB 8,8,8,8,8,8,8,8,0
+FERRM:	DEFB "FORMAT ERROR",0
+
+;Print CR,LF then message at HL
+CRPMSG:	PUSH HL			;Save HL
+	LD C,CR			;Cr,lf to start
+	CALL ?CONOT
+	LD C,LF
+	CALL ?CONOT
+	POP HL			;Reset HL
+;Print HL until a Null
+PMSG:	LD A,(HL)
+	OR A
+	RET Z
+	INC HL
+	PUSH HL
+	LD C,A			;Move to C
+	CALL ?CONOT
+	POP HL
+	JR PMSG
+
+;Print character in C
+?CONOT:	PUSH HL
+	PUSH DE
+	PUSH BC
+
+	LD E,C
+	LD C,6
+	CALL BDOS
+
+GETSTK:	POP BC
+	POP DE
+	POP HL
+	RET
+
+;Get key entry in A
+?CONIN:	PUSH HL
+	PUSH DE
+	PUSH BC
+	LD HL,(0001)		;BIOS location
+	LD DE,6
+	ADD HL,DE
+	CALL IPCHL
+	CP CTLC
+	JP Z,WBOOT
+	JR GETSTK
+
+IPCHL:	JP (HL)
+
+;Get a key input, if ^C go to CPM
+GETCHR:	CALL ?CONIN
+	CP "a"
+	RET C
+	CP "z"+1
+	RET NC
+	AND 5FH			;Lower to upper
+	RET
+
+;Print ENTER prompt and wait for CR
+REDYCR:	LD HL,RDYMES
+	CALL CRPMSG
+WAITCR:	CALL GETCHR
+	CP CR
+	JR NZ,WAITCR
+	LD C,CR
+	CALL ?CONOT
+	LD C,LF
+	JP ?CONOT
+
+	SUBTTL Do The Commands
+	PAGE
+
+;Convert actual drive code in A and store in CDRIV and PDRIV
+CALCDR:	OR MASK
+	LD (PDRIV),A		;Actual drive code
+	PUSH BC
+	LD B,NDRVW-1
+CALCD:	INC B
+	RRCA
+	JR NC,CALCD
+	LD A,B
+	POP BC
+	LD (CDRIV),A		;Drive number
+	RET
+
+;Convert drives in A to actual code in (HL)
+CNVERT:	LD (HL),A
+	LD A,NDRVW
+	OR A
+	RET Z
+	LD B,A
+CVLOOP:	RRC (HL)
+	DJNZ CVLOOP
+	RET
+
+;Do commands
+DOCOMS:	LD A,(SRCDRV)
+	LD HL,SOURCE
+	CALL CNVERT		;Convert to actual
+	LD A,(DESDRV)
+	LD HL,DESTIN
+	CALL CNVERT
+	LD DE,FORMT
+	LD A,(COMAND)
+	BIT FMT,A		;Test for format
+	CALL NZ,DODRVS
+	LD A,(COMAND)
+	BIT CPY,A		;Test for copy
+	CALL NZ,COPY		;COPY routine calls DODRVS
+	LD HL,DESTIN
+	LD DE,VERIFY
+	LD A,(COMAND)
+	BIT VFY,A		;Test for verify
+	CALL NZ,DODRVS
+
+;Commands done
+	LD HL,DONEM
+	CALL CRPMSG
+	JP RESTRT
+
+;Execute routine in DE for drives at (HL)
+DODRVS:	LD A,1			;First floppy
+	LD B,4			;Up to 4 of them
+DLOOP:	LD C,A			;Save A
+	AND (HL)		;Valid against source/destin
+	LD A,C			;Recover walking bit
+	JR Z,NXTDRV
+	PUSH AF
+	PUSH HL
+	PUSH DE
+	PUSH BC
+	EX DE,HL		;Routine to HL
+	CALL IPCHL		;Go to routine with drive in A
+	POP BC
+	POP DE
+	POP HL
+	POP AF
+NXTDRV:	RLCA			;Walk the bit
+	DJNZ DLOOP		;Up to 4 drives
+	RET
+
+	TITLE FORMAT ROUTINES
+	PAGE
+
+;Test routine
+FORMT:	CALL CALCDR		;Set up DRIVEs
+	LD A,(PDRIV)
+	OUT (DRVPRT),A		;Get drives going
+	LD (DRVLOG),A		;Log in
+	LD IX,IXPTR		;Point at format data
+	LD IY,IYPTR		;Point at drive data
+	LD HL,FMES
+	CALL CRPMSG
+	CALL TRACK0		;Load heads and restore them
+	CALL WAITON		;Wait til drive is ready
+	JP C,DNRERR		;Drive not ready
+	LD A,-1
+	LD (STARTT),A		;Track log
+	CALL MAKBUF		;Make raw format buffer
+	CALL INSSEC		;Put in the sectors
+NTRACK:	LD A,(STARTT)
+	INC A
+	LD (STARTT),A
+	JR Z,DOFORM		;Don't step in if track 0
+	CP TPS
+	JR Z,DONEF		;All tracks done
+	LD B,1			;In one track
+	BIT 0,(IX+YNOX-IXPTR)
+	JR Z,DOSTPS
+	INC B			;Double steps
+DOSTPS:	LD A,STEPIN
+	OUT (FDCCOM),A		;Issue it
+	LD A,(IY+STPY-IYPTR)	;Step delay
+	CALL DELAY
+	CALL WAITNB		;Make sure 2797 has finished
+	DJNZ DOSTPS
+	LD A,(IY+STLY-IYPTR)
+	CALL DELAY
+DOFORM:	XOR A			;Side 1
+	LD (STARTS),A
+	CALL INSTRK		;Put in the tracks
+NSIDE:	CALL INSIDE		;Put in the side
+	CALL WRITRK		;Write the buffer
+	LD A,(STARTS)
+	OR A
+	JR NZ,NTRACK		;Already done side 2
+	LD A,SIDES
+	DEC A
+	LD (STARTS),A
+	JR Z,NTRACK		;Single sided
+	JR NSIDE
+
+;Finished format
+DONEF:	CALL CLEAN		;Reset track map
+	RET
+
+;Lay down a raw format buffer
+MAKBUF:	LD HL,FBUFF
+	LD B,G1LEN
+GAP1:	LD (HL),FILLER		;Gap 1
+	INC HL
+	DJNZ GAP1
+	LD B,SPS		;Sectors per side
+;Sector loops here
+SLOOP:	PUSH BC			;Save sector count
+	LD B,PREADR
+PREADD:	LD (HL),0		;Pre address nulls
+	INC HL
+	DJNZ PREADD
+	LD A,PRECRC
+	OR A
+	JR Z,NOPRE1		;No reset CRC with FM
+	LD B,A
+ADRCRC:	LD (HL),RSTCRC		;Reset CRC
+	INC HL
+	DJNZ ADRCRC
+NOPRE1:	LD (HL),IDAM		;ID address mark
+	INC HL
+	INC HL			;Track
+	INC HL			;Side 
+	INC HL			;Sector
+	LD (HL),SECLEN		;Sector length flag
+	INC HL
+	LD (HL),WRCRC		;Write CRC
+	INC HL
+	LD B,G2LEN
+GAP2:	LD (HL),FILLER		;Gap 2 filler
+	INC HL
+	DJNZ GAP2
+	LD B,GAP2N
+G2NULL:	LD (HL),0		;Gap 2 nulls
+	INC HL
+	DJNZ G2NULL
+	LD A,PRECRC
+	OR A
+	JR Z,NOPRE2		;No reset CRC for FM
+	LD B,A
+DATCRC:	LD (HL),RSTCRC		;Reset CRC
+	INC HL
+	DJNZ DATCRC
+NOPRE2:	LD (HL),DAMARK		;Data address mark
+	INC HL
+	LD BC,SEC-1
+	LD (HL),DATA		;Data
+	PUSH HL
+	POP DE
+	INC DE
+	LDIR			;Fill sector buffer
+	INC HL
+	LD (HL),WRCRC		;Write CRC
+	INC HL
+	LD B,INTERF
+INTERS:	LD (HL),FILLER		;Inter sector filler
+	INC HL
+	DJNZ INTERS
+	POP BC			;Recover sector loop
+	DJNZ SLOOP		;Do all sectors
+;Sectors done, pad out with filler until index
+	LD B,0
+GAP4a:	LD (HL),FILLER
+	INC HL
+	DJNZ GAP4a
+	LD B,0
+GAP4b:	LD (HL),FILLER
+	INC HL
+	DJNZ GAP4b
+	LD B,0
+GAP4c:	LD (HL),FILLER
+	INC HL
+	DJNZ GAP4c
+	RET
+
+;Insert sectors into buffer
+INSSEC:	LD IY,FRSTID		;First sector
+	LD DE,BETSEC		;Length between sectors
+	LD HL,(SKEW)		;Skew table address
+	LD B,SPS		;Sectors per side
+SECIN:	LD A,(HL)		;Pick up sector
+	INC HL
+	BIT 2,(IX+YNOX-IXPTR)	;Test for offset
+	JR Z,NOOFF		;Not offset
+	INC A
+NOOFF:	LD (IY+2),A
+	ADD IY,DE		;Next ID
+	DJNZ SECIN
+	RET
+
+;Insert track into buffer
+INSTRK:	LD IY,FRSTID		;First sector ID
+	LD DE,BETSEC		;Length between sectors
+	LD B,SPS		;Sectors in buffer
+	LD A,(STARTT)
+TRKIN:	LD (IY),A
+	ADD IY,DE
+	DJNZ TRKIN
+	RET
+
+;Insert side byte in format buffer
+INSIDE:	LD HL,TRKMES
+	CALL PMSG
+	LD HL,(STARTT)
+	LD H,0
+	CALL PDEC
+	LD HL,SIDMES
+	CALL PMSG
+	LD A,(STARTS)
+	PUSH AF
+	LD L,A
+	LD H,0
+	CALL PDEC
+	POP AF
+	LD IY,FRSTID
+	LD DE,BETSEC
+	LD B,SPS
+SIDIN:	LD (IY+1),A
+	ADD IY,DE
+	DJNZ SIDIN
+	RET
+
+;Write track in format buffer
+WRITRK:	LD A,(STARTS)		;Side flag
+	OR A
+	LD A,(PDRIV)
+	JR Z,SD1
+	SET 7,A			;Set hardware side select
+SD1:	OUT (DRVPRT),A		;Keep drives going
+	LD A,(STARTS)		;Side flag
+	RLCA
+	OR WRTRK		;Set soft side select
+	LD HL,FBUFF
+	LD C,STAPRT
+	DI
+	OUT (FDCCOM),A		;Send Write track command
+SENDTK:	LD A,(HL)
+	INC HL
+TSTDRQ:	IN B,(C)
+	JR Z,TSTDRQ
+	OUT (FDCDAT),A
+	JP M,SENDTK		;Wait for end or time out
+	EI
+	LD A,2
+	CALL DELAY		;2 ms delay
+	IN A,(FDCSTA)
+	AND 0FCH
+	RET Z
+	BIT 2,A			;Lost data ?
+	JR NZ,WRITRK		;Retry
+	JR FORERR
+
+;Drive not ready
+DNRERR:	LD HL,DNR
+	JR FERR
+;Error during track write
+FORERR:	LD HL,FERRM
+FERR:	PUSH HL
+	LD HL,ERMSG
+	CALL PMSG
+	POP HL
+	CALL PMSG
+	JP RESTRT
+
+	TITLE COPY ROUTINES
+	PAGE
+
+STARTT:	DEFB 0			;Start track
+ENDT:	DEFB 0			;End track
+STARTS:	DEFB 0			;Start sector
+ENDS:	DEFB 0			;End sector
+CPYSIZ:	DEFW 0			;Sectors per TPA
+COUNT:	DEFW 0			;Sector count
+
+;Test routine
+COPY:	LD HL,CMES
+	CALL CRPMSG
+;Calculate sectors per TPA
+	LD HL,(WBOOT+6)		;Find base of BDOS
+	LD DE,FBUFF
+	OR A
+	SBC HL,DE		;Calculate remaining TPA size
+	LD BC,0			;Sector count, 16 bit in case 128 byte sectors
+	LD DE,SEC		;Sector size
+SZLOOP:	INC BC			;Increment sector count
+	SBC HL,DE
+	JR NC,SZLOOP
+	DEC BC			;Decrement by one
+	LD (CPYSIZ),BC
+	LD HL,0
+	LD (STARTT),HL		;Initialise track
+	LD (STARTS),HL		;     and sector
+
+NXTBLK:	LD A,(SAMEDR)
+	OR A
+	JR Z,SKIPMS		;If same drive copy prompt for source
+	LD HL,INSS
+	CALL CRPMSG
+	LD A,(SRCDRV)
+	CALL DRVMSG
+	CALL REDYCR
+SKIPMS:	LD A,(SOURCE)
+	CALL CALCDR		;Initialise CDRIV and PDRIV
+	LD A,1
+	LD (RWFLAG),A		;Flag read
+	LD A,(ENDT)
+	CP LGT
+	RET Z			;All done
+	LD (STARTT),A		;Last end
+	LD (CTRAK),A
+	LD HL,(CPYSIZ)
+	LD (COUNT),HL		;Full buffer count
+	LD A,(ENDS)
+	LD (STARTS),A		;Last end
+	LD (CSECT),A
+	LD HL,FBUFF
+	LD (DMAADR),HL		;Initialise DMA
+	LD HL,TRKMES
+	CALL PMSG
+	LD HL,(CTRAK)
+	CALL PDEC
+	LD HL,SECMES		;Keep the user informed
+	CALL PMSG
+	LD HL,(CSECT)
+	CALL PDEC
+
+NXTS:	CALL @FRDWR		;Read the sector
+	JR Z,RWASOK		;Successful read
+	PUSH HL
+	LD HL,(DMAADR)
+	LD DE,SEC
+	ADD HL,DE		;Find out where we should be
+	POP DE
+	OR A
+	SBC HL,DE		;See if we are
+	EX DE,HL
+	JR Z,RWASOK		;Data CRC error, so preserve DMA
+	LD HL,(DMAADR)
+	LD D,H
+	LD E,L
+	INC DE			;Fill DMA with 0E5H if error
+	LD BC,SEC-1
+	LD (HL),0E5H
+	LDIR
+	INC HL
+RWASOK:	LD (DMAADR),HL
+	LD A,(CSECT)
+	INC A			;Bump sector
+	CP SPT
+	JR NZ,SOK
+	XOR A
+SOK:	LD (CSECT),A
+	JR NZ,NREAD		;Not sector overflow
+	LD A,(CTRAK)
+	INC A			;Bump track
+	LD (CTRAK),A
+	CP LGT
+	JR Z,MTBUF		;End of disk
+NREAD:	LD HL,(COUNT)
+	DEC HL			;Decrement buffer count
+	LD A,H
+	OR L
+	LD (COUNT),HL
+	JR NZ,NXTS
+;Buffer full or end of disk
+MTBUF:	LD A,(CTRAK)		;Show top for next read
+	LD (ENDT),A
+	LD A,(CSECT)
+	LD (ENDS),A
+	LD A,(SAMEDR)
+	OR A
+	JR Z,SKPMS
+	LD HL,INSD		;If same drive copy prompt for destination
+	CALL CRPMSG
+	LD HL,CMSSG
+	CALL PMSG
+	LD A,(DESDRV)
+	CALL DRVMSG
+	CALL REDYCR
+;Check if buffer is full of nothing
+SKPMS:	LD DE,FBUFF
+	LD HL,(DMAADR)
+NXTVAL:	LD A,(DE)
+	INC DE
+	CP 0E5H
+
+	IF CPYALL
+	JR VALBUF		;Copy entire disk
+	ELSE
+	JR NZ,VALBUF		;Valid buffer
+	ENDIF
+
+	PUSH HL
+	OR A
+	SBC HL,DE		;When DE = HL end of buffer
+	POP HL
+	RET Z			;Buffer full of nothing so stop
+	JR NXTVAL
+VALBUF:	LD HL,DESTIN
+	LD DE,WRBUF
+	CALL DODRVS		;Write to all destinations
+	JP NXTBLK
+
+;Write a buffer
+WRBUF:	CALL CALCDR		;Set DRIVEs
+	LD HL,(CPYSIZ)
+	LD (COUNT),HL
+	LD HL,FBUFF
+	LD (DMAADR),HL		;Set DMA
+	LD A,(STARTT)
+	LD (CTRAK),A		;Set TRACK
+	LD A,(STARTS)
+	LD (CSECT),A		;Set SECTOR
+	XOR A
+	LD (RWFLAG),A		;Set RWFLAG
+NXSEC:	CALL @FRDWR		;Write a sector
+	LD HL,(DMAADR)
+	LD DE,SEC
+	ADD HL,DE		;Bump DMA address
+	LD (DMAADR),HL
+	LD A,(CSECT)
+	INC A
+	CP SPT
+	JR NZ,SCOK
+	XOR A
+SCOK:	LD (CSECT),A
+	JR NZ,NWRITE
+	LD A,(CTRAK)
+	INC A
+	LD (CTRAK),A
+	CP LGT
+	JR NZ,NWRITE
+	RET			;End of disk
+NWRITE:	LD HL,(COUNT)
+	DEC HL
+	LD (COUNT),HL
+	LD A,H
+	OR L
+	JR NZ,NXSEC
+	RET			;End of buffer
+
+	TITLE VERIFY ROUTINES
+	PAGE
+
+;Test routine
+VERIFY:	CALL CALCDR		;Set CDRIV and PDRIV
+	LD HL,VMES
+	CALL CRPMSG
+	LD HL,0
+	LD (CSECT),HL		;Initialise sector
+	LD (CTRAK),HL		;Initialise track
+	LD HL,FBUFF		;DMA buffer
+	LD (DMAADR),HL
+	LD A,1			;Read
+	LD (RWFLAG),A
+NEXTT:	LD HL,TRKMES
+	CALL PMSG
+	LD HL,(CTRAK)
+	CALL PDEC
+NEXTS:	CALL @FRDWR
+	LD A,(CSECT)		;Bump sector
+	INC A
+	CP SPT
+	JR NZ,SECOK
+	XOR A
+SECOK:	LD (CSECT),A
+	JR NZ,NEXTS
+	LD A,(CTRAK)
+	INC A
+	CP LGT
+	RET Z
+	LD (CTRAK),A
+	JR NEXTT
+
+@FRDWR:	XOR A
+	LD (MULCNT),A
+	JP RWFLPY
+
+;Extra disk bits
+BANK:	RET
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   FLOPPY.MAC .........."
+	INCLUDE FLOPPY
+	IF VER NE VERS
+	.PRINTX "FLOPPY.MAC is incorrect version"
+	ENDIF
+
+	DEFS 100		;Stack space
+STACK:
+
+	DSEG			;Make sure buffer goes at the end
+
+FBUFF:
+	END	START

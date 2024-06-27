@@ -1,0 +1,77 @@
+
+--> FILE:  MFT     .COM		CRC = 10 CE
+
+--> FILE:  DIS     .COM		CRC = A2 DB
+
+--> FILE:  DIS     .DOC		CRC = 4A 73
+
+--> FILE:  STOICCPM.STC		CRC = 17 3F
+
+--> FILE:  MPRINT  .ASM		CRC = 16 61
+
+--> FILE:  MPRINT  .COM		CRC = 2A B5
+
+--> FILE:  UK1     .DOC		CRC = 39 E5
+
+--> FILE:  BANNER3 .COM		CRC = 6D 35
+
+--> FILE:  STOIC   .COM		CRC = F1 BC
+
+--> FILE:  STOICFLE.STC		CRC = 70 59
+
+--> FILE:  -CATALOG.01-		CRC = 10 2C
+
+--> FILE:  STOICEDT.STC		CRC = B5 FE
+
+--> FILE:  DEDUMP  .ASM		CRC = A0 30
+
+--> FILE:  CARMAINT.BAS		CRC = 1D B8
+
+--> FILE:  SPIES   .BAS		CRC = 03 44
+
+--> FILE:  MFT     .DOC		CRC = 7B 42
+
+--> FILE:  HITECH  .Z80		CRC = 91 73
+
+--> FILE:  SPOOLNSH.INS		CRC = F5 D7
+
+--> FILE:  DIRDUMP .ASM		CRC = 90 6A
+
+--> FILE:  LETTER  .BAS		CRC = BD 51
+
+--> FILE:  LETTER  .INT		CRC = A4 FE
+
+--> FILE:  U-G-FORM.LIB		CRC = FD 46
+
+--> FILE:  INST    .FMI		CRC = AB 05
+
+--> FILE:  REMOV"  .COM		CRC = 84 96
+
+--> FILE:  LETTER  .DAT		CRC = 0A 03
+
+--> FILE:  ERUN    .COM		CRC = 32 83
+
+--> FILE:  PRINT   .BAS		CRC = 2B 12
+
+--> FILE:  PRINT   .INT		CRC = 06 E2
+
+--> FILE:  LIB     .BAS		CRC = 54 00
+
+--> FILE:  HELP    .MAC		CRC = BF 22
+
+--> FILE:  SPIES   .INT		CRC = 59 2B
+
+--> FILE:  HEXDUMP .ASM		CRC = 38 8E
+
+--> FILE:  DUMBCOPY.COM		CRC = 29 D6
+
+--> FILE:  DUMBCOPY.ASM		CRC = 84 DC
+
+--> FILE:  MFT     .ASM		CRC = 7B 3C
+
+--> FILE:  BANNER  .ASM		CRC = A2 BF
+
+--> FILE:  CRCK    .COM		CRC = 2D 47
+
+--> FILE:  BANNER  .COM		CRC = 66 D0
+

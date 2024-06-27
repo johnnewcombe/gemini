@@ -1,0 +1,37 @@
+Insufficient memory for program operation
+Operation aborted - Insufficient memory
+This file essential for program operation
+Unable to open this file
+Overlay loading error
+Disc read error
+Disc write error
+Open failure on source device
+Open failure on dest device
+Read failure on source device
+Write failure on dest device
+Seek error
+Invalid entry
+Device is output only
+Device is input only
+Incorrect format
+Format not found
+Transfer abort error
+I/O error from this device driver
+Transfer buffer error
+No files on disk
+Incorrect specification of drivers
+Driver mismatch at this stage
+Invalid switch list
+Cannot load overlay
+Buffer allocation error
+Read error on dest device
+File exists - operation terminated
+Destination disk full
+Dest disk -  block allocation error
+Input drive same as output
+Transfer packet error
+Uncorrectable transfer error
+File too complex
+Destination device not a disc
+Cannot identify 1st floppy disc
+

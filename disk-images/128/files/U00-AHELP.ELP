@@ -1,0 +1,23 @@
+
+
+                       AASSIGN FORMAT TO DRIVEN
+
+               If  the "A" command is entered in answer to  the 
+          system prompt "*", the computer will ask the operator 
+          to select which DRIVE number is to be assigned. After 
+          the  operator has selected the required DRIVE  number 
+          the  computer  will  display the  list  of  available 
+          FLOPPY numbers. The computer will ask the operator to 
+          select  which FLOPPY number is to be assigned.  After 
+          the operator has selected the required FLOPPY  number 
+          the  computer  will  display the  list  of  available 
+          FORMATS.  He  simply types the required FORMAT number 
+          and presses RETURN. 
+
+                              SYNTAX :-
+
+                              A{d:fl,fm}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+
+

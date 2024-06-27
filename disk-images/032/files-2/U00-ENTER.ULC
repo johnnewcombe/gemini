@@ -1,0 +1,536 @@
+Procedure text_edit_and_place;
+begin
+ repeat
+   if curmode<>'V' then
+   begin
+     getinput(125,1,10,tl,'b',fin,2);
+     clrframe(20,23);
+   end;
+   gotoxy(1,8);
+   write('Use Cursor Arrows to re-position text. Press <RETURN> to place it.');
+   key_use(EntTx2);
+   sccol(red);
+   sstle(4);
+   breakline(tl);
+ until error=0;
+   tcx:=cx; tcy:=cy;
+   repeat
+      cx1:=0; cy1:=0;
+      gotoxy(68,8);
+      read(kbd,ans);
+      CASE ans of
+        #28 : begin
+               if cx>left+2 then cx1:=-1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #22 : begin
+              if cx>left+9 then cx1:=-jumpx;
+               remove_cursor;
+              put_cursor;
+              end;
+        #29 : begin
+               if cx<right-2 then cx1:=1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #23 : begin
+               if cx<right-9 then cx1:=jumpx;
+               remove_cursor;
+               put_cursor;
+              end;
+        #30 : begin
+               if cy>top+2 then cy1:=-1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #11 : begin
+               if cy>top+6 then cy1:=-jumpy;
+               remove_cursor;
+               put_cursor;
+              end;
+        #31 : begin
+               if cy<bottom-2 then cy1:=1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #14 : begin
+               if cy<bottom-6 then cy1:=jumpy;
+               remove_cursor;
+               put_cursor;
+              end;
+        #13 : begin        {Re-position}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               cx:=fcx; cy:=fcy;
+               tcx:=cx; tcy:=cy;
+               sccol(red);
+               sstle(4);
+               breakline(tl);
+              end;
+        ^E  : begin    {Edit Line}
+              if curmode<>'V' then
+               begin
+                fcx:=cx; fcy:=cy;
+                cx:=tcx; cy:=tcy;
+                nl:=tl;
+                getinput(125,1,10,nl,'b',fin,1);
+                clrframe(20,23);
+                sccol(cyan);
+                sstle(6);
+                breakline(tl);
+                sccol(red);
+                sstle(4);
+                breakline(nl);
+                tl:=nl;
+               end;
+              end;
+        ^X  : begin       {Accept position}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               if curmode='V' then
+                sccol(cyan)
+               else
+                sccol(green);
+               cx:=fcx; cy:=fcy;
+               sstle(0);
+               breakline(tl);
+               sccol(green);
+               with lab do
+               begin
+                stat:=TRUE;
+                area:=areanum;
+                across:=cx; down:=cy;
+                scale:=scl;
+                font:=fontname;
+                pen:=curpen;
+                mode:=curmode;
+                text:=tl;
+               end;
+               remove_cursor;
+               cx:=left+5;
+              end;
+        ^Q  : begin     {Exit, abort}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               sccol(green);
+               cx:=fcx; cy:=fcy;
+               sstle(0);
+              end;
+        ^F  : begin     {Change Font}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               fontchange;
+               cx:=fcx; cy:=fcy;
+               tcx:=cx; tcy:=cy;
+               sccol(red);
+               sstle(4);
+               breakline(tl);
+              end;
+        ^S  : begin        {Change Scale}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               remove_cursor;
+               loadfont;
+               cy:=cy-scalbase;
+               scalechange;
+               cy:=cy+scalbase;
+               cx:=fcx; cy:=fcy;
+               tcx:=cx; tcy:=cy;
+               put_cursor;
+               sccol(red);
+               sstle(4);
+               breakline(tl);
+              end;
+        ^P  : begin      {Change Pen}
+               fcx:=cx; fcy:=cy;
+               cx:=tcx; cy:=tcy;
+               remove_cursor;
+               sccol(cyan);
+               sstle(6);
+               breakline(tl);
+               penchange;
+               cx:=fcx; cy:=fcy;
+               tcx:=cx; tcy:=cy;
+               put_cursor;
+               sccol(red);
+               sstle(4);
+               breakline(tl);
+              end;
+      end; {of case}
+   until (ans=^X) or (ans=^Q);
+   gotoxy(1,23);clreol;
+end;  {of edit_and_place}
+
+Procedure getnumber;
+var
+    numchar : integer;
+begin
+    numchar:=round((right-cx+round(scl))/(round(16*scl)+penwidth));
+    repeat
+     repeat
+      gotoxy(1,8);
+      write('Enter number of characters, 1 to ',numchar:3,' or press EXIT. ');
+      clreol;
+      read(kbd,ans);
+     until ans in [^Q,'0'..'9'];
+      if ans=^Q then exit;
+      clreol;Vsize:=ans;
+      getinput(2,53,8,Vsize,'n',fin,2);
+      val(Vsize,Vn,j);
+    until (j=0) and (Vn<=numchar);
+end;
+
+
+PROCEDURE ENTER_TEXT;
+{$V-}
+label leave;
+var
+   numchar,i, j  :  integer;
+   Item       :  integer;
+
+begin   {enter_text}
+  if (labname='NONE') or (fontname='NONE') or (areanum=0) then
+  begin
+    clrframe(10,25);gotoxy(1,10);
+    writeln('The following must be selected before Text entry: ');
+    if labname='NONE' then write('LABEL  ');
+    if fontname='NONE' then write('FONT  ');
+    if areanum=0 then write('AREA  ');
+    delay(5000);
+  end
+  else
+  repeat
+   clrframe(13,25);
+   fillchar(lab,sizeof(lab),chr(0));
+   if curmode='V' then
+   begin
+    if opmode<>EntVar then
+      Key_use(EntVar);
+    getnumber;
+    if ans=^Q then goto leave;
+    tl:=ConstStr('@',Vn);
+    text_edit_and_place;
+    if ans=^X then
+    begin
+      seek(tempf,filesize(tempf));
+      write(tempf,lab);
+      cy1:=round(20*scl); cx1:=0;
+      remove_cursor;
+      put_cursor;
+      tl:='';
+    end;
+   end; {curmode='V'}
+
+   if curmode='T' then
+   begin
+    repeat
+     Key_use(EntTx1);
+     gotoxy(1,8);clreol;
+     case txtmode of
+      'F' : begin write('Free Text.');clreol;end;
+      'S' : begin write('Standard Phrase.');clreol; end;
+     end;
+     read(kbd,ans);
+     if ans =^L then
+      case txtmode of
+       'F' : txtmode:='S';
+       'S' : txtmode:='F';
+      end;
+      if ans in[^A,^F,^S,^P] then
+      begin
+        gotoxy(1,8);
+        lowvideo;write('This option can be changed later.');normvideo;
+        delay(3000);
+      end;
+    until ans in [^Q,' '..'~'];
+    if ans = ^Q then goto leave;
+      CASE ans of
+        #28 : begin
+               if cx>left+2 then cx1:=-1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #22 : begin
+              if cx>left+9 then cx1:=-jumpx;
+               remove_cursor;
+              put_cursor;
+              end;
+        #29 : begin
+               if cx<right-2 then cx1:=1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #23 : begin
+               if cx<right-9 then cx1:=jumpx;
+               remove_cursor;
+               put_cursor;
+              end;
+        #30 : begin
+               if cy>top+2 then cy1:=-1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #11 : begin
+               if cy>top+6 then cy1:=-jumpy;
+               remove_cursor;
+               put_cursor;
+              end;
+        #31 : begin
+               if cy<bottom-2 then cy1:=1;
+               remove_cursor;
+               put_cursor;
+              end;
+        #14 : begin
+               if cy<bottom-6 then cy1:=jumpy;
+               remove_cursor;
+               put_cursor;
+              end;
+       ELSE   begin
+   if txtmode='S' then
+   begin
+    ans:=UpcaseStr(ans);
+    gotoxy(1,8);write('Enter Key of Phrase to use: '); clreol;
+    Rec.Key:=ans;
+    getinput(10,31,8,Rec.Key,'c',fin,2);
+    Item:=FindKey(Rec.Key);
+    If Item = -1 then
+    begin
+      gotoxy(35,8);write('Key Does Not Exist.');
+      delay(3000);
+      goto leave;
+    end
+    else
+    begin
+      seek(Dfile,KList[Item].Num);
+      Read(Dfile,Rec);
+      tl:=Rec.Phrase;
+      gotoxy(1,8);
+      write('Edit standard phrase if required, then press <RETURN>.');clreol;
+    end;
+   end
+   else
+   begin
+      gotoxy(1,8);
+      write('Enter text then press <RETURN> to place text.');clreol;
+      tl:=ans;
+   end;
+
+   text_edit_and_place;
+   if ans=^X then
+   begin
+     if txtmode='S' then
+     begin
+       lab.key:=rec.key;
+       if lab.text <> rec.phrase then
+        lab.modif:=1
+       else
+        lab.modif:=0;
+     end
+     else
+     begin
+       lab.key:='';
+       lab.modif:=0;
+     end;
+     seek(tempf,filesize(tempf));
+     write(tempf,lab);
+     cy1:=round(20*scl)*breaknum+1; cx1:=0;
+     remove_cursor;
+     put_cursor;
+     tl:='';
+   end;
+ end; {of else in case}
+end; {of case}
+   end; { of curmode='T'}
+leave:
+  until ans=^Q;
+  if opmode<>Move then
+  begin
+    key_use(Move);
+    for ifnm:=CurrentAr to CurrentPn do
+     Key_info(5,ifnm);
+  end;
+  clrframe(10,25);
+  ans:=' ';
+end; {of enter_text}
+
+Procedure update_current;
+begin
+  if lab.scale <> scl then
+      begin
+        scl:=lab.scale;
+        fontname:=lab.font;
+        assign(cf,labeldrive+fontname+'.CHR');
+        {$I-} reset(cf); {$I+}
+        if ioresult<>0 then
+        begin
+         gotoxy(1,8);write('Font ',fontname,' not on current drive');
+         delay(3000);
+         exit
+        end;
+        loadfont;
+        scalefont;
+        close(cf);
+      end;
+      if lab.pen <> curpen then
+      begin
+        curpen:=lab.pen;
+      end;
+        case curpen of
+         1 : penwidth:=1;
+         2 : penwidth:=3;
+         3 : penwidth:=2;
+         4 : penwidth:=3;
+        end; {of case}
+      if lab.font <> fontname then
+      begin
+        fontname:=lab.font;
+        assign(cf,labeldrive+fontname+'.CHR');
+        {$I-} reset(cf);{$I+}
+        x:=ioresult;
+        if x<>0 then
+        begin
+          gotoxy(1,8);
+          write('Error No ',x,' with ',labeldrive,fontname,'.CHR');
+          delay(3000);
+          exit;
+        end;
+        loadfont;
+        scalefont;
+      end;
+      areanum:=lab.area;
+      set_area_boundries;
+      cx:=lab.across; cy:=lab.down;
+      tl:=lab.text;
+      set_jump;
+end; {of update_current}
+
+
+Procedure put_on_screen;
+begin
+    set_area_boundries;
+    with lab do
+    if (stat=TRUE) and (param.contents=Textarea) then
+    begin
+      update_current;
+      if mode ='V' then
+      begin
+        VarsExist:=TRUE;
+        sccol(cyan)
+      end
+      else
+      sccol(green);
+      breakline(tl);
+{      for ifnm:=CurrentAr to CurrentPn do
+        key_info(5,ifnm); }
+    end; {of text line}
+    if (lab.stat=TRUE) and (param.contents=Symbolarea) then
+    with lab do
+    begin
+      sccol(green);
+      areanum:=area;
+      symname:=text;
+      set_area_boundries;
+ {     Key_info(5,CurrentAr);}
+      xoffs:=left; yoffs:=top;
+      put_symbol(text);
+    end; {of symbol}
+end; {of put_on_screen}
+
+Procedure Display_lab_conts;
+begin
+  remove_cursor;
+  reset(lf);
+  if oldname=labname then
+   reset(tempf);
+  while not eof(lf) do
+  begin
+    read(lf,lab);
+    write(tempf,lab);
+    areanum:=lab.area;
+    put_on_screen;
+  end; {of lab file}
+  cx:=0; cy:=0; areanum:=0;
+  for ifnm:=CurrentAr to CurrentPn do
+   Key_info(5,ifnm);
+  case lab.pen of
+         1 : penwidth:=1;
+         2 : penwidth:=3;
+         3 : penwidth:=2;
+         4 : penwidth:=3;
+  end; {of case}
+  set_jump;
+end;  {of display_lab_conts}
+
+PROCEDURE LOAD_SYMBOL;
+var
+ xx : file;
+begin
+  if (labname='NONE') or (fontname='NONE') or (areanum=0) then
+  begin
+    clrframe(10,25);gotoxy(1,10);
+    writeln('The following must be selected before Text entry: ');
+    if labname='NONE' then write('LABEL  ');
+    if fontname='NONE' then write('FONT  ');
+    if areanum=0 then write('AREA  ');
+    delay(5000);
+  end
+  else
+  begin
+   curmode:='S';
+   display_files('SYM',11,labeldrive[1]);
+   repeat
+     gotoxy(1,8); symname:='';
+     write('Select Symbol to load or press <ESC> to exit ');
+     getinput(8,46,8,symname,'c',fin,1);
+     if fin=FALSE then
+      temp_symbol(symname);
+   until (ir=0) or (fin=TRUE);
+   clrframe(10,25);
+   if fin=TRUE then exit;
+   repeat
+     gotoxy(1,8);write('Exit or Accept ');clreol;
+     read(kbd,ans);
+   until ans in [^Q,^X];
+   reset(sf);
+   sstle(0);
+   case ans of
+    ^Q : delete_symbol(symname);
+    ^X : put_symbol(symname);
+   end; {of case}
+   if ans=^X then
+   with lab do
+   begin
+     stat:=TRUE;
+     area:=areanum;
+     across:=0; down:=0;
+     scale:=0.0;
+     font:='';
+     pen:=0;
+     mode:=curmode;
+     key:='';
+     modif:=0;
+     text:=symname;
+     seek(tempf,filesize(tempf));
+     write(tempf,lab);
+   end;
+   remove_cursor;
+   tl:='';
+   ans:=' ';
+  end;
+end;

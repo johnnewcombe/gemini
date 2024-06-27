@@ -1,0 +1,71 @@
+Procedure AmendPhrase;
+var
+  oldphrase : MaxPhraseSize;
+  k,j : integer;
+Begin
+  write(lst,chr(12));
+  writeln(lst,'                AMENDEMENTS TO DATABASE ON ',date);
+  writeln(lst,Conststr('*',79));
+  gotoxy(1,1);lowvideo;write(' AMEND ');normvideo;
+  clrframe(3,25);
+  gotoxy(1,3);writeln(Conststr('*',79));
+  gotoxy(1,5);writeln(Conststr('*',79));
+  FillChar(Rec.Key,SizeOf(Rec.Key),0);
+  gotoxy(1,4);write('Please wait...');
+  FillChar(KList,SizeOf(KList),0);
+  MakeIndex;
+  seek(udfile,filesize(udfile));
+  Repeat
+    clrframe(6,25);
+    gotoxy(1,4);write('Enter Key of Phrase to Amend: '); clreol;
+    rec.key:='';
+    getinput(10,31,4, Rec.Key,'c',fin,1);
+     k:=pos(' ',rec.key)-1;
+    if k<1 then k:=length(rec.key);
+    rec.key:=copy(rec.key,1,k);
+    Item:=FindKey(Rec.Key);
+    If Item <= 0 then
+    begin
+      gotoxy(35,4);write('Key Does Not Exist.');
+      for i:=1 to 3 do
+       for j:=1 to maxint do;
+    end
+    else
+    begin
+      seek(Dfile,KList[Item].Num);
+      Read(Dfile,Rec);
+      gotoxy(1,6);
+      write(Rec.Phrase);
+      repeat
+       gotoxy(1,4);
+       write('Is this the one to Amend? Y/N  ');clreol;
+       read(kbd,ans);
+      until ans in ['Y','y','N','n'];
+      if ans in ['Y','y'] then
+      begin
+       oldphrase:=rec.phrase;
+       gotoxy(1,4);
+       write('Amend line then press <RETURN>. ');
+       getinput(125,1,6,Rec.Phrase,'b',fin,1);
+       if oldphrase<>rec.phrase then
+       begin
+         writeln(lst,'Amended: ',rec.key:10);
+         writeln(lst,'From: ',oldphrase);
+         writeln(lst,'  To: ',rec.phrase);
+         writeln(lst,Conststr('-',79));
+         write(udfile,rec.key);
+         file_to_check:=TRUE;
+       end;
+       seek(Dfile,KList[Item].Num);
+       write(Dfile,Rec);
+      end;
+    end;
+    repeat
+      gotoxy(1,4);write('Do you wish to amend another? Y/N '); clreol;
+      read(kbd,ans);
+    until ans in ['Y','y','N','n'];
+  Until ans in ['N','n'];
+  CloseFile;
+  writeln(lst,conststr('*',79));
+End;  {of AmendPhrase}
+

@@ -1,0 +1,411 @@
+/* Driver for Gemini GM860 EPROM programmer */
+/* (c) Gemini Microcomputers Ltd 1984		*/
+/*		14-08-84			    */
+
+/* PIO usuage:
+ *	Port B - Data I/O
+ *	Port A - Bits 0,1 only significant
+ *		Bit 0 -> 0 = Write to control latch
+ *			 1 = Write to other latches
+ *		Bit 1 ->   Clock pulse to latches
+ *
+ *	Control latch data:
+ *		Bit	   Function
+ *		 0	) A
+ *		 1	) B Address a latch
+ *		 2	) C
+ *		 3	OE of data latch to EPROM
+ *		 4	Vpp ON
+ *		 5	Vcc ON
+ *		 6	/R/W
+ *		 7	CE/Prog pulse
+ *
+ *
+ *	LS138 outputs
+ *		0	Clear address & Control latches
+ *		1	Select Control latch
+ *		2	Select address latch A0-A7
+ *		3	select address latch A7-A14
+ *		4	Select Data input latch
+ *		5	Enable Output buffer (EPROM Read)
+ *
+ *	Subsidiary control latch
+ *		Bit	=	     1      0
+ *		 0	VCC pin	    28     26
+ *		 1	Prog pulse  20     27
+ *		 2	Pin 23	    Vpp	   A11
+ *		 3	Pin 22	    Vpp    OE
+ *		 4	Pin 1	    Vpp    5v
+ *		 5	Vcc	    5v     6v
+ *		 6      Vpp	    21v    25v
+ *		 7 	Vpp	    12.5v  25v
+ */
+#asm
+	.z80
+	title Drivers for EPROM programmer
+;
+;	Assembly language drivers for the EPROM programmer.
+;	These are a series of functions called by the main
+;	C/80 program.
+
+	external PIO	; Base address of the PIO
+	external CW	; Control word for control latch
+	external RDCW	; Image used for reading
+	external WRCW	; Image used when writing
+	external START	; Memory start address of buffer
+	external OFFSET	; Offset into EPROM
+	external LENGTH	; No. of bytes to read/write/verify
+	external ERRVAL	; Erroneous byte
+	external ERRADR	; Erroneous EPROM address
+
+	external	const	; Keyboard check for abort
+
+Config	equ	1	; Configuration latch
+Addrlo	equ	2	; Low address byte
+Addrhi	equ	3	; Hi address byte
+Data	equ	4	; Write data latch
+Oedata	equ	5	; Output enable for data
+
+.2716	equ	26H	; Control word setting for 2716
+
+Vpp	equ	40H	; Bit to turn on Vpp
+Vcc	equ	20H	; Bit to turn on Vcc
+
+; Subroutines to load <A> into either the main control latch
+; or a data latch.
+; Assumes C -> B-side port & B-side is set for output
+; Destroys  A
+;
+; CLK$C - loads data into Control latch
+; CLK$D - loads data into Data latches
+
+clk$c:	push	bc		; Save
+	ld	b,2		; Main control latch
+	jr	clk
+clk$d:	push	bc		; Save
+	ld	b,3		; Data latches
+clk:	out	(c),a		; Put data/address out on B-side
+	dec	c		; Point at A-side
+	out	(c),b		; Put address out
+	res	1,b
+	out	(c),b		; Clock pulse ON
+	set	1,b
+	out	(c),b		; Turn off clock pulse
+	pop	bc		; reset BC
+	ret
+
+; Make B-side i/p or o/p.
+; Assumes C -> B-side data port
+; Destroys A & B
+
+Bin:	ld	b,0FFh
+	jr	bio
+Bout:	ld	b,0
+bio:	inc	c		; On to the control port
+	inc	c
+	ld	a,0ffh
+	out	(c),a		; Select control mode
+	out	(c),b		; Set I or O
+	dec	c
+	dec	c
+	ret
+
+;
+; INITPIO() - Initialise the PIO for the programmer.
+;	      and set up the Control latch.
+;
+; PWRUP()   - Identical but Turns on programming voltage & delays
+;
+; DESELECT()- Powers down and Inerts the socket.
+
+initpio::
+	xor	a
+	jr	ip
+pwrup::	ld	a,(rdcw)	; Vcc ON
+ip:	push	af		; Save A
+	ld	(Cimage),a
+	ld	a,(pio)		; Load base address
+	ld	c,a		; Get to C
+	inc	c		; Point to control ports
+	inc	c
+	ld	b,0ffh
+	out	(c),b		; A-side = Control mode
+	ld	a,0FCh
+ 	out	(c),a		; A0, A1, outputs
+	inc	c
+	out	(c),b		; B-side = Control mode
+	xor	a
+	out	(c),a		; All out
+	dec	c
+	dec	c		; Point at B-side
+	xor	a		; Clear all latches
+	call	clk$c
+	call	clk$d
+	ld	a,Config	; Select control latch
+	call	clk$c
+	ld	a,(cw)		; Set up for EPROM
+	call	clk$d
+	pop	af		; Now turn power on?
+	or	a
+	ret	z		; Return if not
+	call	clk$c
+	xor	a		; 256ms delay
+	call	delay
+	ret			; Done
+
+; DESELCT - Make socket Inert
+
+deselect::
+	ld	a,(pio)		; Get base address
+	ld	c,a
+	inc	c		; Point at B-side
+	xor	a
+	ld	(Cimage),a
+; Set an address of 0 in the EPROM programmer latches.
+	ld	a,Addrhi+Vcc	; Address AH
+	call	clk$c		; Put in the latch
+	xor	a
+	call	clk$d		; Put AH in the latch
+	ld	a,Addrlo+Vcc
+	call	clk$c		; Address AL
+	xor	a
+	call	clk$d		; Put AL in the latch
+	xor	a		; All Off
+	call	clk$c
+	ret
+
+; REPROM() - Read in EPROM to buffer
+
+reprom::
+	ld	de,(start)	; Setup registers
+	ld	bc,(length)
+	ld	hl,(offset)
+rdloop:	push	bc		; Save count
+	call	read
+	pop	bc
+	ld	(de),a
+	inc	de
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,rdloop
+	ld	hl,0
+	ret
+
+; WEPROM() - Write buffer to EPROM
+
+weprom::
+	ld	a,(pio)		; Set up C
+	inc	a
+	ld	c,a		; ..to point at B-side
+	ld	a,(wrcw)	; Load control word
+	ld	(Cimage),a	; Set it for the duration
+	call	clk$c		; Turn all the power on
+	push	bc		; Save C
+	xor	a
+	call	delay		; Allow to power up
+	ld	de,(start)	; Setup registers
+	ld	bc,(length)
+	ld	hl,(offset)
+wrloop:	ld	a,(de)		; Get byte
+	cp	0FFh		; Is it 0FFh?
+	push	bc
+	call	nz,write	; Write if necessary
+	pop	bc
+	inc	de
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,wrloop
+	pop	bc		; Restore C
+	ld	a,(rdcw)	; Turn off "Write" bits & Vpp
+	ld	(Cimage),a
+	call	clk$c
+	xor	a		; Short delay
+	call	delay
+	ld	hl,0
+	ret
+
+; VEPROM() - Verify EPROM
+
+veprom::
+	ld	de,(start)	; Setup registers
+	ld	bc,(length)
+	ld	hl,(offset)
+vloop:	push	bc
+	call	read
+	pop	bc
+	ex	de,hl
+	cp	(hl)
+	ex	de,hl
+	jr	nz,reterr
+	inc	de
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,vloop
+	ld	hl,0		; No error
+	ret
+
+; EEPROM() - Erased EPROM check
+
+eeprom::
+	ld	de,(start)	; Setup registers
+	ld	bc,(length)
+	ld	hl,(offset)
+eloop:	push	bc
+	call	read
+	pop	bc
+	cp	0ffh		; 0FFH?
+	jr	nz,reterr
+	inc	de
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,eloop
+	ld	hl,0		; No error
+	ret
+
+eerr:				; Verify error
+
+;	Return an Error to the calling program
+
+reterr::
+	ld	(errval),a	; Set erroneous byte
+	ld	(erradr),hl	; Set erroneous address
+	ld	hl,1		; Flag error
+	ret
+
+; Read & Write assume EPROM address is in HL
+; Write assumes DE -> byte to be writen
+; Read in a byte from the EPROM
+; Write a byte to the EPROM
+
+read:
+write:
+
+; Set an address in the EPROM programmer latches.
+
+	ld	a,(pio)
+	ld	c,a		; PIO address to C
+	inc	c		; Point to B-side
+	ld	a,(Cimage)
+	or	Addrhi		; Address AH
+	call	clk$c		; Put in the latch
+	ld	a,h
+	call	clk$d		; Put AH in the latch
+	ld	a,(Cimage)
+	or	Addrlo
+	call	clk$c		; Address AL
+	ld	a,l
+	call	clk$d		; Put AL in the latch
+	ld	a,(Cimage)	; Check for Read/Write
+	bit	6,a
+	jr	z,rd		; Skip if Read
+
+; Write section
+
+	push	hl		; Save HL
+	ex	de,hl		; DE -> HL
+	ld	d,1		; Initialise IPA count
+	or	Data		; Address Data latch
+	call	clk$c		; Address it
+	ld	a,(hl)		; Recover data byte
+	call	clk$d		; Write it to the latch
+	ld	a,(Cimage)	; Get image
+	or	8h		; Enable data
+	ld	b,a		; Save
+wr0:	ld	a,b		; Enable data
+	call	clk$c
+	ld	a,b
+	xor	80H		; Start programming pulse
+	call	clk$c
+	ld	a,(cw)		; Intelligent programming algorithm?
+	bit	5,a		; (See if Vcc=6v)
+	jr	z,ipa		; Skip if IPA
+	call	del50		; ..else 50ms pulse
+	ld	a,b		; Turn off the program pulse
+	call	clk$c
+	ex	de,hl		; Reset
+	pop	hl
+	ret
+
+; Intelligent Programming Algorithm for fast programming
+; of 2764/27128/27256
+
+ipa:	ld	a,1		; 1ms delay
+	call	delay
+	ld	a,b		; Turn off the program pulse
+	call	clk$c
+	call	rd		; Read the byte back
+	cp	(hl)		; Does it match?
+	jr	z,ipa10		; Yes, finish off
+	inc	d		; Increase count
+	ld	a,d		; Check the range
+	cp	15
+	jr	c,wr0		; Repeat if <15
+
+ipa10:	ld	a,b		; Enable data
+	call	clk$c
+	ld	a,b
+	xor	80H		; Turn on programming pulse
+	call	clk$c
+	ld	a,d		; Get count & calculate delay
+	add	a,a
+	add	a,a		; *4
+	call	delay
+	ld	a,b		; Turn off programming pulse
+	call	clk$c
+	ex	de,hl		; Reset all
+	pop	hl
+	ret
+
+; Read, so 1) write "Read
+;	   2) Turn B-side round
+;	   3) Read
+;	   4) Turn B-side back
+
+rd:	push	bc
+	ld	a,(Cimage)
+	and	0BFh		; Ensure 'Read' bit 0
+	or	Oedata		; Set for "Read"
+	call	clk$c
+	call	Bin		; Set B-side "in"
+	ld	b,3		; Data latches
+	dec	c		; Point at A-side
+	out	(c),b		; Put address out
+	res	1,b
+	out	(c),b		; Clock pulse ON
+	inc	c		; Back to B-side
+	in	a,(c)		; Read the byte
+	dec	c		; Back to A-side
+	set	1,b
+	out	(c),b		; Turn off clock pulse
+	inc	c		; reset C
+	push	af		; Save value
+	call	Bout		; Turn B around again
+	pop	af		; Reset A
+	pop	bc		; Reset BC
+	ret
+
+; Delay routines
+
+del50:	ld	a,50		; 50ms delay
+delay:	push	bc
+del:	ld	b,75
+del0:	ex	(sp),hl
+	ex	(sp),hl
+	djnz	del0
+	dec	a
+	jr	nz,del
+	pop	bc
+	ret
+
+Cimage:	defb	0		; Image of main control latch
+
+
+#endasm

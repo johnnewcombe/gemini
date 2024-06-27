@@ -1,0 +1,614 @@
+A few notes on BIOS 3.6		Howard Birkett 8/3/87
+=======================
+
+SIO
+---
+2 access transactions to the B side MUST be surrounded by DI ... EI.
+Status affects Vector bit in WR1 (B side) must be left SET.
+The interrupt vector, in WR2, must not be altered.
+None of the A side should be tampered with !!!!
+The SIO is initialised by the initialisation code in the bios
+The base address of the board should be 40H
+
+Track skew
+----------
+Track skew is only available in some versions of BIOSMFB and BIOSS
+
+If the 'plconv' entry in the drive table is zero then skew
+is assumed to take place in the 'sectrn' bios entry.  If the 'plconv'
+entry is non-zero then the skew is assumed to take place at floppy
+read/write time in bios.  A sector translate table MUST be present at
+the time skew takes place.  ie. if 'plconv' is zero and track skew
+is to take place, then 'sectrn' must be called with a non-zero HL -
+likewise if 'plconv' is non-zero and track skew is to take place,
+then the 'biosst' entry in the drive table must be non-zero.
+Furthermore the translation table passed must translate a sector in
+the range 0 to spt-1 to the range 1 to spt, where spt is the value of the
+sectors/track (5th byte) entry in the drive table.  This will only work
+if bit 0 of the flag byte entry of the drive table (4th byte) is zero,
+otherwise it seem that the sector number will be further incremented
+at label 'sidset:' in the 'readwr' routine.  These limitations may
+be modified later, if more information on the requirements and
+MFB utilities are available.
+
+Dont forget the obvious - for the 'sectrn' entry to work 'settrk' must
+be called first !!!!!!! BDOS operates this way. Lucky.
+
+
+XBIOS functions
+---------------
+Xbios functions are only available in BIOSMFB or BIOSS
+
+All XBIOS functions are accesed by calling the BIOS 'setdma' entry
+with the value FFFFh in register BC and the required function number
+in register E.  Parameter passing and returning is defined for each
+function below.  As with other BIOS entries, no assumptions should be 
+made about the returned state of any register, except as specified in the
+function definition. (Except for IX and IY which are always preserved)
+
+Illegal function number are simply ignored.
+
+In all versions of bios, assuming that the XBIOS switch is enabled,
+a sensible return flag is set if the requested function is meaningless
+because of the particular build.  eg. there is not much point in requesting 
+the address of the SIO interrupt vector table, if the SIO switch is not
+enabled, so a return of 0000h flags this condition.  Other cases are noted
+in the descriptions below.
+
+
+XBIOS Function  0 - Return address of PDRIVE
+--------------------------------------------
+The address of bios label 'pdrive:' is returned in HL
+
+
+XBIOS Function  1 - Return address of BUFFER
+--------------------------------------------
+The address of bios label 'buffer:' is returned in HL
+
+
+XBIOS Function  2 - Return address of SIOIVT
+--------------------------------------------
+The address of bios label 'sioivt:' is returned in HL.  This is 
+the address of an 8 word interrupt vector table as the SIO is initialised
+with the 'status affects vector' bit set.  See SIO manual for 
+details of the function of the first 4 vectors in this table which
+belong to the SIO 'B' side.  NOTE that in the present version of bios
+there is no space for the table to be extrended forwards or backwards
+to allow the entry of vectors for other devices.
+
+If the SIO switch is not enabled during the bios build then this function 
+will return 0000h in HL.
+
+
+XBIOS Function  3 - Call SREAD
+------------------------------
+Performs an unblocked floppy read, by simply passing the call onto the
+bios 'sread' function.  Note that normal procedure for a bios disk
+i/o call must be followed, ie set dma, select disk, set track, set 
+sector.  The A register will contain 00h if no error is encountered,
+or 01 on error.  The normal retry mechanism will have been performed,
+including a call to the error handling routine in the case of an error.
+
+IMPORTANT NOTES.  Bios stack switching will not take place.
+Pending bios buffer flushes will not be affected, but it would be possible
+to have data flushed to the wrong diskette, if diskettes were to be
+switched.  To be on the safe side it is reccommended that bios and xbios 
+disk i/o is not mixed, and that to ensure that a disk write is not left 
+outstanding, a directory read be performed prior to switching to xbios i/o.
+
+
+XBIOS Function  4 - Call SWRITE
+-------------------------------
+Same as above, but write !!
+
+
+XBIOS Function  5 - Modify Floppy retry count
+---------------------------------------------
+On entry register L should contain the number of attempts that should
+be made to read/write a floppy disk.  Note that the minimum count is 1
+(0 is treated as 256) eg. if the parameter passed in L is 2, then if the
+first read/ write fails, then one retry attempt will be made.
+
+
+XBIOS Function  6 - Get/Set Floppy Error Handling routine
+---------------------------------------------------------
+The address of a routine that should be called in the event of floppy disk
+i/o failure (after retrys) is passed in HL.  The address of the previous
+error handling function will be retuurned in HL.
+
+When i/o failure occurs, YOUR routine will be called with the following
+register contents 	A	Floppy error code
+			B	Drive ( A: = 0 )
+			C	operation code 	0 = read
+						1 = write
+						2 = read address
+			HL	transfer address (bios)
+			D	track
+			E	sector
+
+The called routine MUST preserve C, DE  and HL (IX and IY) and return
+A = 0 for the operarion to be retried or A = 1 for the operation to be
+aborted.
+
+DO NOT FORGET to reset the error handling routine (to the address 
+that was returned in HL) before exiting the program that originally 
+set the new error trap.
+
+When your routine is called the bios internal stack will be operative
+
+If original call was from bdos no other call from bdos can be made
+of any description - The bdos stack will be lost
+
+Whilst in error routine bios disk entries may not be envoked dirrectly
+or via bdos
+
+In all cases regardless of where the call came from Bios character I/O
+is available
+
+XBIOS Function  7 - Direct Winchester i/o
+-----------------------------------------
+On entry ( and exit ) HL points to a command block of 10 bytes
+arranged as words.  For clarity the command block layout is
+shown below as words and bytes.
+
+		5 words				   10 bytes
+		======= 			   ========
+         1 1 1 1 1 1 		
+bit      5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0        7 6 5 4 3 2 1 0 
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+word 0  |0 = rd, 1 = wr | error ret code|      | error ret code| byte 0
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+word 1  |      Bits 0 to 15 of block    |      |0 = rd, 1 = wr | byte 1
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+word 2  |          0          | b 16-20 |      |blk bits 0-7   | byte 2
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+word 3  |    0    | LUN |  Block count  |      |blk bits 8-15  | byte 3
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+word 4  |       DMA    address          |      |  0  | b 16-20 | byte 4
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+      +-+-+-+-+-+-+-+-+
+                                               |     0         | byte 5
+                                               +-+-+-+-+-+-+-+-+
+                                               |  block count  | byte 6
+                                               +-+-+-+-+-+-+-+-+
+                                               |    0    | LUN | byte 7
+                                               +-+-+-+-+-+-+-+-+
+                                               |  DMA bits 0-7 | byte 8
+                                               +-+-+-+-+-+-+-+-+
+                                               |  DMA bits 8-15| byte 9
+                                               +-+-+-+-+-+-+-+-+
+
+On exit the HL register will be left pointing to the passed command
+block, and the controller returmn code will be in byte 0 of the block.
+A byte of 00h indicates that the command was completed sucessfully.
+A byte of 01h will be returned if an error occured
+
+If an error occurs then a message indicating the error code will be
+displayed to the console device, but control will be returned at once
+to the caller - unlike a normal bios call which calls conin to wait 
+for a character.
+
+XBIOS Function  8 - Return address of BUFCIP
+--------------------------------------------
+The address of bios label 'bufcip:' is returned in HL. If SVC version
+then 0 will be returned.
+
+; RX character buffer
+;=====================
+bufcip:	defw	bufst		; character input pointer
+bufcop:	defw	bufst		; character output pointer
+bufcnt:	defb	0		; count of characters in buffer
+bufst:	defs	buflen		; the actual buffer
+bufe:				; end of the buffer
+
+; SIO RR0 copy
+;==============
+siorr0:	defs	1		; sio status from rr0
+
+; Interrupt stack
+;==================
+	defs	16		; 8 words
+intsp:	defw	0		; save incomming sp here
+
+; SIO interrupt vectors
+;=======================
+; first get to a 16 byte boundary
+tmp	equ	($-BIOS) mod 16
+if	tmp
+	defs	16-tmp
+endif
+
+sioivt:	defw	iret	; B TX buffer empty
+	defw	iret	; B Ext status
+	defw	iret	; B RX ready
+	defw	iret	; B special receive
+	defw	iret	; A TX buffer empty
+	defw	i$ext	; A Ext status
+	defw	i$rxc	; A RX ready
+	defw	iret	; A special receive
+
+
+<eof 12-mar-87>
+
+	ld	l,a		;Offset to HL
+	ld	h,0
+	add	hl,de		;Index in
+	ld	a,(hl)		;Get address
+	inc	hl
+	ld	h,(hl)
+	ld	l,a
+	jp	(hl)		;Go to it
+
+	SUBTTL IO routines - Enhanced List support
+	page
+;********************************
+;   LIST routine will handle	*
+;	paging if required	*
+;	and Form Feeds		*
+;********************************
+list:	ld	a,c		;Get character
+	cp	' '		;Printing?
+	jr	nc,listit	;Yes,print it.
+	ld	hl,lcount	;Point to line count
+	cp	0CH		;Form feed?
+	jr	nz,notff	;No,skip
+
+; Handle a Form Feed
+
+	ld	a,(FFCNTL)	;Load control byte
+	or	a		;Zero?
+	jr	z,listit	;Yes,accept it
+	ld	b,a		;No,move to B
+	inc	a		;Was it 0FFH?
+	ld	e,(hl)		;(Get current count)
+	ld	a,(lpage)	;(..and Reset it)
+	ld	(hl),a
+	jr	nz,dolfs	;No,do requested LFs
+	ld	a,(lgap)	;Yes,get Gap
+	add	a,e		;Include lines left
+	ld	b,a		;Put in B
+	jr	dolfs		;Do multiple LFs
+
+; Not a Form Feed
+
+notff:	cp	LF		;Line feed?
+	jr	nz,listit	;No,ignore
+
+; Line Feed - update line count
+
+	dec	(hl)		;Another done
+	jr	nz,listit	;Jp if not EOP
+	ld	a,(lpage)	;Reset line count
+	ld	(hl),a
+	or	a		;Paging?
+	jr	z,listit	;No,ignore
+	ld	a,(lgap)	;Yes,add gap
+	inc	a		;(allow for current)
+	ld	b,a		;Put in B
+
+; Do <B> Line feeds
+
+dolfs:	ld	c,LF		;Set LF
+	push	bc		;Save BC
+	call	listit		;List it
+	pop	bc		;Reset BC
+	djnz	dolfs		;Loop if more
+	ret			;Done
+
+lcount:	defb	1
+
+	SUBTTL Serial/Parallel routines
+	page
+;**********************************************************
+;	Serial port routines  - Assume a standard Nascom  *
+;   6402 type UART setup if port<80H, else 8250 UART	  *
+;							  *
+;  On calling <B> holds Low port number			  *
+;	Uses register C to address the port		  *
+;	Register D is used to hold flag mask		  *
+;**********************************************************
+;
+;  Serial status poll - returns -
+;	A=0	Not ready
+;	A=FFH	Ready
+;
+serst:	ld	de,501h		; 8250 status reg offset & flag
+	bit	7,b		; Check port range
+	jr	nz,sersts	; Skip if 8250
+	ld	de,180h		; set for 6402
+
+sersts:	ld	a,d		; Compute status port addr.
+	add	a,b
+	ld	c,a		; Set it
+	in	a,(c)		; Read it
+	and	e		; Check ready bit
+	ret	z		; Return Z if busy
+	ld	a,0FFH		; Ready - so FF
+	ret
+
+; Serial input
+
+serin:	call	serst		; Check status
+	jr	z,serin		; Loop if nothing
+	ld	c,b		; Ready,get port no.
+	in	a,(c)		; Read the data
+	ret			; Return with it
+
+; Serial Output routine
+
+serout:	ld	l,c		; Character to L
+	ld	de,520h		; 8250 reg offset + flag
+	bit	7,b		; Check port range
+	jr	nz,sero0	; Skip if 8250
+	ld	de,140h		; set for 6402
+sero0:	call	sersts		; Check status
+	jr	z,sero0		; Loop if not ready
+	ld	c,b		; Get Data port no.
+	out	(c),l		; Output data
+	ret			; Done
+;
+;  Serial Handshake routine - Status check
+;	Assumes 8250 UART on CPU card
+;
+hsst:	ld	a,6		; Offset
+	add	a,b		; Index in
+	ld	c,a		; Set port
+	in	a,(c)		; Check ready bit
+	and	10H		; Isolate it
+	ret	z		; Return if busy
+	dec	c		; Move to status port
+	in	a,(c)		; Read flags
+	and	20h		; Check busy bit
+	ret	z		; Return if busy
+	ld	a,0ffh		; Else say ready
+	ret
+
+; List Output for handshaking printer
+
+HSHAKE:	ld	l,c		;Move character to L
+hs00:	call	hsst		;Check status
+	jr	z,hs00		;wait if busy
+	ld	c,b		;Port to C
+	out	(c),L		;Output byte
+	ret			;Done
+
+; Centronics-type parallel printer
+;	Assumes standard PIO set-up
+
+CENTST:	ld	a,(pport)	;Get port number
+	ld	c,a		;..to C
+	in	a,(c)		;Read Status port
+	rrca			;Busy to Carry
+	ccf			;1=ready
+	sbc	a,a		;Propagate through A
+	ret			;Return 0 or 0FFH
+
+;	Centronics Output driver
+
+CENTRO:	ld	b,c		;Move character to B
+	ld	a,(pport)	;Get port number..
+	ld	c,a		;..to C
+CENTLP:	in	a,(c)		;Read status lines
+	rrca			;Busy?
+	jr	c,CENTLP	;Yes,wait
+	inc	c		;Point to Data port
+	out	(c),b		;Write character
+	dec	c		;Back to Control
+	ld	b,0FDH		;Set Strobe byte
+	out	(c),b		; Strobe on...
+	ld	a,0FFH		; ..then...
+	out	(c),a		; ..strobe off.
+	ret			;Done.
+
+IFDEF	IVC
+
+;  Define Cursor type to HL
+
+defcur:	push	af
+	push	hl		;Save type
+	ld	c,'Y'		;Define cursor
+	call	escseq
+	pop	bc
+	push	bc
+	call	putvid
+	pop	bc
+	ld	c,b
+	call	putvid
+	pop	af
+	ret
+
+ENDIF
+
+	SUBTTL	SIO routines and workspace
+	page
+
+;***************************************************************
+;
+; 			 SIO routines
+;			==============
+; 
+; Targets are 	SCAN	const
+;		BLINK	conin
+;		CRT	conout
+;
+; RX is interrupt driven and buffered by 'buflen' characters 
+; (see BIOSEQU.MAC)
+;
+; Changes in External control lines are monitored via interrupt.
+; requires CTS (fed from DTR on WYSE) before TX
+;
+; Interrupt routines use own stack so as to place only 2 bytes
+; on the users stack - possibly unnecessary but safe.
+;****************************************************************
+
+IFDEF	SIO
+
+; NOTE that neither blink, crt or scan object to being interrupted
+; by either SIO interrupt
+
+scan:				; return FFh if ready - else 00h
+	ld	a,(bufcnt)
+	or	a		; any there
+	ret	z		; .. no
+	ld	a,0FFh		; .. yes
+	ret
+
+blink:				; wait for char - return it in A
+	call	scan
+	or	a		; could rely on flag - but do it properly
+	jr	z,blink		; wait
+	ld	hl,(bufcop)	; get output pointer
+	ld	a,(hl)		; get char
+	call	incbptr		; move pointer up buffer
+	ld	(bufcop),hl	; save new
+	ld	hl,bufcnt	; point to character counter
+	dec	(hl)		; decrement it
+	ret
+
+
+
+crt:				; send character in C
+	in	a,(sio$ctl)	; wait for TX buffer empty
+	and	4
+	jr	z,crt
+	ld	hl,siorr0	; point to status byte
+crt1:	bit	5,(hl)		; wait for CRT active (interrupt)
+	jr	z,crt1
+	ld	a,c
+	out	(sio$dat),a
+	ret
+
+
+; Common routine that INCs HL then checks for it
+; overrunning the RX buffer (by 1 only !!)
+; called by I$RXC during interrupt and BLINK
+;	entry	HL as buffer pointer
+;	exit	HL incremented an wrapped if required
+;		Flags and DE screwed - other registers are left ok
+incbptr:
+	inc	hl		; inc the pointer
+	ld	de,bufe		; point past end of buffer
+	or	a		; clear carry flag
+	sbc	hl,de
+	add	hl,de
+	ret	nz		; not the same
+	ld	hl,bufst	; overrun - so reset
+	ret
+
+
+
+; external status interrupt service
+;===================================
+i$ext:
+	ld	(intsp),sp
+	ld	sp,intsp
+	push	af
+	ld	a,10h		; reset ext status
+	out	(sio$ctl),a
+	in	a,(sio$ctl)	; get RR0
+	ld	(siorr0),a	; store it
+	pop	af
+	ld	sp,(intsp)
+iret:	ei
+iret1:	reti
+
+
+; Receive character service routine
+;===================================
+i$rxc:
+	ld	(intsp),sp
+	ld	sp,intsp
+	push	af
+	push	hl
+	push	de		; zapped in incbptr
+	in	a,(sio$ctl)	; read status
+	rrca
+	jr	nc,i$rxce	; no char ready
+	in	a,(sio$dat)	; read char
+	ld	l,a		; temp
+	ld	a,(bufcnt)	; check space
+	cp	buflen		;   any left ?
+	jr	z,i$rxce	;   .. no - skip
+	inc	a		; bump count
+	ld	(bufcnt),a	; save new count
+	ld	a,l		; retreive character
+	ld	hl,(bufcip)	; get input pointer
+	ld	(hl),a		; save the char
+	call	incbptr		; bump and wrap pointer if required
+	ld	(bufcip),hl	; save it
+i$rxce:	pop	de
+	pop	hl		; clean up
+	pop	af
+	ld	sp,(intsp)
+	ei
+	reti
+
+
+
+; RX character buffer
+;=====================
+bufcip:	defw	bufst		; character input pointer
+bufcop:	defw	bufst		; character output pointer
+bufcnt:	defb	0		; count of characters in buffer
+bufst:	defs	buflen		; the actual buffer
+bufe:				; end of the buffer
+
+; SIO RR0 copy
+;==============
+siorr0:	defs	1		; sio status from rr0
+
+; Interrupt stack
+;==================
+	defs	16		; 8 words
+intsp:	defw	0		; save incomming sp here
+
+; SIO interrupt vectors
+;=======================
+; first get to a 16 byte boundary
+tmp	equ	($-BIOS) mod 16
+if	tmp
+	defs	16-tmp
+endif
+
+sioivt:	defw	iret	; B TX buffer empty
+	defw	iret	; B Ext status
+	defw	iret	; B RX ready
+	defw	iret	; B special receive
+	defw	iret	; A TX buffer empty
+	defw	i$ext	; A Ext status
+	defw	i$rxc	; A RX ready
+	defw	iret	; A special receive
+
+ENDIF
+
+	SUBTTL	Keyboard routines for the Gemini Keyboard
+	page
+
+;************************************************
+;  SCAN	- Scans the keyboard			*
+;	  It also supports a keyboard on the IVC*
+;	  Returns: A=00  ...No character	*
+;		   A=FF  ...Character ready	*
+;						*
+;	NOTE: The edit buffer has priority	*
+;	  over keyboard scans, so characters	*
+;	  are moved from the edit buffer via	*
+;	  CFLAG.				*
+;************************************************
+
+IFNDEF	SIO		; ***** matching 'endif' at end of this file
+
+scan:
+	ld	a,(cflag)	;anything waiting?
+	or	a
+	jr	nz,scanxt	;return if so
+ifdef SMALL
+	jr	chkkey
+else
+	ld	hl,(editp)	;Check edit buffer
+	ld	a,(hl)
+	or	a		; Test it
+	jr	z,chkkey	; Nothing, check the keyboard(s)
+	inc	hl		; Advance edit buffer pointer
+	ld	(editp),hl	; Update it
+endif
+scanxx:	or	80h		;set m

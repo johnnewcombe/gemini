@@ -1,0 +1,129 @@
+
+The  following  additional information is supplied with your MFB 2  for  use 
+with format library release June 1986
+
+ALPDS4+   This format should be read by double stepping on a 96tpi drive.
+
+ALPHAP3+  The  first  two tracks are "S" format and the rest of the disk  is 
+          "C" format.  The system tracks can be modified before any  copying 
+          is  done to convert the complete disk to a "C" format.  After  the 
+          copying   session   the  disk  must  be  converted  back  to   the 
+          Alphatronics format.
+
+          Use DU.COM
+          Log into the ALPHAP3+ drive with the L command
+
+          T1;S1
+          <;+28;>;w;-27;/40
+
+          The disk is now a normal "C" format
+
+          To convert back to Alphatronics
+          Use DU.COM
+          Log into the ALPHAP3+ drive with the L command
+
+          T2;S1
+          <;-28;>;w;+29;/40
+
+          This is only suitable for non-bootable disks.
+
+
+APRICDSC  Requires APRICDSC.INI when formatting
+
+APRICDSM  Requires APRICDSM.INI when formatting
+
+APRICSSC  Requires APRICSSC.INI when formatting
+
+APRICSSM  Requires APRICSSC.INI when formatting
+          
+BBC48F+   This format is required to FORMAT a double sided BBC 48 tpi disk
+
+BBC48S0+  This  format  will enable you to read and write to side 0  of  the 
+          Acorn DFS double sided format.
+
+BBC48S1+  This  format  will enable you to read and write to side 1  of  the 
+          Acorn DFS double sided format.
+
+BBCDD96   Requires BBCUTIL
+
+CAN100C´† ThÂ† currenÙ releasÂ oÊ FORMAT.COÕ (VersioÓ 2.0© wilÏ noÙ† formaÙ ç
+          the second side.
+
+DECRT11+  Requires FILESTAR.COM
+
+EPQX11M+  This  format  is 67.5 tpi.  The 3.5" drive is "double stepped"  to 
+          achieve  67.5 tpi.  You may have problems if you try to  format  a ä          disk or write data to the EPQX11M+ format.
+
+EQ5NUM1+  Turbodos (See TURBODOS.TXT)
+EQ5NUM2+  Turbodos (See TURBODOS.TXT)
+EQ5NUM3+  Turbodos (See TURBODOS.TXT)
+EQ5NUM4+  Turbodos (See TURBODOS.TXT)
+EQ5NUM6+  Turbodos (See TURBODOS.TXT)
+EQ5NUM7+  Turbodos (See TURBODOS.TXT)
+EQ8NUM1+  Turbodos (See TURBODOS.TXT)
+EQ8NUM2+  Turbodos (See TURBODOS.TXT)
+EQ8NUM3+  Turbodos (See TURBODOS.TXT)
+
+FERPPCD   Requires FERPPCD.INI when formatting
+
+FERPPCS   Requires FERPPCS.INI when formatting
+
+FTSDS8    Requires FTSDS8.INI when formatting
+
+FTSSS8    Requires FTSSS8.INI when formatting
+
+HAYWOOD+  Do not fill the last 12k when writing to this disk.
+
+HP150DM   Requires HP150DM.INI when formatting
+
+HP150SM   Requires HP150SM.INI when formatting
+
+JARMP5+   Track 0 Side 0 of this format is Single Density.  
+
+KALTEXT+  Track 0 Side 0 of this format is Single Density.
+
+KAY10D+   The  current  release of FORMAT.COM (version 2.0) will not  format 
+          the second side.
+
+KAY4D+    The  current  release of FORMAT.COM (version 2.0) will not  format 
+          the second side.
+
+M2500DC   Requires M2500DC.INI when formatting
+
+M2500SC   Requires M2500SC.INI when formatting
+
+
+MCS+      Requires MCSUTIL
+
+MZ80B+    The  current release of FORMAT.COM (version 2.0) will  not  format 
+          the second side.
+
+OLETV30+  Track 0 Side 0 of this format is Single Density. (See OLETVTK0)
+
+OLETVTK0  Special  format and initialisation for first track of Olivetti ETV 
+          300.  (Format  a disk using OLETV30+ and then format  again  using 
+          OLETVTK0)- Requires OLETVTK0.INI
+
+ORIONDS   Requires ORIONDS.INI when formatting
+
+ORIONSS   Requires ORIONSS.INI when formattingä
+SBRNDQD+  Do not put more than 746K on this disk.
+
+TATG100+  Requires TATPAT Utility.
+
+TATG48S+  Requires TATPAT Utility.
+
+TATG96S+  Requires TATPAT Utility.
+
+TORCH+    Requires TORCH Utility.
+
+TULIP5M+  The current release of FORMAT.COM will not format the second side.
+
+TULIP7M+  The current release of FORMAT.COM will not format the second side.
+
+TYCBOOM+  Requires special initialisation
+
+TYCDATM+  Requires special initialisation
+
+TYCOMC+   Requires special initialisation
+

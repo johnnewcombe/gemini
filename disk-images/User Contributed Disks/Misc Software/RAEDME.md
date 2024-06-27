@@ -1,0 +1,30 @@
+
+## Software Packages
+    - Aliens – Space Invaders for CP/M
+    - Ascom_2.2 – ASCOM ver 2.2 for CP/M 2.2 is a Communications program.     Originally came on an Osbourne disk but was running on a Microbee.
+    - AztecC – Aztec C compiler and library utilities.
+    - Catchum – Catchum ‘Pacman’ type clone for CP/M complete with terminal configuration utility.
+    - CBasicCompiler – CBasic Compiler.
+    - Cobol80 – Microsoft Cobol 80.
+    - DBASEII – Ashton Tate’s DBaseII
+    - Fortran80 – Microsoft Fortran 80.
+    - Hitchhiker – Dont Panic!, it’s the Hitchhikers Guide to the Galaxy.
+    - Ladder – Ladder ‘Super Mario’ type clone for CP/M complete with terminal configuration utility.
+    - Macro80 – Microsoft’s M80/L80/LIB80/CREF80 Assembler, linker, library and cross referencing utilities.
+    - Mallard80Basic – Mallard Basic.
+    - MBasic – Microsoft Basic.
+    - Mumps4 – Massachusetts General Hospital Utility Multi-Programming System.
+    - Nemesis – The Nemesis adventure game.
+    - NSweep – NSweep, the CP/M file manager.
+    - Roots – The Roots genealogy Program.
+    - SargonChess – Sargon Chess.
+    - SuperCalc2 – Supercalc 2 spreadsheet program.
+    - T-Net – Serial port based networking utility developed by John B. Hanson, see text.
+    - Tex – The Tex text formatter from Digital Research.
+    - TurboPascal – Turbo Pascal 3 from Borland.
+    - TurboPascalDBToolkit – Turbo Pascal 3 database toolkit from Borland.
+    - VEdit – VEdit text editor.
+    - Wordstar3 – Wordstar 3 configured for the Gemini IVC Video Card.
+    - XIZtoXZI – Z80 to Intel, Intel to Z80 convertor.
+    - Zork1 – The Zork1 adventure game.
+    - ZSID – The Z80 symbolic instruction debugger from Digital Research.

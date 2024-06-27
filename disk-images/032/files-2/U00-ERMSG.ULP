@@ -1,0 +1,88 @@
+Procedure Ermsg(e : integer);
+var
+ z : integer;
+begin
+  Case e of
+  1  : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('File requested is not on the drive accessed.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ 2,3,4 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('File requested is not open.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $90  : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('Record length mismatch.  Consult dealer.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $91 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('Seek beyond end of File.  Consult Dealer.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $99 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('Unexpected end of file. File could be blank.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $F0 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('Disk is full. Delete or transfer some files.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $F1 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('Disk Directory is full. Delete or transfer some files.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $F2 : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('File size overflow. Only 65535 records allowed.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ $FF : begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('File has disappeared!!! Have you changed disks?');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+ ELSE  begin
+        for z:=1 to 3 do
+         write(chr(7));
+        gotoxy(1,8);lowvideo;
+        write('ERROR number ',e,'.  Consult Dealer.');
+        clreol;delay(3000);
+        gotoxy(1,8);normvideo;clreol;
+       end;
+end;  {of case}
+end; {of Ermsg}
+

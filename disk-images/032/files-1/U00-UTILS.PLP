@@ -1,0 +1,575 @@
+Procedure options;
+begin
+  gotoxy(1,8);
+  write('Option: ');
+  clreol;
+end; {of options}
+
+procedure set_area_boundries;
+begin
+ seek(paramf,areanum);
+ read(paramf,param);
+ with param do
+ begin
+   if partition=2 then
+   begin
+    tx:=tx+rightone;
+    bx:=bx+rightone;
+   end;
+        top:=ty+1;
+     bottom:=by-1;
+       left:=tx+1;
+      right:=bx-1;
+      sctop:=round(ty*yscal)+1;
+   scbottom:=round(by*yscal)-1;
+     scleft:=round(tx*xscal)+1;
+    scright:=round(bx*xscal)-1;
+ end;
+end; {of set_area_boundries}
+
+
+Procedure draw_vector(sx2,sy2,cx2,cy2,col : integer);
+var
+  ssx,ssy,scx,scy : integer;
+  sysclx, syscly : real;
+begin
+  set_area_boundries;
+  sysclx:=(right-left)/symbol_sizex;
+  syscly:=(bottom-top)/symbol_sizey;
+  ssx:=round(sx2*sysclx)+xoffs;
+  ssy:=round(sy2*syscly)+yoffs;
+  scx:=round(cx2*sysclx)+xoffs;
+  scy:=round(cy2*syscly)+yoffs;
+  if symvec.status=1 then
+  begin
+    sccol(col);
+    moveto(round(ssx*xscal),round(ssy*yscal));
+    lto(round(scx*xscal),round(scy*yscal));
+  end;
+  if symvec.status=2 then
+  begin
+   moveto(round(ssx*xscal),round(ssy*yscal));
+   sccol(col);
+   ffill;
+  end;
+end;  {of draw_vector}
+
+
+
+procedure clrframe(t,b : integer);
+var i : integer;
+begin
+  for i:=t to b do
+  begin
+   gotoxy(1,i);
+   clreol;
+  end;
+end;
+
+Procedure Display_label_area;
+begin
+ rightone:=0;
+ twoscreens:=FALSE;
+ sstle(4);
+ reset(paramf);
+ read(paramf,param);
+ labeldrop:=param.label_drop;
+ seek(paramf,1);
+ while not eof(paramf) do
+ begin
+   read(paramf,param);
+   if param.partition=1 then
+    if param.bx>rightone then rightone:=param.bx;
+ end;
+ seek(paramf,1);
+ while not eof(paramf) do
+ begin
+   read(paramf,param);
+   if param.partition<>0 then
+   with param do
+   begin
+     if partition=2 then
+     begin
+       tx:=tx+rightone;
+       bx:=bx+rightone;
+     end;
+     case areatype of
+      Line : begin
+              sccol(green);
+              moveto(round(tx*xscal),round(ty*yscal));
+              lto(round(bx*xscal),round(by*yscal));
+             end;
+       Box : begin
+              if Noprint=TRUE then sccol(blue)
+              else
+              sccol(green);
+              moveto(round(tx*xscal),round(ty*yscal));
+              lto(round(bx*xscal),round(ty*yscal));
+              lto(round(bx*xscal),round(by*yscal));
+              lto(round(tx*xscal),round(by*yscal));
+              lto(round(tx*xscal),round(ty*yscal));
+             end;
+      end;  {of case}
+   end;  {of with param}
+ end; {eof}
+end; {display_label_area}
+
+
+function UpcaseStr(S : Str80) : Str80;
+var
+  P : Integer;
+begin
+  for P := 1 to Length(S) do
+    S[P] := Upcase(S[P]);
+  UpcaseStr := S;
+end;
+
+(*  ConstStr returns a string with N characters of value C *)
+
+function ConstStr(C : Char; N : Integer) : Str125;
+var
+  S : str125;
+begin
+  if N < 0 then
+    N := 0;
+  S[0] := Chr(N);
+  FillChar(S[1],N,C);
+  ConstStr := S;
+end;
+
+PROCEDURE getinput(maxnum : integer;
+                ac,dn : integer;
+                VAR line : str125;
+                kind : char;
+                VAR fin : boolean;
+                start : integer);
+
+      (* Requires global var INST:BOOLEAN set TRUE for INSERT Mode
+         or FALSE for OVERWRITE Mode *)
+
+label exit;
+
+const Underscore = '_';
+
+var
+    dec,done : boolean;
+    pos, xadj, yadj : integer;
+
+
+
+procedure printchar;
+begin
+ if pos<=maxnum then
+ begin
+     if length(line)=maxnum then
+       delete(line,maxnum,1);
+     if inst=TRUE then
+      insert(ans,line,pos)
+     else
+     begin
+      if pos>length(line) then
+       line:=line+' ';
+      line[pos]:=ans;
+     end;
+     gotoxy(ac,dn);write(line,ConstStr(Underscore,Maxnum-length(line)));
+     IF pos<maxnum THEN
+       pos:=succ(pos);
+ end;
+end;
+
+BEGIN
+ dec:=FALSE;
+ for pos:=1 to length(line) do
+   if line[pos]='.' then
+    dec:=TRUE;
+ fin:=FALSE;
+ done:=FALSE;
+ up:=FALSE;
+ down:=FALSE;
+ if start>maxnum THEN start:=maxnum;
+ ans:=' ';
+ pos:=start;
+ gotoxy(65,8);
+ lowvideo;
+ write('Insert Mode'); clreol;
+ normvideo;
+ gotoxy(ac,dn);write(line,ConstStr(Underscore,Maxnum-length(line)));
+
+ REPEAT
+ if pos>80 then
+ begin
+   xadj:=80; yadj:=1;
+ end
+ else
+ begin
+   xadj:=0; yadj:=0;
+ end;
+ gotoxy(ac+pos-1-xadj,dn+yadj);read(kbd,ans);
+ IF ans IN [esc,cul,cur,cup,cud,ins,del,cr,bs,ch,^G,^A,^F,^V] THEN
+   begin
+     CASE ans OF
+       esc : begin
+              fin:=TRUE;
+              goto exit;
+             end;
+
+      cr     : begin
+                done:=TRUE;
+                goto exit;
+               end;
+
+    cup,cud : begin
+              done:=true;
+              IF (ans=cup)and(noup=FALSE) THEN
+              begin
+               up:=TRUE;
+               goto exit;
+              end;
+              IF (ans=cud)and(nodown=FALSE) THEN
+              begin
+               down:=TRUE;
+               goto exit;
+              end;
+              done:=FALSE;
+             end;
+
+       cul : IF pos>1 THEN
+             begin
+              pos:=pred(pos);
+              gotoxy(ac+pos-1,dn);
+             end;
+
+       cur : IF pos<=length(line) THEN
+              begin
+                pos:=succ(pos);
+                gotoxy(ac+pos-1,dn);
+              end;
+
+       ins : begin
+                insert(' ',line,pos);
+                gotoxy(ac,dn);
+                write(line,ConstStr(Underscore,Maxnum-length(line)));
+               end;
+
+       del,^G : begin
+                if line[pos]='.' then
+                  dec:=FALSE;
+                delete(line,pos,1);
+                gotoxy(ac,dn);
+                write(line,ConstStr(Underscore,Maxnum-length(line)));
+               end;
+
+        ch : begin
+               write(ConstStr(Underscore,length(line)-pos+1));
+               Delete(line,pos,maxnum);
+             end;
+        bs : IF pos<>1 THEN
+              begin
+                IF line[pos-1]='.' THEN
+                  dec:=FALSE;
+                delete(line,pos-1,1);
+                gotoxy(ac,dn);
+                write(line,ConstStr(Underscore,Maxnum-length(line)));
+                pos:=pred(pos);
+              end;
+        ^A : pos:=1;
+        ^F : pos:=length(line)+1;
+        ^V : begin
+              inst:=not inst;
+              gotoxy(65,8);
+              lowvideo;
+              case inst of
+              TRUE : write('Insert Mode');
+              False: write('Overwrite Mode');
+              end;
+              normvideo;
+              clreol;
+             end;
+     end; {of CASE }
+   end
+ ELSE
+ begin
+
+ CASE kind OF
+
+   'a' : IF ans IN [' '..'/',':'..'~'] THEN
+             printchar;
+
+   'n' : IF ans IN ['0'..'9','-','.'] THEN
+
+           Case ans of
+             '0'..'9' :  printchar;
+
+             '-' :  IF pos=1 THEN printchar;
+
+             '.' : IF not dec THEN
+                   begin
+                    printchar;
+                    dec:=TRUE;
+                   end;
+           end; {of case}
+
+  'b' : IF ans IN [' '..'~'] THEN
+                printchar;
+
+  'c' : IF ans IN [' '..'~'] THEN
+         begin
+           IF ans IN ['a'..'z'] THEN
+            ans:=chr(ord(ans)-$20);
+           printchar;
+         end;
+
+  's' : IF ans IN ['A'..'Z','0'..'9','a'..'z','%','.',':','-',' ','/'] THEN
+         begin
+           IF ans IN ['a'..'z'] THEN
+            ans:=chr(ord(ans)-$20);
+           printchar;
+         end;
+
+ end; {of case}
+ end;
+exit:
+ if ans in [cr,esc] then
+ begin
+  gotoxy(ac,dn);
+  write(line,ConstStr(' ',Maxnum-length(line)));
+ end;
+UNTIL fin or done;
+
+Case ans of
+cup,cud :   IF ((ans=cup)and(noup=FALSE))or((ans=cud)and(nodown=FALSE))THEN
+              done:=TRUE;
+
+       esc : begin
+               fin:=TRUE;
+             end;
+
+ end;  {of case}
+ gotoxy(65,8); clreol;
+END; {of getinput}
+
+
+procedure scalefont;
+var
+  m,t : integer;
+  i,j : integer;
+
+begin
+if fontname<>'NONE' then
+ begin
+  for i:=1 to 95 do
+  begin
+    num:=lo(vecary[i][0]);
+    for j:=1 to num do
+    begin
+      t:=vecary[i][j];
+      m:=hi(t) and 128;
+      vecary[i][j]:=(round((hi(t)-m)*scl)+m) shl 8 +round(lo(t)*scl);
+    end;
+  end;
+ end;
+end;  {of scalefont}
+
+procedure loadfont;
+begin
+  {$I-} reset(cf); {$I+}
+  if ioresult=0 then
+  begin
+    read(cf,vector);
+    base:=vector[0];
+    scalbase:=round(base*scl);
+    for i:=1 to 95 do
+     read(cf,vecary[i]);
+  end
+  else
+  begin
+   gotoxy(25,8);lowvideo;Write(fontname,' DOES NOT EXIST. ');
+   normvideo; clreol;
+   delay(3000);
+   fontname:='NONE';
+  end;
+end;
+
+
+Procedure write_it(s : str255);
+var
+  xp,yp : integer;
+  xo : integer;
+
+procedure print;
+var
+   xl, yl : integer;
+begin
+   ac:=charsize; dn:=0;
+   if ord(s[1])-31>0 then
+   for l:=1 to length(s) do
+   begin
+     vector:=vecary[ord(s[l])-31];
+     num:=lo(vector[0]);
+     xl:=round(cx*xscal);
+     yl:=round(cy*yscal);
+     for j:=1 to num do
+     begin
+        inp:=vector[j];
+        ac:=hi(inp); dn:=lo(inp);
+        if ac>127 then
+        begin
+          ac:=ac-128;
+          moveto(xl+round((ac-xo)*xscal)+xo+xp
+                ,yl-round(dn*yscal)+yp);
+        end
+        else
+          lto(xl+round((ac-xo)*xscal)+xo+xp
+             ,yl-round(dn*yscal)+yp);
+
+     end;
+     cx:=cx+ac+penwidth;
+   end;
+   cx:=tx; cy:=ty+scalbase;
+
+end;  {of print in write_it}
+
+begin
+   xo:=round(7*Scl);
+   cy:=cy+scalbase;
+   case curpen of
+   1 : begin
+          xp:=0; yp:=0; print;
+       end;
+   2 : begin
+        xp:=0; yp:=0; print;
+        xp:=1; print;
+        xp:=2; print;
+        xp:=1; yp:=-1; print;
+       end;
+   3 : begin
+        xp:=0; yp:=0; print;
+        xp:=1; print;
+        yp:=-1; print;
+        xp:=0; print;
+       end;
+   4 : begin
+        xp:=0; yp:=0; print;
+        xp:=1; print;
+        xp:=2; print;
+       end;
+   end; {of case}
+end; {of write_it}
+
+
+Procedure breakline(ll : str255);
+var
+  last, numchar : integer;
+  ts : str125;  {temp string}
+begin
+   error:=0; breaknum:=1;
+   sx:=cx; sy:=cy;{Start pos of first line}
+   tx:=cx; ty:=cy;{Temporary Vars for line start}
+   charsize:=round(16*scl)+penwidth;
+   repeat
+        {Get number of possible chars on line}
+     numchar:=round((right-cx+round(scl))/charsize);
+
+     if numchar<length(ll) then   {Are there too many?}
+     begin                       {Yes, so split line up}
+       last:=numchar;
+       breaknum:=breaknum+1;
+       while ll[last]<>' ' do
+       begin
+         last:=last-1;
+        if last<1 then
+        begin
+         gotoxy(1,8);
+         if length(ll)<59 then
+         begin
+          lowvideo; write(ll,' is too long for line.');normvideo;
+         end
+         else
+         begin
+          lowvideo; write('This is too long for the line.');normvideo;
+         end;
+         clreol;
+         delay(3000);
+         error:=1;
+         cx:=sx; cy:=sy;
+         ll:=copy(tl,1,length(tl)-length(ll));
+        { breakline(ll);}
+         exit;
+        end;
+       end;
+       ts:=copy(ll,1,last);
+       write_it(ts);
+       cx:=left+5;
+       tx:=cx;
+       cy:=ty+round(20*scl);
+       ty:=cy;
+       ll:=copy(ll,last+1,length(ll))
+     end
+     else                        {No. So do whole line}
+     begin
+       write_it(ll);
+       ll:='';
+     end;
+   until length(ll)=0;
+   cx:=sx; cy:=sy;  {Restore start of line}
+   moveto(round(cx/yscal),round(cy*yscal));   {and move to it}
+end;  {of breakline}
+
+
+
+procedure show_function_line;
+begin
+  lowvideo;
+  gotoxy(1,3);write(' F0 ');
+  gotoxy(9,3);write(' F1 ');
+  gotoxy(17,3);write(' F2 ');
+  gotoxy(25,3);write(' F3 ');
+  gotoxy(33,3);write(' F4 ');
+  gotoxy(41,3);write(' F5 ');
+  gotoxy(49,3);write(' F6 ');
+  gotoxy(57,3);write(' F7 ');
+  gotoxy(65,3);write(' F8 ');
+  gotoxy(73,3);write(' F9 ');
+  normvideo;
+end; {show_function_line}
+
+
+Procedure put_symbol(sn : str14);
+begin
+   assign(sf,labeldrive+sn+'.SYM');
+   {$I-} reset(sf); {$I+}
+   if ioresult>0 then
+   begin
+     gotoxy(1,8);
+     write('File for Symbol ',sn,' not on current drive');
+     delay(3000);exit;
+   end;
+   while not eof(sf) do
+   begin
+     read(sf,symvec);
+     if symvec.status<>0 then
+     with symvec do
+      draw_vector(startx,starty,endx,endy,green);
+   end;
+   close(sf);
+end;
+
+procedure setup;
+begin
+ initialise;
+ sbcol(6);
+ sccol(blue);
+ sstle(0);
+ fontname:='NONE';
+ labname:='NONE';
+ areanum:=0;
+ cx1:=0; cy1:=0;
+ scl:=0.5; curpen:=1;
+ scleft:=0; scright:=767;
+ sctop:=0; scbottom:=575;
+ tl:='';
+ penwidth:=1;
+ txtmode:='F';
+ inst:=TRUE;
+end;
+

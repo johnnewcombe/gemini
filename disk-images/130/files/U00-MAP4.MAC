@@ -1,0 +1,143 @@
+VER	DEFL 4			;Version 4 module
+
+	SUBTTL Bank Select and Data Move (4k mapping)
+	PAGE
+
+	CSEG
+
+;A BLOCK is any 4k block of "memory mapped" memory
+;A SLOT is a 4k location within the 64k currently accessible to the Z80
+;A BANK is a group of BLOCKS which can be selected into the lower n SLOTs
+
+;Read/Write virtual disk
+RWVIR:	LD HL,0
+	LD (MULCNT),HL		;Cancel countdown and multi count
+	LD HL,BNKBDY+1		;Point at high byte of bank boundary
+	LD DE,(DMAADR)
+	LD A,D
+;See if in common memory
+	CP (HL)			;NC if in common memory
+	LD BC,BASBNK+2000H+0FEH	;Put track at base of banked memory + 2000H
+	JR NC,GOTBNK		;No need to bank
+	CP HIGH BASBNK-1	;C if in common memory
+	JR C,GOTBNK
+;Test for memory conflict
+	CP 1FH+HIGH BASBNK	;C if below 2nd banked block
+	JR C,DOBNK
+	LD B,HIGH BASBNK	;Put track at banked base
+DOBNK:	LD A,(DMABNK)
+	CALL BANK		;Select DMA bank
+;DMA bank selected, B holds location for track
+GOTBNK:	LD A,(LTRAK)
+	ADD A,10H		;Make a page
+	OUT (C),A		;Select track
+	LD HL,(LSECT)
+	REPT 7
+	ADD HL,HL
+	ENDM			;*128
+	LD A,H
+	ADD A,B			;Add mapped location
+	LD H,A
+;HL = sector, DE = DMA
+	PUSH BC
+	LD BC,RECSIZ		;One record
+	LD A,(RWFLAG)
+	OR A			;Z = Write
+	JR NZ,MOVIT
+	EX DE,HL		;Swop for write
+MOVIT:	LDIR
+	POP BC
+	LD A,B			;Locate track
+	REPT 4
+	RRCA
+	ENDM
+	OUT (C),A		;Restore track location to bank 0
+	XOR A
+	CALL BANK		;Restore rest of bank if required
+	XOR A			;No errors
+	RET
+
+;Reload the CCP from bank 2
+RLCCP:	LD BC,BASBNK+1000H+0FEH	;Base of banked+1000H
+	LD A,10H		;Base of bank 1
+	LD HL,BNKSIZ		;Point to bank size
+	ADD A,(HL)		;Base of bank 2
+	OUT (C),A		;Select CCP block
+	LD HL,BASBNK+1000H	;CCP location when mapped in
+	LD DE,0100H		;Location in bank 1 or common
+	PUSH BC
+	LD BC,CCPLEN
+	LDIR
+	POP BC
+	LD A,11H		;Base of bank 1 + 1000H
+	OUT (C),A		;Put bank 1 back
+	RET
+
+;Bank move
+?MOVE:	LD A,(SRCDES)
+	OR A			;Test for internal move
+	JP M,INTRNL
+	CALL BIGSTK		;Local stack
+	CALL BANK		;Select source bank
+	PUSH HL			;Save destination address
+	LD HL,BUFF80		;Buffer
+	PUSH BC			;Save transfer length
+	EX DE,HL
+	LDIR			;Source to buffer
+	LD A,(SRCDES+1)
+	CALL BANK		;Select destination bank
+	POP BC			;Recover transfer length
+	POP DE			;Recover destination address
+	PUSH HL			;Save DE exit address
+	LD HL,BUFF80		;Point to transfer buffer
+	LDIR			;Buffer to destination
+	POP HL			;Recover DE exit address
+	LD A,(CURBNK)
+	CALL BANK		;Restore current bank
+	EX DE,HL
+	DEC BC			;BC = 0FFFFH to corrupt XMOVE
+
+;Inter bank move
+?XMOVE:	LD (SRCDES),BC		;Set XMOVE
+	RET
+
+;Intra bank move
+INTRNL:	EX DE,HL		;Switch for LDIR
+	LDIR
+	EX DE,HL		;Need next addresses in same regs
+	RET	
+
+;Bank Select.  Select CPU bank for further execution.
+?BKSEL:	LD (CURBNK),A		;Remember current bank
+
+;Select bank in A
+BANK:	PUSH HL
+	LD HL,BNKLOG
+	CP (HL)			;Already selected ?
+	LD (HL),A
+	JR Z,SELOUT		;Skip
+	DEC HL			;Back to bank size
+	PUSH BC
+	LD B,A
+	OR A
+	LD A,HIGH BASBNK/16
+	JR Z,GOTBAS		;Bank 0
+	LD A,10H		;Bank 1
+	SUB (HL)		;Prime A
+GOBASE:	ADD A,(HL)		;Add blocks per bank
+	DJNZ GOBASE
+GOTBAS:	LD BC,BASBNK+0FEH	;Base Slot
+	LD L,(HL)		;Bank size
+	LD H,A			;Block
+BANKIN:	OUT (C),H		;Select block
+	DEC L			;Decrement bank size
+	JR Z,BANKED		;Done
+	INC H			;Increment block
+	LD A,10H
+	ADD A,B			;Increment slot
+	LD B,A
+	JR BANKIN
+BANKED:	POP BC
+SELOUT:	POP HL
+	RET
+

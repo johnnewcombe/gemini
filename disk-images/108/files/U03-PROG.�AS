@@ -1,0 +1,259 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+print clear$
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+rem *********************************************************
+rem : Programmable algabraic calculator program.
+rem : Requires a terminal with clear screen
+rem : plus an addressable curser.
+rem *********************************************************
+continue.flag$ = "CONTINUE"
+while continue.flag$ = "CONTINUE"
+    print clear$
+    print fnc$(1,23);"Programmable Calculator : MENU."
+    print fnc$(2,21);"***********************************"
+    print " "
+    print "  1 : Load source program.            ";
+    print "  2 : Load object program."
+    print " "
+    print "  3 : Load data file.                 ";
+    print "  4 : Echo results to printer."
+    print " "
+    print "  5 : Echo results to disc file.      ";
+    print "  6 : Echo results to printer & disc."
+    print " "
+    print "  7 : Compile source program.         ";
+    print "  8 : Run object program."
+    print " "
+    print "  9 : Edit source program.            ";
+    print " 10 : Edit data file."
+    print " "
+    print " 11 : Reset to no echo.               ";
+    print " 12 : Exit from program."
+    print :print :print
+    input "          Type in option number : ";option%
+    if option% < 13 then \
+        on option% gosub \
+            105,   \  rem : load source
+            110,   \  rem : load object
+            160,   \  rem : load data
+            130,   \  rem : printer
+            140,   \  rem : disc
+            150,   \  rem : printer and disc
+            180,   \  rem : compile
+            190,   \  rem : run
+            120,   \  rem : ed program
+            170,   \  rem : ed data
+            200,   \  rem : reset no echo to printer or disc
+            210    :  rem : stop
+wend
+chain "PCALC"
+stop
+
+105 rem ***** Load source code *****
+print clear$
+print :print :print
+print "All disc files used by this program to hold programs have"
+print "ambiguous filenames of '.SRC'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.SRC'."
+print :print
+input "Type in filename : ";f4$
+f4$ = f4$ + ".SRC"
+open f4$ as 4
+i% = 0
+while ucase$(instruction$(i%)) <> "END"
+    i% = i% + 1
+    if i% > tot.inst% then \
+        print :print : \
+        print "PROGRAM MORE THAN ";tot.inst%;" INSTRUCTIONS :-" : \
+        print "          PROGRAM LOAD ABORTED !" : \
+        print "Type any character to return to menu : "; : \
+        dummy% = conchar% : \
+        close 4 :  \
+        return
+    read # 4 ;instruction$(i%)
+wend
+n% = i% + 1
+for i% = n% to tot.inst%
+    instruction$(i%) = "X"
+next i%
+print :print
+print "Program loaded is ";(n% - 1);" instructions long."
+print :print
+print "Type any character to continue : ";
+dummy% = conchar%
+close 4
+return :rem ** End load source code **
+
+110 rem ***** Load object program *****
+print clear$
+print :print :print
+print "All disc files used by this program to hold programs have"
+print "ambiguous filenames of '.OBJ'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.OBJ'."
+print :print
+input "Type in filename : ";f1$
+f1$ = f1$ + ".OBJ"
+open f1$ as 1
+i% = 0
+while object$(i%) <> "END1"
+     i% = i% + 1
+     read #1 ; object$(i%)
+wend
+i% = 42
+read #1;register$
+while register$ <> "END2"
+    register(i%) = val(register$)
+    i% = i% + 1
+    read #1; register$
+wend
+close 1
+return :rem ** End of load object program **
+
+120 rem ***** Ed program *****
+chain "EDITOR"
+return :rem ** End of editor program **
+
+130 rem ***** Printer *****
+print.flag$ = "YES"
+return :rem ** End Printer **
+
+140 rem ***** Disc files *****
+option% = 0
+while option% < 1 or option% > 3
+    print clear$
+    print :print :print
+    print "   SPECIFY THE TYPE OF DISC FILE/S."
+    print
+    print "   1 : Disc file to hold a data file."
+    print
+    print "   2 : Disc file to hold a results file."
+    print
+    print "   3 : Disc file (data) + disc file (results)."
+    print :print
+    input "      Type in option number : ";option%
+    if option% = 1 then \
+        gosub 144 :rem data file
+    if option% = 2 then \
+        gosub 142 :rem results file
+    if option% = 3 then \
+        gosub 144 : \ rem data file
+        gosub 142 :rem results file
+wend
+return :rem ** End of disc files **
+
+142 rem ***** Disc results files *****
+res.flag$ = "YES"
+print clear$
+print :print :print
+print "All disc files used by this program to store results have"
+print "ambiguous filenames of '.RES'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.RES'."
+print :print
+input "Type in filename : ";f3$
+f3$ = f3$ + ".RES"
+return :rem ** End disc results files **
+
+144 rem ***** Disc data files *****
+dat.flag$ = "YES"
+print clear$
+print :print :print
+print "All disc files used by this program to store data files have"
+print "ambiguous filenames of '.DAT'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.DAT'."
+print :print
+input "Type in filename : ";f5$
+f5$ = f5$ + ".DAT"
+return :rem ** End disc data files **
+
+150 rem ***** Printer and disc *****
+gosub 130 :rem printer
+gosub 140 :rem disc
+return :rem ** End printer and disc **
+
+160 rem ***** Load data *****
+print clear$
+print :print :print
+print "All disc files used by this program to hold data files have"
+print "ambiguous filenames of '.DAT'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.DAT'."
+print :print
+input "Type in filename : ";f2$
+f2$ = f2$ + ".DAT"
+open f2$ as 2
+print :print
+i% = 0
+while data.no(i%) <> end.data
+    i% = i% + 1
+    read # 2 ;data.no(i%)
+wend
+n% = i% + 1
+for i% = n% to tot.inst%
+    data.no(i%) = blank.data
+next i%
+print "Data file loaded is ";(n% - 1);" elements long."
+close 2
+print :print
+print "Type any character to continue : ";
+dummy% = conchar%
+return :rem ** End load data **
+
+170 rem ***** Ed data *****
+type.file$ = "DATA"
+chain "EDITOR1"
+return :rem ** End ed data **
+
+180 rem ***** Compile *****
+chain "COMPILE"
+if comp.flag$ <> "ERROR" then \
+    return
+for i% = 1 to 200
+    object$(i%) = " "
+    register(i%) = 0
+next i%
+for i% = 201 to 400
+    object$(i%) = " "
+next i%
+return :rem ** End of compile **
+
+190 rem ***** Run *****
+if val(object$(1)) = 0 then \
+    return
+chain "RUNOBJ"
+return :rem ** End run **
+
+200 rem ***** Reset echo to printer or disc *****
+print.flag$ = "NO"
+res.flag$ = "NO"
+dat.flag$ = "NO"
+return :rem ** End of reset to printer or disc **
+
+210 rem ***** Stop *****
+continue.flag$ = "STOP"
+return :rem ** End of stop **
+

@@ -1,0 +1,148 @@
+..---!----!--------------------------!----------------------------
+8.° Tesô riç design.
+
+Iî  lookinç  aô  tesô riç design¬  iô ió verù desirablå tï  uså  á 
+
+standarä riç anä modifù iô tï suiô thå applicatioî iî hand®   Thió 
+
+ió  becauså  theså arå readilù availablå anä thå basiã  desigî  ió 
+
+proven®    Tï  thió enä existinç tesô rigó shoulä bå  investigateä 
+
+witè á ve÷ tï modifyinç theí tï suiô thå application®    Thió  caî 
+
+bå donå bù á quicë revie÷ oæ thå ASTÍ standards¬  anä BS®    Theså 
+
+arå somå oæ thå weaò tesô deviceó widelù useä :-
+
+     1©   Fouò balì machines,
+     2©   Crosseä cylindeò machines,
+     3©   Piî oî disc,
+     4©   Piî oî ring,
+     5©   Reciprocatinç weaò machines,
+     6©   Thrusô washeò machines.
+
+Lookinç  aô  thå  requirementó foò thå tesô riç theî  onå  oæ  thå 
+
+governinç  factoró  foò thå choicå oæ riç wilì bå thå  abilitù  tï 
+
+controì  thå  feeä oæ contaminantó tï thå weaò  interface®    Thió 
+
+reduceó thå optionó tï thoså whicè presenô aî easù platforí oî  tï 
+
+whicè  thå conatminantó caî bå loaded®    Notå thaô thå fouò  balì 
+
+machineó arå noô suitablå becauså oæ theiò inabilitù tï draiî useä 
+
+contaminantó  easily¬  anä crosseä cylindeò machineó woulä noô  bå 
+
+easù  tï  controì  thå  drawinç iî oæ thå  particleó  duå  tï  thå 
+
+geometry®    Anotheò  factoò  whicè musô bå takeî intï accounô  ió 
+
+thaô thoså machineó wherå thå geometrù oæ thå tesô pieceó  changeó 
+
+durinç  thå  tesô  arå noô acceptablå sincå thió wilì  affecô  thå 
+
+stresó  conditioî witè time¬  anä iô wilì bå impossiblå tï  assesó 
+
+thå  weaò  foò giveî stresó conditions®    Thió leaveó  twï  basiã 
+
+designó open¬ thå rotatinç surfacå witè á piî oò washeò bearinç oî 
+Šit¬  oò  á reciprocatinç design®    Reciprocatinç designó wilì  bå 
+
+difficulô anä bulkù tï producå witè thå requireä strength¬  anä sï 
+
+thå rotatinç stylå oæ devicå ió thå requireä option.
+
+Lookinç aô thå requirementó onå bù onå theî possiblå solutionó  tï 
+
+eacè oæ thå requirementó maù bå drawî up.
+
+
+
+     1)   Thå  movemenô oæ thå surfaceó iî anä ouô oæ contacô  maù 
+
+          bå  achieveä  bù alterinç thå surfacå geometrieó  tï  dï 
+
+          thió  aó theù rotate®    Iî additioî thå traveì  oæ  thå 
+
+          loaä impartinç sectioî musô bå limited.
+
+
+
+     2)   Thå  normaì forceó coulä bå controlleä bù á simplå leveò 
+
+          anä weighô arrangement¬ whicè woulä inherentlù allo÷ foò 
+
+          anù  smalì differenceó iî distancå betweeî thå  surfaceó 
+
+          withouô  alterinç thå normaì forcå (excepô foò  inertiaì 
+
+          loads).
+
+
+
+     3)   Thå  slidinç  velocitù maù bå altereä  bù  changinç  twï 
+
+          things¬  firsô  thå  speeä oæ rotation¬  anä seconä  thå 
+
+          radiuó oæ thå contacô patch.
+
+
+
+     4)   Thå  radiuó oæ thå thå contacô patcè (measureä froí  thå 
+
+          centrå  oæ  rotation© ió alsï tï bå useä  tï  alteò  thå 
+
+          distancå  oæ slidinç betweeî thå movementó iî anä ouô oæ 
+
+          contact.
+
+Š
+     5)   Thå atmospherå maù simplù bå controlleä bù shoudinç  thå 
+
+          spacå  arounä  thå tesô pieces¬  anä  usinç  appropriatå 
+
+          deviceó tï effecô thå necessarù modifications.
+
+
+
+     6)   Thå  feeä  oæ contaminantó tï thå thå interfacå  maù  bå 
+
+          controlleä  simplå  bù á vibratorù feedeò ontï  á  shutå 
+
+          aimeä aô thå interfacå froí thå appropriatå side.
+
+
+
+     7)   Thå abilitù tï controì thå tesô pieceó coulä bå achieveä 
+
+          bù  mountinç  theí iî gooä thermaì contacô witè á  fluiä 
+
+          flo÷  whicè  coulä theî bå useä foò heatinç  oò  coolinç 
+
+          purposes®    Alternativelù iæ á significanô  temperaturå 
+
+          riså  ió requireä theî provisioî foò electricaì  heatinç 
+
+          maù  bå  made¬  buô thió ió unlikelù iî  thió  situatioî 
+
+          wherå  thå  lacë oæ inherenô heaô dissipatioî  naturallù 
+
+          giveó riså tï higè temperatures.
+
+
+
+     8)   Thå  coefficienô  maù bå establisheä  bù  measurinç  thå 
+
+          frictioî  reactioî  tï rotatioî througè á torquå arí  oî 
+
+          thå  noî driveî component¬  anä comparinç thió witè  thå 
+
+          normaì force.
+
+
+
+A possible design of rig is shown in fig (*).
+

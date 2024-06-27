@@ -1,0 +1,23 @@
+                    WHATSNEW.DOC
+
+     WHATSNEW  is  a variation of the  Ward  Christensen  program 
+D.COM.  When initialized it captures a copy of the directory, and 
+when   called  subsequently  it  reports  the  additions  to  and 
+deletions from the disk since the date of initialization.  
+
+     WHATSNEW must be resident in each USER area on each disk  in 
+order  to report properly since it keeps an internal copy of  the 
+DIR within itself.
+
+     The command sequence to initialize WHATSNEW is:
+
+          WHATSNEW LOK
+
+     then
+
+          WHATSNEW BLD mm/dd/yy
+
+     where:
+           mm is the present month
+           dd is the present day of the month
+           yy is the present year

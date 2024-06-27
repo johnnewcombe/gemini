@@ -1,0 +1,233 @@
+
+procedure initialise;
+begin
+  repeat until port[status]>127;
+  for i:=1 to 4 do
+    port[status]:=0;
+  repeat until port[status]>127;
+  port[data]:=init_;
+end;
+
+procedure hires;
+begin
+ repeat until port[status]>127;
+ port[data]:=$AA;
+end;
+
+
+ procedure setcwp(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=scwp_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+ procedure setcdp(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=scdp_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+procedure moveto(xc,yc : integer);
+begin
+  repeat until port[status]>127;
+  port[data]:=mto_;
+  repeat until port[status]>127;
+  port[data]:=lo(xc);
+  port[data]:=hi(xc);
+  port[data]:=lo(yc);
+  port[data]:=hi(yc);
+end;
+
+procedure sccol(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=sccol_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+procedure sstle(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=sstle_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+procedure lto(x,y : integer);
+begin
+  repeat until port[status]>127;
+  port[data]:=lto_;
+  repeat until port[status]>127;
+  port[data]:=lo(x);
+  port[data]:=hi(x);
+  port[data]:=lo(y);
+  port[data]:=hi(y);
+end;
+
+
+procedure ffill;
+begin
+  repeat until port[status]>127;
+  port[data]:=ffill_;
+end;
+
+ procedure sfcol(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=sfcol_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+
+ procedure sbcol(c : byte);
+begin
+  repeat until port[status]>127;
+  port[data]:=sbcol_;
+  repeat until port[status]>127;
+  port[data]:=c;
+end;
+
+
+procedure rsel(x : integer);
+begin
+ repeat until port[status]>127;
+ port[data]:=$B8;
+ repeat until port[status]>127;
+  port[data]:=x;
+end;
+
+procedure wprot(x : integer);
+begin
+  repeat until port[status]>127;
+  port[data]:=$8C;
+  repeat until port[status]>127;
+  port[data]:=x;
+end;
+
+PROCEDURE dump_pluto(xx1,yy1 : integer);
+var
+  count : integer;
+  line_byte : integer;
+  graphbytes : integer;
+  sixpos, lastdata : integer;
+  la : integer;
+  bt,result : byte;
+  sixline : sixbyte;
+  end_one : integer;
+  v : array[1..576] of byte;
+  finish, dataflag : boolean;
+  formfeed : integer;
+
+procedure place(b : byte);
+begin
+  sixline[sixpos]:=b;
+  if (sixpos=128) or (finish=TRUE) then
+  begin
+    blockwrite(fname,sixline,1);
+    sixpos:=1;
+    fillchar(sixline,sizeof(sixline),0);
+  end
+  else
+  sixpos:=sixpos+1;
+end; {of place}
+
+
+begin    {dump_pluto}
+  finish:=FALSE;
+  if bdr=FALSE then rsel(green) else rsel(white);
+  sixpos:=1; finish:=false;
+  end_one:=(xx1 div 8);
+  if (xx1 mod 8)<>0 then end_one:=end_one+1;
+  formfeed:=trunc(slabeldrop*216);
+  {set printer line spacing to 24/216 of an inch for correct aspect ratio}
+  {This is correct for FX80 types but LQ800 works in 180ths not 216ths !!}
+  place(27); place(51); place(24);
+
+  for count:=end_one downto 1 do
+  begin
+    lastdata:=0;
+    moveto(count*8-8,0);
+    repeat until port[status]>127;
+    port[data]:=$BE;
+    repeat until port[status]>127;
+    port[data]:=lo(8);
+    port[data]:=hi(8);
+    port[data]:=lo(yy1+2);
+    port[data]:=hi(yy1+2);
+    gotoxy(54,8);
+    write((end_one-count)/end_one*100:4:0,' % done.');clreol;
+    dataflag:=FALSE;
+    fillchar(v,sizeof(v),0);
+    for line_byte:=yy1+2 downto 0 do
+    begin
+      result:=port[data];
+      bt:=0;
+      if (result and 1)>0 then bt:=bt or 128;
+      if (result and 2)>0 then bt:=bt or 64;
+      if (result and 4)>0 then bt:=bt or 32;
+      if (result and 8)>0 then bt:=bt or 16;
+      if (result and 16)>0 then bt:=bt or 8;
+      if (result and 32)>0 then bt:=bt or 4;
+      if (result and 64)>0 then bt:=bt or 2;
+      if (result and 128)>0 then bt:=bt or 1;
+      v[line_byte]:=bt;
+      if (dataflag=FALSE) and (result>0) then
+      begin
+        dataflag:=TRUE;
+        lastdata:=line_byte;
+      end;
+    end;
+    if lastdata=0 then
+    begin
+      place(13); place(10);formfeed:=formfeed-24;
+    end
+    else
+    begin
+      if number_across>1 then lastdata:=yy1+2;
+      if (lastdata mod 8)<>0 then lastdata:=((lastdata div 8)+1)*8;
+      place(27); place(ord('*')); place(1);
+      graphbytes:=lastdata;
+      if number_across>1 then graphbytes:=graphbytes*number_across+space_between_labels*12*(number_across-1);
+      place(graphbytes MOD 256); place(graphbytes div 256);
+      for line_byte:=lastdata downto 1 do place(v[line_byte]);
+      if number_across>1 then
+      for la:=1 to number_across-1 do
+      begin
+       for line_byte := 1 to space_between_labels*12 do place(0);
+(*       place(27); place(ord('*')); place(1); {repeat line for 2nd label across}
+       place(lastdata MOD 256); place(lastdata div 256);
+  *)     for line_byte:=lastdata downto 1 do place(v[line_byte]);
+      end;
+      place(13); place(10);formfeed:=formfeed-24;
+    end;
+  end;
+  while formfeed>216 do
+  begin
+    place(27);place(74);place(216);
+    formfeed:=formfeed-216;
+  end;
+  place(27);place(74);place(formfeed);
+  finish:=TRUE; place(0);
+end; {of dump_pluto}
+
+procedure output(VAR ch : byte);
+begin
+  inline($DB/$B4/    {IN A,B4}
+         $1F/        {RRA}
+         $38/$FB/    {JR,C }
+         $2A/ch/     {LD HL,(CH)}
+         $7E/        {LD A,(HL)}
+         $D3/$B5/    {OUT (B5),A}
+         $AF/        {XOR A}
+         $D3/$B4/    {OUT (B4),A}
+         $3C/$3C/    {INC A INC A}
+         $D3/$B4     {OUT (B4),A}
+);
+end;
+

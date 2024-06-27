@@ -1,0 +1,237 @@
+;This is the program by Dr Lee of Peterborough
+; which appeared in the December  1980 edition
+; of Computer Age. It is a method of transferring
+; files between CP/M computers. Documentation is
+; contained in the article "Transferring Files
+; between two CP/M Machines". What makes it so
+; cunning is the fact that the program needs only
+; to be in the receiving computer as it uses
+; the dump utility. Limitations include the
+; fact that the transmitted program must be
+; smaller than memory and the dump program
+;must be altered if your list device is parallel
+;and not serial     A.R.M.C. 1/5/81
+
+        ORG        100H
+ HIGMEM   EQU      32         ;POSITION IN MEMORY
+                              ;TO PLACE PROGRAMME
+
+;         ****** INSERTED USART ROUTINE ******
+; (this initialises an U8251 on ports 7DH & 7CH
+; not part of original programme. set to talk
+; to a Horizon. Butcher this to suit)
+
+          MVI      A,0D0H
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          MVI      A,40H
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          MVI      A,0CEH
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          MVI      A,37H
+          OUT      7DH
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          NOP
+          MVI      A,05H
+          OUT      78H
+          NOP
+          NOP
+          NOP
+          MVI      A,01H
+          OUT      78H      ;SET BAUD RATE
+          
+;		   The original program continues from now
+
+
+ BASE     EQU      HIGMEM*1024
+          LXI      SP,BASE
+          LXI      D,SIGNON
+          MVI      C,9
+          CALL     5
+          JMP      BASE
+
+ SIGNON:  DB       26,'TO USE THIS PROGRAMME:',0DH,0AH
+          DB       'CONNECT CROSSED LEAD FROM '
+          DB       'RECEIVING COMPUTERS READER',0DH,0AH
+          DB       'PLUG TO OTHER COMPUTERS '
+          DB       'PRINTER PLUG .',0DH,0AH
+          DB       'ON THE OTHER MACHINE TYPE:',0DH,0AH
+          DB       'DUMP FILENAME.COM',0DH,0AH
+          DB       'FOLLOWED BY CONTROL P AND '
+          DB       'RETURN',0DH,0AH,0AH,'$'
+          ORG      BASE
+
+          LXI      H,100H
+ ST:      PUSH     H
+ START:   CALL     READER    ;GET CHARACTER
+
+          CPI      '>'       ;CHECK FOR TERMINATOR
+          JZ       DONE      ;IF SO,JOB DONE
+          CPI      020H
+          JNZ      START     ;LOOP FOR SPACE
+ 
+          MVI      B,16      ;BYTES PER LINE
+          POP      H
+ LOOP:    PUSH     B
+          PUSH     H
+          CALL     GETBYTE
+          PUSH     PSW       ;SAVE IT
+   
+          CALL     READER    ;READ READER (SPACE OR TAB )
+          MOV      E,A       ;SAVE IN E
+
+          POP      PSW       ;RESTORE DATA
+          POP      H         ;RESTORE POINTER
+          MOV      M,A       ;PUT DATA IN RAM
+          INX      H         ;BUMP POINTER
+          POP      B         ;RESTORE COUNT
+          DCR      B
+          JNZ      LOOP      ;MORE DATA ON LINE
+          MOV      A,E       ;RESTORE CR
+          CPI      0DH       ;CHECK CORRECT
+          JZ       ST        ;KEEP GOING
+          LXI      D,MESSCR
+          JMP      PRINT
+
+ 
+MESSSAV:  DB       0DH,'TRANSFER FINISHED - '
+          DB       'NO ERRORS DETECTED',0DH,0AH
+          DB       'TYPE SAVE 00'
+ NUM:     DB       '0 FILENAME.COM AND '
+          DB       'PRESS RETURN',0DH,0AH,'$'
+MESSCR:   DB       0DH,0AH,'ERROR - '
+          DB       'BYTES DROPPED',0DH,0AH,'$'
+MESSWR:   DB       0DH,0AH,'ERROR - '
+          DB       'INVALID CHARACTER',0DH,0AH,'$'
+
+ DONE:    POP      H         ;RESTORE POINTER
+          DCX      H
+          MOV      B,H       ;NO. OF RECORDS TO B
+ COUNT:   LXI      H,NUM     ;POINT TO 000
+                             ;IN PRINT STRING
+ C1:      MOV      A,M       ;GET DIGIT
+          INR      A         ;INCREMENT IT
+          MOV      M,A       ;PUT IT BACK
+          CPI      '9'+1
+          JNZ      CONT      ;LOOP IF 9 OR LESS
+          MVI      M,'0'     ;SET DIGIT TO ZERO
+          DCX      H
+          JMP      C1        ;INCREMENT NEXT DIGIT
+
+ CONT:    DCR      B         ;ONE LESS RECORD
+          JNZ      COUNT     ;NOT YET FINISHED
+
+                             ;SET LEADING ZEROS
+                             ;TO SPACES
+          LXI      H,NUM-2
+          MVI      A,'0'
+ ZERO:    CMP      M         ;IS DIGIT ZERO?
+          JNZ      PRIN      ;NOT A ZERO
+
+          MVI      M,' '     ;SET ZERO TO SPACE
+          INX      H
+          JMP      ZERO      ;REPEAT
+
+ PRIN:    LXI      D,MESSSAV ;MESSAGE 'TYPE SAVE'
+ PRINT:   MVI      C,9
+          CALL     5         ;PRINT MESSAGE
+          JMP      0         ;BYE,BYE!
+
+ ;            **SUBROUTINE TO GET ONE DATA BYTE**
+
+ GETBYTE: CALL     GETHEX    ;GET FIRST NIBBLE
+          ADD      A
+          ADD      A
+          ADD      A
+          ADD      A         ;X 16
+          PUSH     PSW       ;SAVE IT
+          CALL     GETHEX    ;GET NEXT NIBBLE
+          MOV      B,A       ;NEW NIBBLE TO B
+          POP      PSW       ;OLD TO A
+          ADD      B         ;ADD TOGETHER
+          RET
+ 
+;    **SUBROUTINE TO TURN ASCII CHAR TO BIN NIBBLE**
+
+ GETHEX:  CALL     READER    ;READ CHARACTER
+          ANI      07FH      ;STRIP PARITY
+          CPI      030H
+          JM       INVALID   ;CHAR < '0'
+          SBI      030H
+          CPI      10
+          RM                 ;RETURN VALID 0-9
+          CPI      'A'-030H-10
+          JM       INVALID   ;'9' < CHAR < 'A'
+          SBI      'A'-10-030H
+          CPI      10H
+          RM                 ;RETURN VALID A-F
+
+                             ;CHAR > 'F'
+
+                             ;INVALID CHARACTER
+ INVALID: LXI      D,MESSWR
+          JMP      PRINT     ;PRINT ERROR MESSAGE
+
+; Thr following subroutine is altered from original
+; and should be butchered to suit
+                             ;SUBSTITUTE TO READ
+                             ;A CHARACTER FROM READER
+                             ;ND ECHO ON CONSOLE
+READER:   IN      7DH        ;INPUT FROM SERIAL STATUS
+          ANI     02         ;READY?
+          JZ      READER     ;IF NOT THEN POLL
+          IN      7CH        ;THEN READ PORT
+          ANI     7FH        ;AND STRIP OFF PARITY
+
+
+
+ ; **IF YOU HAVE A CP/M READER DEVICE REPLACE **
+ ; **PREVIOUS ROUTINE WITH CODE TO READ THE   **
+ ; **READER DEVICE, IE                        **
+ ;READER: MVI      C,3       ;FDOS CALL TO READER
+ ;	  CALL	   5	     ;AND DO IT
+
+
+          PUSH     PSW       ;SAVE CHAR
+          MOV      E,A
+          MVI      C,2
+          CALL     5         ;PRINT ON CONSOLE
+          POP      PSW       ;RESTORE CHAR
+          RET
+          END
+

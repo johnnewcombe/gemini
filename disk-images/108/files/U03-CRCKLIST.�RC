@@ -1,0 +1,51 @@
+
+--> FILE:  CALC    .BAS		CRC = 2E 34
+
+--> FILE:  CALC    .INT		CRC = 0A 2D
+
+--> FILE:  COMPILE .BAS		CRC = 8D B6
+
+--> FILE:  COMPILE .INT		CRC = 82 6C
+
+--> FILE:  RUNOBJ  .BAS		CRC = ED 70
+
+--> FILE:  RUNOBJ  .INT		CRC = 15 48
+
+--> FILE:  EDITOR  .BAS		CRC = 45 40
+
+--> FILE:  EDITOR  .INT		CRC = E3 32
+
+--> FILE:  EDITOR1 .BAS		CRC = F5 D4
+
+--> FILE:  EDITOR1 .INT		CRC = C9 98
+
+--> FILE:  PROG    .BAS		CRC = 61 D3
+
+--> FILE:  PROG    .INT		CRC = 98 37
+
+--> FILE:  INIT    .BAS		CRC = 3A 75
+
+--> FILE:  INIT    .INT		CRC = E6 C3
+
+--> FILE:  PCALC   .BAS		CRC = 86 02
+
+--> FILE:  PCALC   .INT		CRC = 58 6F
+
+--> FILE:  CNOTES  .PRN		CRC = 34 16
+
+--> FILE:  SAL     .SRC		CRC = D5 07
+
+--> FILE:  SAL     .OBJ		CRC = 6F 84
+
+--> FILE:  BM      .SRC		CRC = 22 56
+
+--> FILE:  BM      .OBJ		CRC = 61 20
+
+--> FILE:  BREAK   .COM		CRC = EF EA
+
+--> FILE:  BREAK   .ASM		CRC = BF BC
+
+--> FILE:  LIST    .ASM		CRC = 44 DF
+
+--> FILE:  LIST    .COM		CRC = 4E 06
+

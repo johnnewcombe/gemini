@@ -1,0 +1,1205 @@
+
+
+
+
+
+	org 100h
+	jp start
+
+;	Gemini GM891 test program
+;	Version 1.0	20-10-87
+
+;	Version 1.1	04-11-87
+;	Modified for revision 104 of Sierra 11007 firmware
+;	Extra option to display revision number added
+
+;	Version 1.2	20-11-87
+;	Modified for interupts
+
+;	Version 1.3     27-11-87
+;	Timeout added in routine that gets result. Required if you send
+;	an ATZ command before Modem Controller chip has processed last
+;	command. Default escape sequence added in RESET.
+	
+;	Version 1.4	10-12-87
+;	Timeout removed from getres. This does not work with revision 104
+;	of firmware.
+true	equ -1
+false	equ not true
+
+;	General equates
+CR	EQU	0DH
+LF	EQU	0AH
+ESC	EQU	1BH
+BDOS	EQU	5
+EOT	equ	4		; ASCII End Of Transmission
+
+;	GM812/832 Ports
+IVCD	EQU	0B1H
+IVCS	EQU	0B2H
+
+
+;	Sierra UART ports
+mdat	equ	80h		; Sierra base port/data
+mbaud1	equ	80h		; Divisor latch LSB (NOT USED!!!!!)
+mbaud2	equ	81h		; Divisor latch MSB
+miereg	equ	81h		; Modem interupt enable register
+miireg	equ	82h		; Modem interupt identification register
+mlcreg	equ	83h		; Line control register
+mmcreg	equ	84h		; Modem control register
+mlstat	equ	85h		; Modem line status register
+mstat	equ	86h		; Modem status register
+
+adata	equ	88H		; PIO base address
+bdata	equ	adata+1
+actrl	equ	adata+2
+bctrl	equ	adata+3
+
+				; PIO controlled LED's
+cdled	equ	0		; CD LED
+dsrled	equ 	1		; DSR LED
+orgled	equ 	4		; ORG LED
+off	equ 	0		; All LED's OFF
+
+
+;Uart speed table
+_1200	equ	0		; 1200 baud
+_300	equ	01		; 300 Baud
+_150	equ 	3		; 150 baud
+
+lcdat	equ	00000011B	; Line control reg data
+				; Bit 0 + 1 = 8 bit word
+				; Bit 2     = 1 stop 
+				; Bit 3     = no parity
+				; Bit 4     = no parity
+				; Bit 5     = no stick parity
+				; Bit 6     = no break control
+				; Bit 7     = No divisor latch here
+
+mcdat	equ	00001001B	; Modem control reg data
+				; Bit 0     = DTR
+				; Bit 3	    = OUT2
+	defb 0			; Filler to get to even boundry
+vector:	defw introu
+dstatr:	defb 10,13,7," BINGO Modem status register is $"
+
+introu:	push af
+	push hl
+	push de
+	push bc
+xxx:	in a,(0b2h)
+	rrca
+	jr c,xxx
+	ld a,7
+	out (0b1h),a
+	in a,(mstat)
+	ld hl,leds
+	res cdled,(hl)		; Turn led off
+	bit 7,a			; Do we want to turn it on
+	jr z,zzz
+	set cdled,(hl)		; Yes
+zzz:	ld a,(leds)
+	out (bdata),a
+	pop bc
+	pop de
+	pop hl
+	pop af
+	ei
+	reti
+
+menu:
+	defb 1ah
+	defb cr,lf,lf,lf,lf
+	defb "                     0 - Off Line and Exit",cr,lf
+	defb "                     1 - Select baud rate",cr,lf
+	defb "                     2 - Autoanswer",cr,lf
+	defb "                     3 - Manual Entry",cr,lf
+	defb "                     4 - Off Line",cr,lf
+	defb "                     5 - Examine status",cr,lf
+	DEFB "                     6 - Test 773298",cr,lf
+	defb "                     7 - Test 771810",cr,lf
+	defb "                     8 - Return firmware revision number",cr,lf,lf,lf
+	defb "                     Enter Option - "
+	defb "$"
+
+cspeed:	defb 1ah
+	defb cr,lf,lf,lf,lf,lf
+	defb "                     0 - Return to main menu",cr,lf
+	defb "                     1 - 300 baud",cr,lf
+	defb "                     2 - 1200 baud",cr,lf,lf,lf
+	defb "                     Enter Option - "
+	defb "$"
+
+res1:	defb " LINE CONNECTED ",0
+res2:	defb "    RINGING    ",0
+res3:	defb "   NO CARRIER   ",0
+res4:	defb " ILLEGAL COMMAND ",0
+res5:	defb "  CONNECT 1200  ",0
+res6:	defb "   NO DIALTONE   ",0
+res7:	defb "     ENGAGED    ",0
+res8:	defb "    NO ANSWER    ",0
+resx:	defb "  UNKNOWN REPLY  ",0
+
+mes80:	defb lf,lf,lf,lf
+	defb cr,lf,9,"Modem Data register is......................80 $"
+mes81:	defb cr,lf,9,"Modem Interrupt Enable register is..........81 $"
+mes82:	defb cr,lf,9,"Modem Interrupt Identification register is..82 $"
+mes83:	defb cr,lf,9,"Modem Line Control register is..............83 $"
+mes84:	defb cr,lf,9,"Modem Control register is...................84 $"
+mes85:	defb cr,lf,9,"Modem Line Status. register is..............85 $"
+mes86: 	defb cr,lf,9,"Modem Status register is....................86 $"
+mescom:	defb cr,lf,9,24h
+akmes:	defb cr,lf,lf,9,"Any key to continue - $"
+
+testmes:
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb cr,lf,"The quick brown fox jumped over the lazy dogs"
+	defb eot,eot
+	defb 0
+
+str0:	defb "ATH",cr,0			; Hang up
+str1:	defb "ATS0=0 PD 773298",cr,0	; Dial a number
+str2:	defb "ATS0=2",cr,0		; Auto-answer
+str4:	defb "ATH",cr,0			; Hang up
+str8:	defb "ATI0",cr,0		; Request product ID code
+str8a:	defb "ATI1",cr,0		; Request firmware revision number
+restr:	defb "ATZ",cr,0
+initstr:
+	defb "ATV",cr,0
+teststr:
+	defb "ATS0=0 F1 PD 773298",cr,0
+testrstr:
+	defb "ATS0=0 F1 PD 771810",cr,0
+
+com3m:	defb "Enter your command - $"
+head:	defb " Gemini GM891 Modem Test Version 1.4 ",0
+stalin:	defb " Command                                                  "
+	defb "Result code                $"
+b1200: 	defb " 1200 Baud ",0
+b300:	defb " 300 Baud ",0
+com8m0:	defb "   Product ID code is          $"
+com8m1:	defb "   Firmware revision Number is $"
+
+;	Initialise Sierra chipset and PIO
+
+initm:
+				; Initialise PIO
+	xor a			
+	out (mlcreg),a
+	ld a,00001100B		; Set for interupts
+	out (miereg),a
+
+	ld a,lcdat
+	or 80h			; Ensure bit 7 set
+	out (mlcreg),a		; Set it
+	ld a,(speed)		; Set up baud rate
+	out (mbaud2),a
+	ld a,lcdat
+	out (mlcreg),a
+	ld a,mcdat
+	out (mmcreg),a
+
+	im 2
+	ld hl,vector
+	ld a,h
+	ld i,a
+	ld a,l
+	out (actrl),a
+	ld a,11001111B			; 0CF Make port A control
+	out (actrl),a
+	ld a,00000001B			; Make bit 0 input
+	out (actrl),a
+	ld a,10110111B
+	out (actrl),a
+	ld a,11111110B
+	out (actrl),a
+
+	ld a,0fh		; Make Port B outputs
+	out (bctrl),a
+	ld a,off
+	out (bdata),a
+
+	ei	
+
+	ld hl,leds
+	set dsrled,(hl)		; Turn on this one
+	res cdled,(hl)		; CD should be off
+	call setled
+	ld de,2*256+30		; Position cursor
+	call poscur
+	ld a,esc		; Clear to end of line
+	call echo
+	ld a,"*"
+	call echo
+	ld a,(speed)		; Display baud rate
+	ld hl,b1200
+	or a
+	jr z,initm1
+	ld hl,b300
+initm1:	call prninv
+	ret
+
+reset:	
+					; First of all send the escape
+					; sequence "+++"
+	call ldelay
+	ld b,3
+sss:	ld a,"+"
+	call mout
+	djnz sss
+	call ldelay
+	ld a,cr
+	call mout
+
+	ld de,20*256+0
+	call poscur
+	call logof			; Zap DTR
+
+	ld hl,restr			; Do a soft reset
+	call sendcom
+	call getres
+	cp "O"				; This will return "OK",cr,lf
+	jr nz,retry
+chkO:	call getres			; Get result
+	cp "O"				; There may be multiple "O"'s
+	jr nz,chkK
+	jr chkO
+chkK:	cp "K"
+	jr nz,reset
+res00:	
+	call getmod
+	cp cr
+	jr nz,reset
+
+
+res01:	
+	call getmod
+	cp lf
+	jr nz,reset
+
+	ld a,cr				; ********* 1.3 *********
+	call mout
+
+	call setsta		; Clear status line
+
+	ld hl,initstr		; Result of "0" from now on
+	call sendcom
+	call getres
+	cp "0"
+	jp nz,start
+	ret
+
+start:
+	ld sp,stack
+	ld b,20
+startx:	in a,(mstat)
+	djnz startx
+	ld a,1ah			; Clear the screen
+	call echo
+	ld de,0018			; Position cursor
+	call poscur
+	ld hl,head			; Display title
+	call prninv
+	ld de,4*256+0			; Lock top 3 lines
+	call poscur
+	ld a,esc
+	call echo
+	ld a,"M"
+	call echo
+	call setsta			; Clear status line
+
+retry:	call initm			; Initialise the modem
+
+	call reset
+
+start0:
+	ld hl,leds
+	res orgled,(hl)		; Not originate
+	call setled
+	ld de,4*256+0		; Get option
+	call poscur
+	ld de,menu
+	ld c,9
+	call bdos
+	ld c,1
+	call bdos
+	cp "0"			; Hang up and return to CP/M
+	jp z,com0
+	cp "1"			; Change baud rate
+	jp z,com1
+	cp "2"			; Auto-answer
+	jp z,com2
+	cp "3"			; Manual entry
+	jp z,com3
+	cp "4"			; Hang up
+	jp z,com4
+	cp "5"			; Display status of registers
+	jp z,com5
+	cp "6"			; Dial and send
+	jp z,tests
+	cp "7"			; Dial and send
+	jp z,testr
+	cp "8"			; Display version number
+	jp z,com8
+	cp esc			; Quit
+	jp z,0
+	jr start0
+
+com0:
+	call setsta		; Clear status line
+	ld hl,str0
+	call sendcom
+	call getres
+	cp "0"
+	jr z,com0a
+	cp "X"			; Timeout error reply
+	jp nz,badrep
+	call initm
+	call reset
+	jr com0			; Try again
+com0a:	in a,(mlstat)
+	and 1			; Is there one there yet
+	jr z,com0a
+	in a,(mdat)
+
+	ld a,off		; Turn led's off
+	out (bdata),a
+
+	ld a,esc		; Restore display
+	call echo
+	ld a,"O"
+	call echo
+	ld a,1ah
+	call echo
+	jp 0
+
+badrep:			; <A> contains ASCII result
+	push af		; Save result
+	call savcur
+	ld de,20*256+25
+	call poscur
+	pop af
+	ld hl,res1
+	cp "1"
+	jr z,pmes
+	ld hl,res2
+	cp "2"
+	jr z,permes
+	ld hl,res3
+	cp "3"
+	jr z,permes
+	ld hl,res4
+	cp "4"
+	jr z,permes
+	ld hl,res5
+	cp "5"
+	jr z,permes
+	ld hl,res6
+	cp "6"
+	jr z,permes
+	ld hl,res7
+	cp "7"
+	jr z,permes
+	ld hl,res8
+	cp "8"
+	jr z,permes
+	push af
+	ld a," "+80h
+	call echo
+	pop af
+	call b2hex
+	ld hl,resx
+pmes:	call prninv		; Display message
+	call repcur		; Replace cursor
+	call logof
+	call initm
+	call anykey
+	jp start0
+	jp loop0
+permes:	call prninv
+	call repcur
+	call anykey
+	ret
+
+	jp start0
+
+
+com1:				; Change modem baud rate
+	call setsta		; Clear status line
+com1a:	ld de,cspeed		; Display options
+	ld c,9
+	call bdos
+	ld c,1
+	call bdos
+	cp "0"
+	jp z,start0
+	cp esc
+	jp z,start0
+	ld b,_300
+	cp "1"
+	jr z,com1b
+	ld b,_1200
+	cp "2"
+	jr nz,com1
+com1b:	ld a,b
+	ld (speed),a
+	call initm
+	jp start0
+
+com2:
+	ld hl,leds
+	res orgled,(hl)
+	call setled
+
+	ld a,1ah		; Clear screen
+	call echo
+	call setsta		; Clear status line
+	ld hl,str2		; Send command string
+	call sendcom
+	ld de,3*256+70		; Position cursor
+	call poscur		; Ready for result
+
+	ld a," "+80h
+	call echo
+com2a:
+	in a,(mlstat)
+	and 1			; Is there one there yet
+	jr z,com2ab		; No, try kbd
+	in a,(mdat)
+com2aa:
+	cp "1"			; Are we on line yet?
+	jr z,com2b		; Yes ==>
+com2ab:	di			; No interupts here
+	ld a,esc		; No, so check kbd
+	call echo
+	ld a,"k"
+	call echo
+	call getchr		; Any key hit?
+	ei
+	or a
+	jr z,com2a		; Not yet, so loop
+	jp start0		; Yes, so back to menu
+
+com2b:	
+	call b2hex		; Display the "1"
+	ld a," "+80h
+	call echo
+
+com2c:	in a,(mlstat)		; A "1" has been found
+	and 1			; Wait for CR
+	jr z,com2c
+	in a,(mdat)		; Get CR
+	cp cr
+	jr nz,com2b		; Not CR so wait for it
+	ld de,10*256+0
+	call poscur
+loop6:
+	di
+	ld a,esc
+	call echo
+	ld a,"k"
+	call echo
+	call getchr
+	ei
+	or a
+	jr z,loop7		; NO ==>
+	di
+	ld a,esc
+	call echo
+	ld a,"K"
+	call echo
+	call getchr
+	ei
+	cp esc			; Escape ?
+	jp z,start0		; Yes, exit
+loop7:	in a,(mlstat)		; Anything from modem
+	and 1
+	jr z,loop6		; Not yet, loop round
+	in a,(mdat)		; Get char from modem
+	cp eot			; End of Transmission ?
+	jr z,loop8
+	call echo		; Echo to screen
+	jr loop6
+loop8:
+	ld hl,leds
+	res cdled,(hl)
+	ld a,(leds)
+	out (bdata),a
+
+	call logof
+	call anykey
+	cp esc
+	jp z,start0
+	jp com2
+
+
+
+com3:				; Manual entry of command
+	call setsta		; Clear status line
+	ld de,19*256+0
+	call poscur
+	di
+	ld a,esc		; Delete to end of line
+	call echo
+	ld a,"*"
+	call echo
+	ei
+	ld de,com3m
+	ld c,9
+	call bdos
+	call savcur
+	ld hl,combuf
+com3a:	push hl
+	ld c,1			; Get a char from kbd
+	call bdos
+	pop hl
+	cp 8			; Backspace ?
+	jr z,com3a		; Yes, don't include it
+	cp esc			; Escape ?
+	jp z,start0		; Yes, quit
+	cp cr			; Terminator
+	jr z,com3b		; Yes, put in buffer
+	cp " "			; Simple check and conversion
+	jr c,com3a		; Control char !!
+	cp "Z"+1
+	jr c,com3b
+	and 5fh			; Convert to upper case
+com3b:	ld (hl),a		; Put in buffer
+	inc hl			; Bump buffer pointer
+	cp cr			; Terminator?
+	jr nz,com3a		; Not yet, get another
+
+	ld hl,combuf		; Point to start of buffer
+	call sendcom		; Send command
+
+
+	call getres
+	jr com3d
+
+	ld a," "
+	call echo
+	ld a," "+80h
+	call echo
+com3c:	in a,(mlstat)
+	and 1			; Is there one there yet
+	jr z,com3c		; No ==>
+	in a,(mdat)		; Yes, get it
+
+	push af
+	call b2hex
+	pop af
+
+	cp cr
+	jr z,com3c		; If CR then get skip
+	cp lf
+	jr z,com3c		; Also if LF
+	push af
+	ld a," "+80h
+	call echo
+
+com3d:	ld de,20*256+50
+	call poscur
+	call anykey
+	jp start0
+
+
+com4:	call setsta		; Get off line
+	ld hl,str4
+	call sendcom
+	call getres
+	cp "0"
+	jp z,start0
+	cp "X"
+	jp nz,badrep
+	call initm
+	call reset
+	jr com4
+
+ 
+com5:			; Display status of all registers
+	ld de,4*256+0	; Position cursor
+	call poscur
+	ld a,1ah
+	call echo
+	call status
+	call anykey
+	jp start0
+
+com8:	
+	call setsta			; Clear status line
+	ld a,1ah			; Clear the screen
+	call echo
+	ld de,10*256+0
+	call poscur
+	ld c,9
+	ld de,com8m0
+	call bdos
+	ld hl,str8
+	call sendcom
+	ld de,10*256+32
+	call poscur
+com8a:	call getmod			; Get reply from modem
+	cp cr				; Don't want to display CR
+	jr z,com8a
+	cp lf				; Or LF
+	jr z,com8a
+	call echo			; Display result
+com8aa:	call getmod			; Get another reply
+	call echo			; Display it
+	cp lf
+	jr nz,com8aa
+	ld de,3*256+70			; Position cursor
+	call poscur			; For status display
+	ld a," "+80h
+	call echo
+	call getmod			; Get the "0"
+	call b2hex
+	ld a," "+80h
+	call echo
+com8b:
+	call setsta			; Clear status line
+	ld de,12*256+0			; Position cursor
+	call poscur
+	ld c,9				; Display text
+	ld de,com8m1
+	call bdos
+	ld hl,str8a			; Send command to modem
+	call sendcom
+	ld de,12*256+32			; Position cursor for reply
+	call poscur
+com8c:
+	call getmod			; Get CR and LF
+	cp cr
+	jr z,com8c			; Don't echo
+	cp lf
+	jr z,com8c
+	call echo			; Not CR or LF so display it
+com8d:	call getmod			; Get reply
+	call echo			; Display on screen
+	cp lf				; Check for second LF
+	jr nz,com8d
+	ld de,3*256+70			; Position cursor
+	call poscur			; For status display
+	ld a," "+80h
+	call echo
+	call getmod			; Get the "0"
+	call b2hex
+	ld a," "+80h
+	call echo
+
+	ld de,20*256+0
+	call poscur
+
+	call anykey
+	jp start0
+
+getmod:	in a,(mlstat)			; Get a char from modem
+	and 1				; Wait
+	jr z,getmod
+	in a,(mdat)
+	ret
+	
+anykey:	
+	ld de,akmes		; Any key to continue
+	ld c,9
+	call bdos
+	ld c,1
+	call bdos
+	ret
+
+
+status:
+	ld c,9
+	ld de,mes80
+	call bdos
+	in a,(mdat)
+	call b3hex
+	ld c,9
+	ld de,mes81
+	call bdos
+	in a,(mbaud2)
+	call b3hex
+	ld c,9
+	ld de,mes82
+	call bdos
+	in a,(82h)
+	call b3hex
+	ld c,9
+	ld de,mes83
+	call bdos
+	in a,(mlcreg)
+	call b3hex
+	ld c,9
+	ld de,mes84
+	call bdos
+	in a,(mmcreg)
+	call b3hex
+	ld c,9
+	ld de,mes85
+	call bdos
+	in a,(mlstat)
+	call b3hex
+	ld c,9
+	ld de,mes86
+	call bdos
+	in a,(mstat)
+	call b3hex
+	ld c,9
+	ld de,mescom
+	call bdos
+	ret
+
+logof:
+	ld a,mcdat
+	res 0,a
+	out (mmcreg),a
+
+	ld hl,leds
+	res dsrled,(hl)
+	call setled
+
+	ld a,255
+	call delay
+	ld a,mcdat
+	out (mmcreg),a
+
+	set dsrled,(hl)
+	call setled
+	ret
+
+
+getres:				; Get result from a hayes command
+	push de
+	call savcur		; Save cursor position
+	ld de,3*256+70
+	call poscur
+	ld a," "+80h
+	call echo
+	ld de,3000
+gres0:	in a,(mlstat)
+	and 1			; Is there one there yet
+	jr z,gres0
+;	ld a,3
+;	call delay
+;	dec de
+;	ld a,d
+;	or e
+;	jr nz,gres0		; No ==>
+;	ld a,"X"
+;	jr gres2
+gres1:	in a,(mdat)		; Yes, get it
+;	push af
+;	call b2hex
+;	pop af
+	cp cr
+	jr z,gres0		; If CR then get skip
+	cp lf
+	jr z,gres0		; Also if LF
+	push af
+	call b2hex
+	ld a," "+80h
+	call echo
+	pop af
+gres2:	pop de
+	ret			; Done
+
+getcr:	in a,(mlstat)		; Get a CR issued at end of each reply
+	and 1
+	jr z,getcr		; Wait till ready
+	in a,(mdat)		; Get result
+	cp cr			; Is it the right one
+	jp nz,badrep		; No, let's see what it is
+	ret			; Done
+
+b2hex:
+	push af			; Save char
+	call b3hex		
+	pop af
+	ret
+
+b3hex:	push af
+	rra
+	rra
+	rra
+	rra
+	call b1hex
+	pop af
+b1hex:	and 0fh
+	add a,90h
+	daa
+	adc a,40h
+	daa
+	set 7,a
+	call echo
+	ret
+
+sendcom:			; Send a command to modem
+				; HL points to command string
+				; Command string terminated with null
+	call savcur
+
+;**************************************************************************
+;	Read Data  -  Required for 8711 version of firmware
+	in a,(mdat)
+;**************************************************************************
+
+	ld de,3*256+9
+	call poscur
+	ld a," "+80h
+	call echo
+scom0:	ld a,(hl)		; Check for end
+	or a
+	jr z,scomx		; Done
+	call mout		; Send char to modem
+	cp cr
+	jr z,scomx
+	set 7,a
+	call echo
+scom1:	inc hl			; bump char
+	jr scom0		; Loop till done
+scomx:	ld a," "+80h
+	call echo
+	call repcur
+	ret
+
+mout:			; Outputs char in <A> to modem
+	push af		; Save char
+mout0:	in a,(mlstat)	; Check modem status
+	bit 5,a
+	jr z,mout0
+	pop af		; Restore char
+	and 7fh		; Zap parity bit
+	out (mdat),a
+
+;**************************************************************************
+;	Read Data  -  Required for 8711 version of firmware
+mout1:	in a,(mlstat)
+	and 1
+	jr z,mout1
+	in a,(mdat)
+;**************************************************************************
+	ret
+
+delay	or a
+	ret z
+	push bc
+	ld b,a
+msdel0:	ld a,215
+msdel1:	ex (sp),hl
+	ex (sp),hl
+	dec a
+	jr nz,msdel1
+	djnz msdel0
+	pop bc
+	ret
+echo:
+	PUSH	AF
+echo0:
+	IN	A,(IVCS)
+	RRCA
+	JR	C,echo0
+	POP	AF
+	OUT	(IVCD),A
+	RET
+
+;       **** Uart Drivers ****
+
+; POLLU - Polls the UART and moves any
+;         waiting character to (DE)
+
+POLLU:	IN	A,(mlstat)
+	AND	01H
+	RET	Z
+	IN	A,(mdat)
+	AND	7FH
+	ld (de),a
+	inc de
+	RET
+
+; SEROUT - Outputs the character in <A> to
+;          the serial port.
+
+SEROUT:	PUSH	AF
+SERO0:	IN	A,(mlstat)
+	AND	20H
+	JR	Z,SERO0
+	POP	AF
+SERO1:  			;AND	7FH Set Hi bit LO - TRK 
+	and 07fh
+	OUT	(mdat),A
+	RET
+
+
+
+;       **** IVC Drivers ****
+
+; GETVID - gets a character from the IVC
+; PUTVID - sends a character in <A> to the IVC
+;          Both poll the serial port whilst waiting.
+
+GETVID:	CALL	POLLU
+	IN	A,(IVCS)
+	RLCA
+	JR	C,GETVID
+	IN	A,(IVCD)
+	cp 1bh			; Escape
+	jp z,com4		; Disconnect
+	RET
+
+PUTVID:	PUSH	AF
+PV0:	CALL	POLLU
+	IN	A,(IVCS)
+	RRCA
+	JR	C,PV0
+	POP	AF
+	OUT	(IVCD),A
+	RET
+
+; Get a character from the keyboard
+; Returns NZ if a character is read.
+
+CONST:	di
+	LD	A,ESC
+	CALL	PUTVID
+	LD	A,"k"
+	CALL	PUTVID
+	CALL	GETVID
+	OR	A
+	jr z,constx
+	LD	A,ESC
+	CALL	PUTVID
+	LD	A,"K"
+	CALL	PUTVID
+	CALL	GETVID
+	CP	"C" AND 1FH
+	jr nz,constx
+	JP	0000H
+constx:	ei
+	ret
+
+
+
+loop0:	ld de,buffer
+	ld hl,buffer
+loop1:	call const		; Anything from kbd
+	call nz,serout		; Yes, send to modem
+	push hl
+	or a
+	sbc hl,de
+	pop hl
+	jr z,loop0
+	ld a,(hl)
+	inc hl
+	call putvid
+
+	ld a,(cdflag)
+	or a
+	jr z,loop1
+	call logof
+	jr loop1
+
+getchr:				; Get a char from IVC
+	IN	A,(IVCS)
+	RLCA
+	JR	C,GETCHR
+	IN	A,(IVCD)
+	RET
+
+poscur:				; Position cursor
+	di
+	ld a,esc		; Row in <D>
+	call echo		; Col in <E>
+	ld a,"="
+	call echo
+	ld a,d
+	add a," "
+	call echo
+	ld a,e
+	add a," "
+	call echo
+	ei
+	ret
+
+savcur:				; Request cursor position
+	di
+	ld a,esc
+	call echo
+	ld a,"?"
+	call echo
+	call getchr
+	ld (row),a
+	call getchr
+	ld (col),a
+	call getchr
+	ei
+	ret
+
+repcur:				; Replace cursor
+	di
+	ld a,esc
+	call echo
+	ld a,"="
+	call echo
+	ld a,(row)
+	call echo
+	ld a,(col)
+	call echo
+	ei
+	ret
+
+
+prnstr:				; Print a string of chars normal vid
+	ld a,(hl)
+	or a
+	ret z
+	call echo
+	inc hl
+	jr prnstr
+
+prninv:				; Print a string of chars in inverse vid
+	ld a,(hl)
+	or a
+	ret z
+	set 7,a
+	call echo
+	inc hl
+	jr prninv
+
+	
+setsta:				; Setup status line on screen
+	call savcur		; Save current cursor position
+	ld de,3*256+0		; Set cursor to line 3
+	call poscur		; Position cursor
+	ld de,stalin		; Display blank status line
+	ld c,9
+	call bdos
+	call repcur		; Restore cursor
+	ret
+
+
+
+tests:				; Dial up and send message
+	ld hl,leds
+	set orgled,(hl)
+	res cdled,(hl)
+	call setled
+	ld a,-1
+	ld (cdflag),a
+
+	call setsta
+	ld hl,teststr
+	call sendcom
+testsa:
+	call getres
+	push af
+	call b2hex
+	pop af
+
+	cp "1"			; Good reply
+	jr z,testsb		; Yes, continue
+	cp "X"			; Timeout reply
+	jp nz,badrep		; No, another error
+	call logof
+	call initm		; Timeout error so reset everthing in sight
+	call reset
+	jp start0
+testsb:	call getcr
+	ld a,1ah
+	call echo
+	ld hl,testmes
+tests0:	ld a,(hl)
+	or a
+	jr z,testsx
+	call serout
+	call echo
+	inc hl
+	jr tests0
+testsx:
+	ld a,-1
+	call delay
+	call logof
+	ld hl,leds
+	res orgled,(hl)
+	res cdled,(hl)
+	call setled
+	call anykey
+	jp start0
+
+testr:				; Dial up and send message
+	ld hl,leds
+	set orgled,(hl)
+	call setled
+
+	call setsta
+	ld hl,testrstr
+	call sendcom
+testra:
+	call getres
+	push af
+	call b2hex
+	pop af
+
+	cp "1"
+	jr z,testrb
+	cp "X"
+	jp nz,badrep
+	call logof
+	call initm
+	call reset
+	jp start0
+testrb:	call getcr
+	ld a,1ah
+	call echo
+	ld hl,testmes
+testr0:	ld a,(hl)
+	or a
+	jr z,testsx
+	call serout
+	call echo
+	inc hl
+	jr testr0
+
+setled:
+	ld a,(leds)
+	out (bdata),a
+	ret
+
+ldelay:
+	push bc
+	ld b,10
+ldel0:	ld a,30
+	call delay
+	djnz ldel0
+	pop bc
+	ret
+
+
+
+test:
+	jp start0
+
+; Workspaces
+
+	DEFS	64
+STACK:
+speed:	defb _1200		; Default to 1200 baud
+leds:	defb 0			; LED workspace
+cdflag:	defb -1			; Carrier,Detect flag
+				; 0 = ON
+				; -1 = OFF
+save:	defb 6
+row:	defb 0
+col:	defb 0
+combuf:	defs 50			; Command buffer
+BUFFER	EQU	$
+
+	END
+

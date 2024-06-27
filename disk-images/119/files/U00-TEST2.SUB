@@ -1,0 +1,4 @@
+PIP B:=A:*.*[OV]
+ERA B:*.SUB
+PIP A:=B:*.*[OV]
+SUBMIT TEST2

@@ -1,0 +1,306 @@
+REM MICROPLAN                                        MML Ltd.
+REM =========                                        11 Sun Street
+REM                                                  London E.C.2.
+REM                                                  Tel: 01-247 0691
+REM COPYRIGHT APRIL 1979
+REM
+REM ------------------------------------------------------------------
+REM
+REM
+REM  Library of CBASIC utilities to assist in text input & output
+REM
+REM Operating environment:
+REM
+REM Hardware:	Digital Microsystems DSC4
+REM CP/M:	Vers 2.2 with added features including clock & interrupts
+REM CBASIC:	Vers 2.03
+REM CRUN:	Vers 2.05
+REM
+REM ==================================================================
+REM
+REM FNQ%(QUERY$)
+REM FUNCTION to request YES or NO to QUERY
+REM
+REM FNOK%
+REM Function to request YES or NO to "O.K.(Y/N)" prompt
+REM
+REM
+REM FNLINE$
+REM FUNCTIOn FNLINE$ to return next word from LINE$
+REM
+REM
+REM FNDATE%
+REM Function to request date in Daym Month Year format
+REM Returning logical function FNDATE%
+REM FNDATE% = TRUE% if date o.k. or FALSE% if date in error
+REM Date is returned in array D%(3) where 1 - Day, 2 - Month, 3 - Year
+REM
+REM
+REM FNNOS(TEXT$)
+REM FUNCTION FNNOS to return number from TEXT$
+REM A value of 9.9E62 is used to indicate bad TEXT$
+REM
+REM
+REM FNDM$(DATE%)
+REM  Function returns day and month in form DD/MM
+REM
+REM
+REM FNDMY$(DATE)
+REM  Function returns d, month and year in form DD/MM/YY
+REM
+REM
+REM FNDMYY$(DATE)
+REM  Function returns day, month and year in form DD/MM/YYYY
+REM
+REM
+REM FNMY$(DATE%)
+REM  Function returns month and year in form MMM YY
+REM  where MMM is character string
+REM
+REM
+REM FNLINE$
+REM FUNCTIOn FNLINE$ to return next word from LINE$
+REM
+REM
+REM FNNEXTWORD$(QUERY$)
+REM FUNCTIOn FNNEXTWORD$(QUERY$) to return next word from LINE$
+REM
+REM
+REM FNNEWWORD$(QUERY$)
+REM FUNCTIOn FNNEWWORD$(QUERY$) to return a new word from LINE$
+REM
+REM
+REM FNNEXTLINE$(QUERY$)
+REM FUNCTIOn FNNEXTLINE$(QUERY$) to return next word from LINE$
+REM
+REM
+REM FNNEWLINE$(QUERY$)
+REM FUNCTIOn FNNEWLINE$(QUERY$) to return a new word from LINE$
+REM
+REM
+REM FNHM$(TIME%)
+REM  Function returns hours and minutes in form HH:MM
+REM  where TIME% is in minutes
+REM
+REM
+REM FNHMS$(TIME)
+REM  Function returns hours, minutes and seconds in form HH:MM:SS
+REM  where TIME is in seconds
+REM
+REM =========================================================================
+REM
+%NOLIST
+REM
+REM
+REM --------------------------------------
+REM FUNCTION to request YES or NO to QUERY
+REM --------------------------------------
+TRUE%=-1: FALSE%=0
+DEF FNQ%(QUERY$)
+   QUERY%=TRUE%
+   WHILE QUERY%
+      PRINT QUERY$;: INPUT LINE ANS$
+      ANS$=UCASE$(ANS$): LEN%=LEN(ANS$)
+      IF LEN% > 0 AND ANS$ = LEFT$("YES",LEN%) THEN FNQ%=TRUE%: RETURN
+      IF LEN% > 0 AND ANS$ = LEFT$("NO",LEN%) THEN FNQ%=FALSE%: RETURN
+      PRINT "? ";ANS$;" ? - Answer YES or NO"
+   WEND
+FEND
+REM ---------------------------------------------------
+REM Function to request YES or NO to "O.K.(Y/N)" prompt
+REM ---------------------------------------------------
+DEF FNOK%
+   QUERY%=TRUE%
+   WHILE QUERY%
+      INPUT "O.K.(Y/N)?";LINE ANS$
+      ANS$=UCASE$(ANS$): LEN%=LEN(ANS$)
+      IF LEN% > 0 AND ANS$ = LEFT$("YES",LEN%) THEN FNOK%=TRUE%: RETURN
+      IF LEN% > 0 AND ANS$ = LEFT$("NO",LEN%) THEN FNOK%=FALSE%: RETURN
+      PRINT "? ";ANS$;" ? - Answer YES or NO"
+   WEND
+FEND
+REM --------------------------------------------
+REM FUNCTIOn FNLINE$ to return next word from LINE$
+REM --------------------------------------------
+DEF FNLINE$
+     SPACE%=MATCH(" ",LINE$,1): COMMA%=MATCH(",",LINE$,1)
+     WHILE (SPACE% > COMMA% OR SPACE% = 0) AND (COMMA% <> 0)
+        FNLINE$=UCASE$(LEFT$(LINE$,COMMA%-1))
+        LINE$=MID$(LINE$,COMMA%+1,255): I%=LEN(LINE$)
+        WHILE LEFT$(LINE$,1) = " " AND I% > 0
+           LINE$=MID$(LINE$,2,256)
+        WEND
+        RETURN
+     WEND
+     WHILE (COMMA% > SPACE% OR COMMA% = 0) AND (SPACE% <> 0)
+        FNLINE$=UCASE$(LEFT$(LINE$,SPACE%-1))
+        LINE$=MID$(LINE$,SPACE%+1,256): I%=LEN(LINE$)
+        WHILE LEFT$(LINE$,1) = " " AND I% > 0
+           LINE$=MID$(LINE$,2,256)
+        WEND
+        RETURN
+     WEND
+     FNLINE$=UCASE$(LINE$): LINE$="": RETURN
+FEND
+REM ---------------------------------------------------------------
+REM Function to request date in Daym Month Year format
+REM Returning logical function FNDATE%
+REM FNDATE% = TRUE% if date o.k. or FALSE% if date in error
+REM Date is returned in array D%(3) where 1 - Day, 2 - Month, 3 - Year
+REM ------------------------------------------------------------------
+DEF FNDATE%
+    FNDATE%=TRUE%
+    WHILE LINE$=""
+       INPUT "Day, Month, Year?";LINE LINE$
+    WEND
+    ANS$=FNLINE$: D%(1)=VAL(ANS$)
+    IF D%(1) < 1 OR D%(1) > 32 THEN PRINT "? ";ANS$: FNDATE%=FALSE%: RETURN
+    WHILE LINE$ = ""
+       INPUT "Month?";LINE LINE$
+    WEND
+    ANS$=FNLINE$: D%(2)=VAL(ANS$)
+    IF D%(2) < 1 OR D%(2) > 12 THEN PRINT "? ";ANS$: FNDATE%=FALSE%: RETURN
+    WHILE LINE$ = ""
+       INPUT "Year?";LINE LINE$
+    WEND
+    ANS$=FNLINE$: D%(3)=VAL(ANS$)
+    IF D%(3) > 1900 THEN D%(3)=D%(3)-1900
+    IF D%(3) < 79 OR D%(3) > 129 THEN PRINT "? ";ANS$: FNDATE%=FALSE%: RETURN
+    RETURN
+FEND
+REM --------------------------------------------
+REM FUNCTION FNNOS to return number from TEXT$
+REM A value of 9.9E62 is used to indicate bad TEXT$
+REM --------------------------------------------
+DEF FNNOS(TEXT$)
+     FNNOS=9.9E62
+     LEN%=LEN(TEXT$)
+     IF LEN% = 0 THEN PRINT "? ": RETURN
+     R=VAL(TEXT$)
+     IF LEN(STR$(R)) = LEN% THEN FNNOS=R ELSE PRINT "? "; TEXT$
+     RETURN
+FEND
+REM ---------------------------------------------
+REM  Function returns day and month in form DD/MM
+REM ---------------------------------------------
+DEF FNDM$(DATE%)
+   IF DATE% = 0 THEN FNDM$="     ": RETURN
+   F.M%=DATE%/100: F.D%=DATE%-F.M%*100
+   FNDM$=CHR$(F.D%/10+030H)+CHR$(F.D%-(F.D%/10)*10+030H)+"/"+CHR$(F.M%/10+030H)+CHR$(F.M%-(F.M%/10)*10+030H)
+   RETURN
+FEND
+REM ----------------------------------------------------
+REM  Function returns d, month and year in form DD/MM/YY
+REM ----------------------------------------------------
+DEF FNDMY$(DATE)
+   IF DATE = 0.0 THEN FNDMY$="        ": RETURN
+   F.Y%=INT%(DATE/10000.0): DATE%=INT%(DATE-FLOAT(F.Y%)*10000.0)
+   FNDMY$=FNDM$(DATE%)+"/"+CHR$((F.Y%-(F.Y%/100)*100)/10+030H)+CHR$(F.Y%-(F.Y%/10)*10+030H)
+   RETURN
+FEND
+REM --------------------------------------------------------
+REM  Function returns day, month and year in form DD/MM/YYYY
+REM --------------------------------------------------------
+DEF FNDMYY$(DATE)
+    IF DATE = 0.0 THEN FNDMYY$="          ": RETURN
+    F.YY%=INT%(DATE/10000.0): DATE%=INT%(DATE-F.YY%*100.0)
+    IF F.YY% < 1900 THEN F.YY%=F.YY%+1900
+    FNDMYY$=FNDM$(DATE%)+"/" \
+       +CHR$(F.YY%/1000+030H)+CHR$((F.YY%-(F.YY%/1000)*1000)/100+030H)+CHR$((F.YY%-(F.YY%/100)*100)/10+030H)+CHR$(F.YY%-(F.YY%/10)*10+030H)
+    RETURN
+FEND
+REM -----------------------------------------------
+REM  Function returns month and year in form MMM YY
+REM  where MMM is character string
+REM -----------------------------------------------
+DIM MONTH$(12)
+READ MONTH$(1),MONTH$(2),MONTH$(3),MONTH$(4),MONTH$(5),MONTH$(6),MONTH$(7),MONTH$(8),MONTH$(9),MONTH$(10),MONTH$(11),MONTH$(12)
+DATA "JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"
+DEF FNMY$(DATE%)
+    IF DATE% = 0 THEN FNMY$="      ": RETURN
+    F.Y%=DATE%/100: F.M%=DATE%-F.Y%*100
+    FNMY$=LEFT$(MONTH$(F.M%),3)+" "+CHR$((F.Y%-(F.Y%/100)*100)/10+030H)+CHR$(F.Y%-(F.Y%/10)*10+030H)
+    RETURN
+FEND
+REM -----------------------------------------------
+REM FUNCTIOn FNLINE$ to return next word from LINE$
+REM -----------------------------------------------
+DEF FNLINE$
+     SPACE%=MATCH(" ",LINE$,1)
+     WHILE SPACE% = 1
+        LINE$=MID$(LINE$,2,256)
+        SPACE%=MATCH(" ",LINE$,1)
+     WEND
+     COMMA%=MATCH(",",LINE$,1)
+     WHILE (SPACE% > COMMA% OR SPACE% = 0) AND (COMMA% <> 0)
+        FNLINE$=UCASE$(LEFT$(LINE$,COMMA%-1))
+        LINE$=MID$(LINE$,COMMA%+1,255)
+        WHILE LEFT$(LINE$,1) = " "
+           LINE$=MID$(LINE$,2,256)
+        WEND
+        RETURN
+     WEND
+     WHILE (COMMA% > SPACE% OR COMMA% = 0) AND (SPACE% <> 0)
+        FNLINE$=UCASE$(LEFT$(LINE$,SPACE%-1))
+        LINE$=MID$(LINE$,SPACE%+1,256)
+        WHILE LEFT$(LINE$,1) = " "
+           LINE$=MID$(LINE$,2,256)
+        WEND
+        RETURN
+     WEND
+     FNLINE$=UCASE$(LINE$): LINE$="": RETURN
+FEND
+REM -----------------------------------------------------------
+REM FUNCTIOn FNNEXTWORD$(QUERY$) to return next word from LINE$
+REM -----------------------------------------------------------
+DEF FNNEXTWORD$(QUERY$)
+   WHILE LINE$ = "" : PRINT QUERY$; : INPUT "";LINE LINE$ : WEND
+   FNNEXTWORD$=FNLINE$
+   RETURN
+FEND
+REM -----------------------------------------------------------
+REM FUNCTIOn FNNEWWORD$(QUERY$) to return a new word from LINE$
+REM -----------------------------------------------------------
+DEF FNNEWWORD$(QUERY$)
+   LINE$=""
+   FNNEWWORD$=FNNEXTWORD$(QUERY$)
+   RETURN
+FEND
+REM -----------------------------------------------------------
+REM FUNCTIOn FNNEXTLINE$(QUERY$) to return next word from LINE$
+REM -----------------------------------------------------------
+DEF FNNEXTLINE$(QUERY$)
+   IF LINE$ = "" THEN PRINT QUERY$; : INPUT "";LINE LINE$
+   FNNEXTLINE$=FNLINE$
+   RETURN
+FEND
+REM -----------------------------------------------------------
+REM FUNCTIOn FNNEWLINE$(QUERY$) to return a new word from LINE$
+REM -----------------------------------------------------------
+DEF FNNEWLINE$(QUERY$)
+   LINE$=""
+   FNNEWLINE$=FNNEXTLINE$(QUERY$)
+   RETURN
+FEND
+REM -------------------------------------------------
+REM  Function returns hours and minutes in form HH:MM
+REM  where TIME% is in minutes
+REM -------------------------------------------------
+DEF FNHM$(TIME%)
+   IF TIME% = 0 THEN FNHM$="     ": RETURN
+   F.H%=TIME%/60: F.M%=TIME%-F.H%*60
+   FNHM$=CHR$(F.H%/10+030H)+CHR$(F.H%-(F.H%/10)*10+030H)+":"+CHR$(F.F.M%/10+030H)+CHR$(F.F.M%-(F.F.M%/10)*10+030H)
+   RETURN
+FEND
+REM -------------------------------------------------------------
+REM  Function returns hours, minutes and seconds in form HH:MM:SS
+REM  where TIME is in seconds
+REM -------------------------------------------------------------
+DEF FNHMS$(TIME)
+   IF TIME = 0.0 THEN FNHMS$="        ": RETURN
+   TIME%=INT%(TIME/60.0): F.S%=INT%(TIME-FLOAT(TIME%)*60.0)
+   FNHMS$=FNHM$(TIME%)+":"+CHR$(F.S%/10+030H)+CHR$(F.S%-(F.S%/10)*10+030H)
+   RETURN
+FEND
+%LIST
+

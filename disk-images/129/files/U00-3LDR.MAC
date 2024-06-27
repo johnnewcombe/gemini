@@ -1,0 +1,203 @@
+VERS	EQU 5			;Version 4 module
+
+	TITLE CPM3 BOOT LOADER FOR TRACK 0 SECTOR 0
+	.Z80
+
+	IF1
+	.PRINTX "*** PASS 1 ***"
+	ENDIF
+
+	IF2
+	.PRINTX "*** PASS 2 ***"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     DATA.MAC .........."
+	INCLUDE DATA		;Data equates
+	IF VER NE VERS
+	.PRINTX "DATA.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   SYSTEM.MAC .........."
+	INCLUDE SYSTEM		;System equates
+	IF VER NE VERS
+	.PRINTX "SYSTEM.MAC is incorrect version"
+	ENDIF
+
+	.PRINTX "..........     3LDR.MAC .........."
+
+	ASEG
+;This loader is loaded from track 0 sector 0 into 0C00H/0000H
+;The loader is then moved to 0000, if necessary, from where it loads
+;the CP/M 3.0 loader BIOS into 100H, This BIOS is then executed
+
+;	*	System ID for EPROM loader       *
+
+BOOT:	IF MAP
+;MAP CPU with VFC or IVC
+	.PHASE 0
+	DEFB "80"
+	ELSE
+	IF VFC
+;G811/G813/NAS with VFC
+	.PHASE 0C00H
+	DEFB "80"		;Expected by VFC
+	ELSE
+	IF NAS
+;NAS with IVC
+	.PHASE 0
+	DEFB "GN"		;Expected by SIMON
+	ELSE
+	.PHASE 0
+;G811/G813 with IVC
+	DEFB "GG"		;Expected by RP/M
+	ENDIF
+	ENDIF
+	ENDIF
+
+;Tidy up the systems
+	IF MAP
+	LD A,01
+	OUT (EPROM),A		;Kill CPU EPROM
+	ENDIF
+
+	IF G811 OR G813
+	LD A,0CH		;Turn off BOOT EPROM on G811/G813
+	OUT (MCRG),A		;MCR reg
+	ENDIF
+
+	LD A,11H
+	OUT (0FFH),A		;Select RAM deselect EPROM on G813
+
+;Turn off VFC
+	IF VFC
+	IF G813 OR MAP
+	XOR A			;Non auto-booting
+	ELSE
+	LD A,2			;Auto boot on G811 or NAS with VFC
+	ENDIF
+	OUT (CNTRL),A		;Switch off VFC
+
+	IF NOT MAP
+;Boot loader relocation for VFC systems with G811/G813/NAS
+	LD HL,LOADER
+	LD DE,0
+	LD BC,TOP-START
+	LDIR
+	JP 0			;Move loader down to 0
+LOADER:	.DEPHASE
+	.PHASE 0		;Rest will be transferred to 0
+	ENDIF
+	ENDIF
+
+;Boot loader for loading CPM 3 loader BIOS
+START:	LD HL,0100H		;Where CPMLDR is put
+	LD DE,RDSEC*256+11	;Read sector command + number of secs
+	LD BC,1*256+STAPRT	;Start sector + Status port
+	LD A,01
+	EX AF,AF'
+
+GETSEC:	EX AF,AF'
+	OUT (DRVPRT),A		;Drive
+	EX AF,AF'
+	LD A,B
+	OUT (FDCSEC),A		;Sector
+	LD A,D
+	OUT (FDCCOM),A		;Command
+	JR LOAD
+SAVE:	LD (HL),A
+	INC HL
+LOAD:	IN A,(C)
+	JR Z,LOAD
+	IN A,(FDCDAT)
+	JP M,SAVE
+	IN A,(FDCSTA)
+	AND 0FCH
+	JR NZ,BAD		;Error during sector read
+;Sector has been successfully read, go to next
+	INC B			;Increment sector
+	LD A,B
+	SUB 10			;Sectors per side
+	JR NZ,NEXTS		;No overflow
+
+	LD B,A			;Zero sector
+
+;MAP96D/S
+	IF (FORM1 EQ 1) OR (FORM1 EQ 2)
+	LD A,5BH		;Step in
+	OUT (FDCCOM),A
+WBUSY:	IN A,(FDCSTA)		;Wait until busy
+	BIT 0,A
+	JR Z,WBUSY
+WNBUSY:	IN A,(FDCSTA)		;Wait until not busy
+	BIT 0,A
+	JR NZ,WNBUSY
+	ELSE
+;MAP48
+	IF FORM1 EQ MAP48
+	SET 1,D			;Other side
+	EX AF,AF'
+	SET 7,A
+	EX AF,AF'
+	ELSE
+;Others
+	.PRINTX "*** ERROR:- Only MAP96D/S and MAP48 catered for ***"
+	END
+	ENDIF
+	ENDIF
+
+NEXTS:	DEC E			;Sector counter
+	JR NZ,GETSEC
+
+;All loaded, so go to it
+	JP 0100H		;Execute CPMLDR
+
+;The load is all screwed up, return to system
+BAD:
+;MAP CPU
+	IF MAP
+	XOR A
+	OUT (EPROM),A		;Recover CPU EPROM
+	JP 0F000H
+	ENDIF
+
+;Nascom
+	IF NAS
+	IF VFC
+	LD A,0
+	OUT (CNTRL),A		;Enable VFC
+	JP 0			;Jump to it
+	ELSE
+	JP 0F000H		;Back to SIMON
+	ENDIF
+	ENDIF
+
+;G813
+	IF G813
+	LD A,0
+	OUT (MCRG),A
+	JP 0F000H		;Back to RPM/BOOT813
+	ENDIF
+
+;G811
+	IF G811
+	IF VFC
+	LD A,0
+	OUT (CNTRL),A		;Enable VFC
+	JP 0			;Jump to it
+	ELSE
+	LD A,0
+	OUT (MCRG),A
+	JP 0F000H		;Back to RPM/BOOT813
+	ENDIF
+	ENDIF
+
+TOP:	DEFS 200H-(TOP-BOOT),0	;Fill in sector
+
+	IF VFC AND NOT MAP
+	.DEPHASE
+	ENDIF
+
+	END
+

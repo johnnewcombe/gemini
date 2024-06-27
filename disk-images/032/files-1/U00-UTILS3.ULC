@@ -1,0 +1,54 @@
+procedure do_area_numbers;
+var
+  st : string[80];
+  current_pen : integer;
+begin
+  loadfont;
+  seek(paramf,1);
+  while not eof(paramf) do
+  begin
+    read(paramf,param);
+    with param do
+    begin
+     top:=ty+1;
+     bottom:=by-1;
+     left:=tx+1;
+     right:=bx-1;
+     setcwp(partition);
+     cx:=bx-20;
+     cy:=by-5;
+     moveto(cx,cy);
+     ready;
+     st:=chr(filepos(paramf)+47);
+     current_pen:=curpen;
+     curpen:=1;
+     write_it(st);
+     curpen:=current_pen;
+    end;
+  end;
+end; {of display_area_numbers}
+
+procedure get_design;
+var
+  design_name : str8;
+
+begin
+  gotoxy(1,8);clreol;
+  write('Select a label design, or <ESC> to exit: ');
+  gotoxy(1,10);writeln('Designs available: ');
+  display_files('DSN',11,labeldrive[1]);
+  repeat
+    design_name:='';
+    getinput(8,41,8,design_name,'c',fin,1);
+    assign(paramf,labeldrive+design_name+'.DSN');
+    {$I-} reset(paramf); {$I+}
+  until (ioresult=0) or (fin=TRUE);
+  if fin=TRUE then exit;
+  gotoxy(1,8);
+  write('Opening Files for label design ',design_name,', Please wait...');
+  clreol;
+  read(paramf,param);
+  labext:=param.label_extension;
+end;  {of get_design}
+
+

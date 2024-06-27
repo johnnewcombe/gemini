@@ -1,0 +1,77 @@
+Exit program
+Exit to CP/M
+System shutdown
+SP
+Press any key to exit
+Press any key to continue
+Abort operation
+Back to last menu
+SP
+Source
+Destination
+Use arrows / 1st letters to move
+RETURN enters selection / ESC aborts
+Main Menu
+Change Source/ Dest device
+Source / Dest utilities
+Copy data Source -> Dest
+System has shut down
+Now turn power off or press Reset button
+Timeclaim A.M.I.E
+Please Wait
+Exit Confirmation
+Resume program
+Enter new settings
+Yes
+No
+Search
+None
+Change Format
+Format = 
+Manager
+Directory
+Volume details
+Run Job
+Format Disc
+Job = 
+Fatal 
+Non Fatal 
+Error
+Error file not found
+Read error in error file
+File specification
+Disc
+Tape
+I/O device
+Configuration
+Input
+Output
+Enter destination filename
+Transfer in progress
+Format destination disc
+Place disc in destination drive
+NB. All data on disc will be lost
+Press 'I' to initialise - any other to exit
+** WARNING **
+SP
+Transfer complete
+Transfer interrupted
+File is 
+unstructured 
+record based 
+binary
+characters
+fields
+File content is 
+ASCII 
+EBCDIC 
+EIA 
+Records are 
+fixed
+variable
+unspecified
+File size is 
+SPACE picks, RETURN ends, ESC aborts
+Do you wish to be prompted?
+#
+

@@ -1,0 +1,638 @@
+VERS	EQU 5			;Version 4 module
+
+	TITLE LOADER BIOS FOR CPM3 (CPU/G811/G813/NAS)
+;COPYRIGHT (C) MAP 80 SYSTEMS LTD.
+	.Z80
+	.SFCOND
+	CSEG
+
+	IF1
+	.PRINTX "*** PASS 1 ***"
+	ENDIF
+
+	IF2
+	.PRINTX "*** PASS 2 ***"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     DATA.MAC .........."
+	INCLUDE DATA		;Data equates
+	IF VER NE VERS
+	.PRINTX "DATA.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   SYSTEM.MAC .........."
+	INCLUDE SYSTEM		;System equates
+	IF VER NE VERS
+	.PRINTX "SYSTEM.MAC is incorrect version"
+	ENDIF
+
+	.PRINTX "..........  LDRBIOS.MAC .........."
+
+	SUBTTL Loader BIOS jump table
+	PAGE
+
+VFCLOC	EQU 3000H
+DRERR	EQU T			;Errors as drive
+
+IMASK	DEFL 4
+
+	IF G811 OR NAS
+IMASK	DEFL 6			;Initial VFC mask for G811 or NASCOM
+	ENDIF
+
+;Cancel previous assignments
+DRVW	DEFL 0
+NDRVW	DEFL 0
+NDRVF	DEFL 1
+
+;BIOS Jump vector.
+BIOS:	JP BOOT			;initial entry on cold start
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	JP ?CONOT		;send console output character
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	JP ?HOME
+	JP ?SELDK		;select disk drive, return disk parameter info
+	JP ?SETRK		;set disk track
+	JP ?SETSC		;set disk sector
+	JP ?SETDM		;set disk I/O memory address
+	JP ?READ		;read physical block(s)
+	CALL ERCALL
+	CALL ERCALL
+	JP ?SCTRN
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	JP MOVE
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+	CALL ERCALL
+
+ERCALL:	LD HL,ERRMES
+	CALL PMSG
+	POP HL
+	LD DE,BIOS+3
+	OR A
+	SBC HL,DE
+	CALL PDEC
+	HALT
+
+ERRMES:	DEFB "Illegal call to BIOS+",0
+
+MOVE:	EX DE,HL
+	LDIR
+	EX DE,HL
+	RET
+
+;Initial entry point for system startup.
+BOOT:	CALL BIGSTK
+	CALL INITC		;Initialise console
+	CALL CLEAR		;Clean up FDC
+	LD HL,WELCOM
+	CALL PMSG		;Print signon message
+;Modify DPB and DPH
+	LD HL,8000H
+	LD (DPBASE+11),HL
+	LD HL,0
+	LD (FD0+14),HL
+	LD HL,ALVC
+	LD (FD0+16),HL
+	LD HL,DIRBCB
+	LD (FD0+18),HL
+	LD HL,DTABCB
+	LD (FD0+20),HL
+	RET			;Back to Loader BDOS
+
+;Internal DIRBCB and DTABCB
+DIRBCB:
+DTABCB:	DEFB 0FFH		;DRV
+	DEFB 0,0,0		;REC#
+	DEFB 0			;WFLG
+	DEFB 0			;00
+	DEFW 0			;Track
+	DEFW 0			;Sector
+	DEFW DTAAD		;BUFFAD
+
+;*****************************
+;*	SIGN ON MESSAGE      *
+;*****************************
+WELCOM:
+;Sign-on messages
+	IF VFC OR IVC
+	DEFB 1AH		;Clear screen
+RRR	DEFL 20H+1		;Initialise row
+CCC	DEFL 20H+(VIDWID-(W2-W1))/2
+	DEFB ESC,"=",RRR,CCC
+
+W1:	DEFB "************************************"
+W2:
+RRR	DEFL RRR+1
+	DEFB ESC,"=",RRR,CCC
+
+	DEFB "**     MAP 80 SYSTEMS LIMITED     **"
+
+RRR	DEFL RRR+1
+	DEFB ESC,"=",RRR,CCC
+	DEFB "**   BIOS Version .... ........   **"
+RRR	DEFL RRR+1
+	DEFB ESC,"=",RRR,CCC
+
+	DEFB "**       CP/M PLUS Vers 3.0       **"
+
+RRR	DEFL RRR+1
+	DEFB ESC,"=",RRR,CCC
+
+	IF MAP
+	DEFB "**            MAP  CPU            **"
+	ENDIF
+	IF G811
+	DEFB "**            G811 CPU            **"
+	ENDIF
+	IF G813
+	DEFB "**            G813 CPU            **"
+	ENDIF
+	IF NAS
+	DEFB "**           NASCOM CPU           **"
+	ENDIF
+
+RRR	DEFL RRR+1
+	DEFB ESC,"=",RRR,CCC
+
+	DEFB "************************************"
+	DEFB CR,LF
+	DEFB ESC,"M"
+	ENDIF
+
+	DEFB 0
+
+	IF VFC
+;Initialise VFC
+INITC:	LD IX,VFCW
+	LD A,IMASK		;Initial VFC status
+	OR HIGH VFCLOC		;Now position + initial status
+	XOR EVMASK		;Switch EPROM/VRAM enable bits
+	OUT (CNTRL),A		;Bring in the VFC
+	CALL VFCLOC+VFCCLR
+	LD A,(IX+VFCST-VFCW)	;VFC status with EPROM and VRAM off
+	OUT (CNTRL),A		;Switch card out
+	IN A,(VSWICH)		;Switch to alternate video
+	RET
+
+;Console Output. Send character in <C>
+?CONOT:	CALL BIGSTK		;Make sure of stack position
+	PUSH HL
+	LD HL,VIDOUT
+
+;VFC entry routines
+;Common VFC entry routine
+	PUSH DE
+	PUSH BC			;Save registers
+	PUSH IX
+	CALL GOVFC
+	POP IX
+	POP BC
+	POP DE
+	POP HL
+	SCF
+	RET
+
+GOVFC:	LD IX,VFCW		;Initialise IX
+	LD DE,VFCRET		;Return address after EPROM
+	PUSH DE			;Set up for return
+	LD A,HIGH VFCLOC	;Location for paging in VFC
+	OR (IX+VFCST-VFCW)	;Current VFC status
+	XOR EVMASK		;Set VRAM and EPROM enable bits
+	OUT (CNTRL),A		;Bring in VFC
+	AND 0F0H		;Mask 4k SLOT
+	LD D,A
+	LD E,0			;DE = address offset
+	ADD HL,DE
+	JP (HL)
+;Goto EPROM routine
+;DE holds address offset, C holds output char if video
+
+;VFC EPROM returns here
+VFCRET:	PUSH AF			;Save returned character and flags
+	LD A,(IX+VFCST-VFCW)	;VFC status with EPROM and VRAM off
+	LD B,A
+	POP AF
+	LD C,CNTRL		;VFC control port
+	OUT (C),B		;VFC out
+	RET			;Via RETSP
+
+;Sample video workspace
+VFCW:
+VFCST:	DEFB 0			;Initial status of VFC
+LASVR:	DEFW 0			;Last screen address
+CURSR:	DEFW 0			;Cursor address
+MLOCK:	DEFW 0			;Top of screen
+PRGKEY:	DEFW 0			;Address of programable key table
+CURTYP:	DEFW 0			;Normal cursor
+STATE1:	DEFB 0			;Option bits
+KCHR:	DEFB 0			;Key character store
+SEND:	DEFB 0			;Number of characters during send
+KPOS:	DEFW 0			;Current send position
+KCOUNT:	DEFW 0			;Key repeat counter
+ESCST:	DEFB 0			;ESC status
+ESCTYP:	DEFB 0			;ESC type
+EDCHR:	DEFB 0			;Editing charater
+ROW:	DEFB 0			;Row store
+PIXEL:	DEFB 0			;Pixel for SET,RESET,TEST
+VWEND:
+	DEFS 50
+VFCSTK:
+	ENDIF
+
+	IF IVC
+INITC:	IN A,(PVDUR)		;Reset IVC
+	IN A,(PVDUD)		;Clear rubbish
+	RET
+
+?CONOT:	IN A,(PVDUS)		;Read flags
+	RRCA			;Flag to carry
+	JP C,?CONOT		;Loop if full
+	LD A,C			;Else output byte
+	OUT (PVDUD),A
+	RET
+	ENDIF
+
+	IF NOT (VFC OR IVC)
+	IF MAP
+;	*	SIO channnel A       *
+
+SMODEA:	DEFB IMODEA		;Initial mode
+SBAUDA:	DEFB IBAUDA		;Initial baud rate
+
+INITC:	LD HL,SMODEA
+	CALL INITB		;Get baud
+	JR NC,NOBDA		;No baud
+	IF SIOCHA EQ SLOW	;If CTC 0 clocked at 1Mhz
+	SRL H
+	RR L			;Divide by 2
+	ENDIF
+	LD A,L
+	LD (DIV0),A		;Save divisor
+	LD HL,CPCTC0		;Initialise CTC 0
+	CALL INITDV
+NOBDA:	LD HL,REG4A
+	LD BC,REG3A
+	CALL INITMK		;Do masks
+	LD HL,CPSIOA		;Initialise SIO A
+	CALL INITDV
+	RET
+
+;Initialise device with stream pointed to by HL
+INITDV:	LD C,(HL)		;Get port
+	INC HL
+	LD B,(HL)		;Get length of stream
+	INC HL
+	INC B
+	DEC B			;Test B
+	RET Z			;Nothing to send
+NEXBYT:	LD A,(HL)
+	INC HL
+	OUT (C),A		;Send bytes
+	DJNZ NEXBYT
+	RET
+
+;Get baud rate and masks from character table pointed to by HL
+;Return D=Clock rate mask, E=Auto Enable mask, A=CTC divisor
+;Returns NC if no baud
+INITB:	LD A,(HL)		;Mode
+	AND MBXNXF
+	LD E,20H		;Auto enables
+	JR NZ,AUTOE
+	LD E,0			;No enables
+AUTOE:	INC HL
+	LD A,(HL)		;Get baud rate
+	OR A
+	LD H,A			;Default baud rate
+	LD L,A
+	LD D,A			;Default *1 mode
+	RET Z			;Assume external clock (NC)
+	LD B,A
+	CP B600
+	LD D,0C0H		;*64 mode
+	JR C,MODEE
+	CP B19200
+	LD D,40H		;*16 mode
+	JR C,MODEE
+	LD D,0			;*1 mode
+MODEE:	LD HL,BTABLE-2
+LOOPB:	INC HL
+	INC HL
+	DJNZ LOOPB
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A			;Divisor in HL
+	SCF			;Show baud rate got
+	RET
+
+;Put Clock rate mask on (HL) and Enable mask on (BC)
+INITMK:	LD A,(HL)		;Get REG 4
+	AND 5FH			;Clear clock bits
+	OR D			;Add new
+	LD (HL),A
+	LD A,(BC)		;Get REG 3
+	AND 0DFH		;Clear auto enables
+	OR E			;Add new
+	LD (BC),A
+	RET
+
+;Baud table, sets divisor for CTC
+BTABLE:
+;*64 SIO mode
+	DEFW 625		;50
+	DEFW 417		;75 Minimum baud rate for 1Mhz clock
+	DEFW 284		;110
+	DEFW 233		;134.5 Minimum baud rate for 2Mhz clock
+	DEFW 208		;150
+	DEFW 104		;300
+;*16 SIO mode
+	DEFW 208		;600
+	DEFW 104		;1200
+	DEFW 69			;1800
+	DEFW 52			;2400
+	DEFW 35			;3600
+	DEFW 26			;4800 Maximum *16 mode for 1Mhz clock
+	DEFW 17			;7200
+	DEFW 13			;9600 Maximum *16 mode for 2Mhz clock
+;*1 SIO mode (Transmit only)
+	DEFW 104		;19200
+
+;Port initialisation table
+;First byte defines port location of device
+;Second bytes indicates how many bytes to send
+;On board CTC channel 0
+CPCTC0:	DEFB CPCTC		;CTC port
+	DEFB 2
+	DEFB 01000111B		;Counter mode, Count follows, Reset channel
+DIV0:	DEFB 34H		;Divisor
+
+;On board SIO channel A
+CPSIOA:	DEFB CPSIO+2		;Channel A command register
+	DEFB S200-S100
+S100:	DEFB 18H		;Reset the channel
+	DEFB 4			;Register 4
+REG4A:	DEFB 11000100B		;X64 clock, 1 stop, no parity
+	DEFB 3			;Register 3
+REG3A:	DEFB 11000001B		;8 bits Rx enabled
+	DEFB 5			;Register 5
+	DEFB 11101010B		;DTR, 8 bits, Tx enabled, RTS
+S200:	DEFS 13-(S200-S100),0	;Max count
+
+;	*	Serial output status       *
+
+;Return 0 busy 0FFH free
+SIOOST:	IN A,(C)
+	AND 4
+	JR Z,NREADY
+READY:	XOR A			;Free, return 0FFH NZ C
+	DEC A
+	RET
+NREADY:	XOR A			;Busy, return 00 Z NC
+	RET
+
+INVAL:	LD A,1AH
+	RET
+
+;	*	Serial output       *
+
+?CONOT:	LD A,CPSIO+2
+	LD B,C
+	LD C,A
+SWAIT:	CALL SIOOST
+	JR Z,SWAIT		;Wait until free
+	DEC C
+	DEC C
+	OUT (C),B
+	RET
+
+	ELSE
+
+;	*	Initialise serial       *
+INITC:	IF NOT NAS
+;Intialise 8250
+	LD A,MODEU
+	OUT (MCRG),A		;Set mode
+	LD A,83H		;Divisors
+	OUT (LCRG),A
+	LD A,IBAUD
+	OR A
+	JR Z,NOBD		;No baud
+	ADD A,A
+	LD E,A
+	LD D,0
+	LD HL,BTABLE-1
+	ADD HL,DE		;Get to right place in baud table
+	LD A,(HL)
+	DEC HL
+	OUT (BAUDL),A		;Baud rate high byte
+	LD A,(HL)
+	OUT (UARTD),A		;Baud rate low byte
+NOBD:	LD A,SETU
+	OUT (LCRG),A		;Set line control
+	ENDIF
+	RET
+
+;	*	Serial output       *
+
+?CONOT:	CALL SOTST
+	JR Z,?CONOT
+	LD A,C
+	OUT (UARTD),A
+	RET
+
+;	*	Serial output status       *
+
+;Serial output buffer status, return 0 busy 0FFH free
+SOTST:	IN A,(UARTS)		;Check serial port
+	IF NAS
+	BIT 6,A
+	ELSE
+	BIT 5,A
+	ENDIF
+	JR Z,NREADY
+READY:	XOR A			;Free, return 0FFH NZ
+	DEC A
+	RET
+NREADY:	XOR A			;Busy, return 00 Z
+	RET
+
+	IF NOT NAS
+;8250 baud table
+BTABLE:	DEFW 09C4H	;50
+	DEFW 0683H	;75
+	DEFW 0470H	;110
+	DEFW 03A1H	;134.5
+	DEFW 0341H	;150
+	DEFW 01A1H	;300
+	DEFW 00D0H	;600
+	DEFW 0068H	;1200
+	DEFW 0045H	;1800
+	DEFW 0034H	;2400
+	DEFW 0023H	;3600
+	DEFW 001AH	;4800
+	DEFW 0011H	;7200
+	DEFW 000DH	;9600
+	DEFW 0007H	;19200
+	ENDIF
+
+	ENDIF
+
+	ENDIF
+
+BIGLOG:	DEFB 0FFH
+
+;Take on local BIOS stack
+BIGSTK:	PUSH HL
+	LD HL,BIGLOG
+	INC (HL)
+	LD (HL),0		;Big log active
+	POP HL
+	JR Z,NEWBIG		;New entry
+	RET			;Already in
+NEWBIG:	LD (BIGSP-6),HL		;HL on new stack
+	POP HL			;Calling address
+	LD (BIGSP-4),HL		;Put it on new stack
+	LD HL,OLDSP		;Exit via here
+	LD (BIGSP-2),HL
+	LD (SPSTOR),SP		;Save SP
+	LD SP,BIGSP-6		;Set up to new stack
+	POP HL			;Recover HL
+	RET
+
+OLDSP:	PUSH AF
+	LD A,0FFH
+	LD (BIGLOG),A		;Reset stack log
+	POP AF
+	LD SP,(SPSTOR)		;Recover old stack
+	RET
+
+SPSTOR:	DEFW 0			;Saved SP
+	DEFS 100,0
+BIGSP:
+
+;Print message <HL> up to a null saves <BC> & <DE>
+PMSG:	PUSH BC
+	PUSH DE
+PMSG1:	LD A,(HL)
+	OR A
+	JP Z,PMSGEX
+	LD C,A
+	PUSH HL
+	CALL ?CONOT
+	POP HL
+	INC HL
+	JP PMSG1
+PMSGEX:	POP DE
+	POP BC
+	RET	
+
+	TITLE HIGH LEVEL IO (DISK/LOADER BIOS)
+	PAGE
+
+;	**********************************
+;	*	HIGH LEVEL DISK IO       *
+;	**********************************
+
+;Select Disk Drive.  Drive code in <C>.
+;Return address of disk parameter header in HL
+?SELDK:	LD A,C
+	LD (CDRIV),A		;Save drive select code
+	LD HL,FD0
+	DEC HL
+	DEC HL
+	LD A,(HL)
+	LD (PDRIV),A		;Get relative drive
+	INC HL
+	INC HL
+	RET 
+
+;Home selected drive.  Treated as ?SETRK(0).
+?HOME:	LD BC,0			;Same as set track zero
+
+;Set Track. Saves track address from <BC> 
+;in CTRAK for further operations.
+?SETRK:	LD (CTRAK),BC
+	RET 
+
+;Set Sector.  Saves sector number from <BC>
+;in pre skew CSECT for further operations.
+?SETSC:	LD (CSECT),BC
+	RET 
+
+;Set Disk Memory Address.  Saves DMA address
+;from <BC> in DMAADR and sets DMABNK to CURBNK
+;so that further disk operations take place
+;in current bank.
+?SETDM:	LD (DMAADR),BC
+;Fall through to set DMA bank
+;Set Disk Memory Bank.  Saves bank number
+;in DMABNK for future disk data transfers.
+?SETBK:	RET 
+
+;Sector Translate.  Indexes skew table in <DE>
+;with sector in <BC>.  Returns physical sector
+;in <HL>.  If no skew table (<DE>=0) then
+;returns physical=logical.
+?SCTRN:	LD L,C
+	LD H,B
+	LD (SKTAB),DE		;Don't do skew now
+	RET
+;Read/Write physical record from currently selected drive.
+;Finds address of proper read/write routine from XDPH.
+;All entry points are common for read or write
+;RWFLAG tells us wether we're coming or going
+?READ:	LD A,1			;Flag read
+RDWR:	LD (RWFLAG),A
+	CALL BIGSTK		;Take on local stack in common memory
+	LD C,0
+	CALL ?MULIO		;1 at a time
+RWVIR:	JP RWFLPY		;Go to it
+
+;Set multiple sector count. Saves passed count in MULCNT
+?MULIO:	LD A,C
+	LD (MULCNT),A
+	RET 
+
+?CONIN:	LD A,"N"		;Say no to retry message
+NOACT:
+BANK:	RET			;Do nothing for bank
+
+VER	DEFL 0			;Clear VER
+	.PRINTX ".......... DSKSTRUC.MAC .........."
+	INCLUDE DSKSTRUC	;Disk structures
+	IF VER NE VERS
+	.PRINTX "DSKSTRUC.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   FLOPPY.MAC .........."
+	INCLUDE FLOPPY		;Low level disk IO
+	IF VER NE VERS
+	.PRINTX "FLOPPY.MAC is incorrect version"
+	ENDIF
+
+	PAGE
+	DSEG			;Make sure buffers at end
+
+ALVC:
+DTAAD	EQU ALVC+200H
+
+	END

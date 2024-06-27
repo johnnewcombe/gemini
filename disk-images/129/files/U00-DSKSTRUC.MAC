@@ -1,0 +1,364 @@
+VER	DEFL 5			;Version 4 module
+
+	SUBTTL Disk Data Structures for CP/M PLUS
+	PAGE
+
+	DSEG			;Most disk stuff can be banked
+
+;Calculate Boot track, sector and number of sectors
+;;Get format
+	MLAB1 FM.,FORM,1
+
+	MLAB1 BTRK,OFF,%FM.
+	MLAB1 BNM,SEC,%FM.
+	MLAB1 BSEC,SPT,%FM.
+
+BTRACK	DEFL BTRK-1
+BNUM	DEFL 4096/BNM
+BSECT	DEFL BSEC-BNUM
+	IF BNUM GT BSEC
+BTRACK	DEFL BTRACK-1
+BSECT	DEFL BSECT+BSEC
+	ENDIF
+
+;	SHOW CCP_TRACK,BTRACK,DEC
+;	SHOW CCP_SECTOR,BSECT,DEC
+
+;	**************************
+;	*	DPH MACROS       *
+;	**************************
+
+;	DPH MACRO
+;1 Skew (%)
+;2 Sectors per track (%)
+;3 Format (%)
+;4 Drive number (%)
+;5 Checksum activation True or False ($)
+;6 Read/Write routine (?)
+;7 Floppy drive select code (?)
+
+DPH	MACRO @K,@S,@FM,@DN,$CKS,?VEC,?COD
+	LOCAL MASK_
+
+;;5" double density
+MASK_	DEFL 0
+
+	IF @FM LT 999
+;;Sort out if 2 or 1 Mhz clock and if single or double density
+	IFDEF FTY&@FM	;;If NDEF then 96 tpi
+	IF FTY&@FM EQ TP8
+;;8" (2 Mhz clock)
+MASK_	DEFL MASK_ OR 20H
+	ENDIF
+	ENDIF
+
+	IFDEF DEN&@FM	;;If NDEF then double density
+	IF DEN&@FM EQ SDEN
+;;Single density
+MASK_	DEFL MASK_ OR 10H
+	ENDIF
+	ENDIF
+
+	ENDIF
+
+;;Make read/write addresses
+	DEFW ?VEC
+	DEFW ?VEC
+
+	DEFW NOACT
+
+	IF @DN EQ 0
+	DEFW CLEAN
+	ELSE
+	DEFW NOACT
+	ENDIF
+
+	DEFB ?COD OR MASK_	;Drive code
+
+	DEFB 0
+;;Make DPH label
+FD&@DN:
+	IF @FM EQ NULLF
+	DEFW SK&@DN	;;Assignable
+	ELSE
+	IF @K EQ SPSK
+	DEFW SP&@FM	;;Special skew
+	ELSE
+	IF @K GT 1
+	DEFW K&@S&@K	;;Standard skew
+	ELSE
+	DEFW 0		;;No translation
+	ENDIF
+	ENDIF
+	ENDIF
+
+	DEFB 0,0,0,0,0	;BDOS Scratch area
+	DEFB 0,0,0,0
+	DEFB 0		;Media flag
+;;Make DPB label
+	IF @FM EQ NULLF
+	DEFW DPNF&@DN
+	ELSE
+	DEFW DP&@FM
+	ENDIF
+
+	IF $CKS
+;;Allocated by GENCPM
+	DEFW 0FFFEH	;CKSVEC
+	ELSE
+	DEFW 0		;No checksum vector
+	ENDIF
+
+;;Following allocated by GENCPM
+	DEFW 0FFFEH	;ALLVEC
+	DEFW 0FFFEH	;DIRBCB
+	DEFW 0FFFEH	;DTABCB
+	DEFW 0FFFEH	;HASH
+	DEFB 0		;Hash bank
+
+	ENDM	
+
+;	**************************
+;	*	DPB MACROS       *
+;	**************************
+
+;	DPB MACRO
+;1 Physical Sector size
+;2 Physical Sectors per track
+;3 Tracks per disk
+;4 CP/M allocation size
+;5 Number of directory blocks
+;6 Number of user blocks
+;7 Number of system tracks
+;8 Checksum activation True or False
+;9 CP/M 1.4 compatibility True or False
+
+DPB	MACRO ?PSS,?SPT,?TPD,?BLS,?DBLK,?UBLK,?OFF,$CKS,$EXM
+	LOCAL SPT_,BSH_,BLM_,EXM_,DSM_,DRM_,AL0_,AL1_,CKS_,PSH_,PSM_,NUM_
+	LOCAL NDIR_,ALL_,SPB_,SCTS_
+
+SPB_	EQU ?BLS/?PSS		;;Physical sectors per block
+NDIR_	DEFL (?BLS/32)*?DBLK	;;Directory entries
+
+;;Physical sector mask and physical sector shift
+PSH_	DEFL 0
+NUM_	DEFL ?PSS/128		;;Records per sector
+PSM_	DEFL NUM_-1
+
+	REPT 8
+NUM_	DEFL NUM_/2
+	IF NUM_ EQ 0 
+	EXITM	
+	ENDIF	
+PSH_	DEFL PSH_+1
+	ENDM	
+
+SPT_	DEFL ?SPT*(?PSS/128)
+BSH_	DEFL 3
+NUM_	DEFL ?BLS/1024
+
+	REPT 8
+NUM_	DEFL NUM_/2
+	IF NUM_ EQ 0
+	EXITM	
+	ENDIF	
+BSH_	DEFL BSH_+1
+	ENDM	
+
+BLM_	DEFL ?BLS/128-1
+
+;;Calculate disk size in blocks
+	IF (?TPD-?OFF) LE 7FFFH/17
+;;This form size limited but fast
+DSM_	DEFL ((?TPD-?OFF)*?SPT)/SPB_
+
+	ELSE
+
+SCTS_	DEFL 0
+DSM_	DEFL 0
+
+	REPT ?TPD-?OFF
+SCTS_	DEFL SCTS_+?SPT		;;Add in one track of physical sectors
+@BLK	DEFL SCTS_/SPB_		;;Blocks to add
+
+	IF @BLK GT 0		;;If sectors produce a block(s)
+SCTS_	DEFL SCTS_-(SPB_*@BLK)
+DSM_	DEFL DSM_+@BLK
+	ENDIF
+
+	ENDM
+	ENDIF
+
+EXM_	DEFL ?BLS/1024
+
+	IF (DSM_ GT 255) AND (?BLS EQ 1024)
+DSM_	DEFL 255		;;Limit disk size
+	ENDIF
+
+	IF DSM_ GT 255
+EXM_	DEFL EXM_/2
+	ENDIF	
+
+	IF $EXM
+EXM_	DEFL 0		;;CP/M 1.4 compatible
+	ELSE
+EXM_	DEFL EXM_-1
+	ENDIF
+
+ALL_	DEFL 0
+NUM_	DEFL ?DBLK+?UBLK
+
+	REPT NUM_
+ALL_	DEFL (ALL_ SHR 1) OR 8000H
+	ENDM	
+
+AL0_	DEFL HIGH ALL_
+AL1_	DEFL LOW ALL_
+DRM_	DEFL NDIR_-1
+
+	IF $CKS
+CKS_	DEFL NDIR_/4
+	ELSE	
+CKS_	DEFL 8000H
+	ENDIF	
+
+	DEFW SPT_		;128 byte records per track
+	DEFB BSH_,BLM_	;Block shift and mask
+	DEFB EXM_		;Extent mask
+	DEFW DSM_-1		;Maximum block number
+	DEFW DRM_		;Maximum directory entry number
+	DEFB AL0_,AL1_	;Alloc vector for directory
+	DEFW CKS_		;Checksum size
+	DEFW ?OFF		;Offset for system tracks
+	DEFB PSH_,PSM_	;Physical sector size shift and mask
+	ENDM
+
+	SUBTTL Disk Parameter Headers
+	PAGE
+
+;	*********************
+;	*	XDPHs       *
+;	*********************
+
+DN	DEFL 0			;Initialise drive number
+WN	DEFL 1			;Initialise Winchester number
+
+;Make Winchester DPH using Winchester number as ID to DPB
+	IF DRVW
+DPHW:	REPT NDRVW
+
+WN_	DEFL WN*1000
+
+	DPH 0,0,%WN_,%DN,F,RWWINI,0
+
+DN	DEFL DN+1
+WN	DEFL WN+1
+	ENDM
+	ENDIF
+
+;Floppy DPHs
+
+FN	DEFL 1			;Initialise floppy number
+;Make DPH using Floppy number, Format, drive number
+	REPT NDRVF
+;;Get format and floppy assignment
+	MLAB2 FM.,FORM,%FN,FA.,FASG,%FN
+;;Get skew and sectors per track
+	MLAB2 SKEW.,SKW,%FM.,SECS.,SPT,%FM.
+;;Make drive code
+CODE_	DEFL 1
+	REPT FA.-1
+CODE_	DEFL CODE_+CODE_
+	ENDM
+
+	DPH %SKEW.,%SECS.,%FM.,%DN,T,RWFLPY,CODE_
+
+DN	DEFL DN+1
+FN	DEFL FN+1
+	ENDM
+
+;Virtual disk
+DPH999:	DPH 0,0,999,15,F,RWVIR,0
+
+	SUBTTL Drive Table
+	PAGE
+
+	CSEG			;Drive table and DPBs must be resident
+
+;	***************************
+;	*	DRIVE TABLE       *
+;	***************************
+DRVTBL:
+DN	DEFL 0			;Initialise drive number
+	REPT NDRVW+NDRVF
+	MLAB1 LBL1.,FD,%DN
+	DEFW LBL1.
+DN	DEFL DN+1
+	ENDM
+
+;Fill in to drive O
+	REPT 16-DN-1
+	DEFW 0
+	ENDM
+
+VENTRY:	DEFW FD15		;Virtual disk
+
+	SUBTTL Disk Parameter Blocks
+	PAGE
+
+;	********************
+;	*	DPBs       *
+;	********************
+
+DPBASE:				;Required by LDRBIOS
+;Make Winchester DPB(s), one for each Winchester allocated
+WN	DEFL 1
+	REPT NDRVW
+;;Make label
+ID_	DEFL WN*1000
+	MAKLOC DP,%ID_
+;;Get drive size, block size, directory allocation
+	MLAB2 SW.,SIZW,%WN,BW.,BLSW,%WN
+	MLAB1 DW.,DALW,%WN
+	DPB SECW,SPTW,SW.,BW.,DW.,0,OFFW,F,F
+
+WN	DEFL WN+1
+	ENDM
+
+;Make floppy DPB(s) using floppy number to establish format
+FN	DEFL 1			;Initialise floppy number
+DN	DEFL NDRVW
+
+	REPT NDRVF
+;;Get format
+	MLAB1 FM.,FORM,%FN
+;;Get format data
+	MLAB2 SEC.,SEC,%FM.,SPT.,SPT,%FM.
+	MLAB2 LGT.,LGT,%FM.,BLK.,BLK,%FM.
+	MLAB2 DAL.,DAL,%FM.,OFF.,OFF,%FM.
+	MLAB1 UAL.,UAL,%FM.
+
+	IF FM. EQ NULLF		;;One DPB for each NULLF
+	MAKLOC DPNF,%DN
+	DPB SEC.,SPT.,LGT.,BLK.,DAL.,UAL.,OFF.,T,F
+
+	ELSE
+
+;;Get extent mask handling
+	MLAB1 EX.,EXM,%FM.
+;;Each format only once
+	MULTI Z,%FM.,Z
+	IF FIRST
+	MAKLOC DP,%FM.
+	DPB SEC.,SPT.,LGT.,BLK.,DAL.,UAL.,OFF.,T,EX.
+	ENDIF
+
+	ENDIF
+
+FN	DEFL FN+1
+DN	DEFL DN+1
+	ENDM
+
+;Make virtual disk DPB
+DP999:	DPB SECV,SPTV,LGTV,BLKV,DALV,0,OFFV,F,F
+

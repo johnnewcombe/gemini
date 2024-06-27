@@ -1,0 +1,24 @@
+
+     Initialisation of FTS, OEM Orion and Ferranti PPC discs
+
+Thå abovå machineó reaä á sectoò oî tracë onå tï seå iæ thå discó 
+arå singlå oò doublå sided® Iî ordeò tï achievå correcô operatioî 
+iô  ió  necessarù  tï  initialiså  discó  afteò  theù  havå  beeî 
+formatted on this machine.
+
+Á  submiô  filå haó beeî prepareä sï thaô thió caî bå donå  usinç 
+the DU program.
+
+The syntax is:-
+
+           SUBMIT FTS <drive letter> <number of sides>
+
+e.g®  tï initialiså á doublå sideä disã witè thå formaô seô uğ oî 
+drive D:
+
+A>SUBMIT FTS D 2
+
+Thå  samå ió useä oî thå formató thaô arå equivalenô tï  thå  FTÓ 
+machines.
+
+(c) TIMECLAIM LTD 17/11/84

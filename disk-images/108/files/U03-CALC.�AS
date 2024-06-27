@@ -1,0 +1,480 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+print clear$
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+data +,-,*,/,CLR,PI,SQ,RT,CHS,INT,FR,ABS,%,STO,COMB
+data REC,PERM,SIN,COS,TAN,ASIN,ACOS,ATAN,PWR,LN,EXP
+data LOG,ALOG,DEG,RAD,#D,#R,CLR-R,FACT,D%,END
+angle.flag$ = "DEGREES"
+b1.line$ = "                       "
+b2.line$ = b1.line$ + "      "
+blk$ = " "
+pic0$ = "/...5/#.###########^^-"
+pic1$ = "//##,###,###,###.###########-"
+pic2$ = "//##,###,###,###-"
+rem *********************************************************
+rem : Algabraic calculator program.
+rem : Requires a terminal with clear screen
+rem : plus an addressable curser.
+rem *********************************************************
+dim calc.reg(10)
+continue.flag$ = "CONTINUE"
+k% = 0
+while f$ <> "END"
+    read f$
+    k% = K% + 1
+wend
+ dim f$(1,(k% + 1))
+restore
+for i% = 1 to k%
+    read f$(1,i%)
+next i%
+gosub 100 :rem fill screen with fixed labels
+while continue.flag$ = "CONTINUE"
+    gosub 200 :rem get characters
+    gosub 300 :rem select function
+    gosub 400 :rem Write blanks to input areas
+wend
+chain "PCALC"
+stop
+
+100 rem ***** Fill screen with fixed labels *****
+print clear$
+line1$ = "________________________"
+line2$ = line1$ + "____________"
+print fnc$(14,1);line2$ 
+print fnc$(17,1);line2$ 
+print fnc$(4,37);line1$ 
+print fnc$(19,37);line1$ 
+for i% = 1 to 23
+    print fnc$(i%,36); ":" 
+    print fnc$(i%,61); ":" 
+next i%
+print fnc$(2,3);"REG" 
+print fnc$(3,4);"NO" 
+for i% = 4 to 12
+    reg% = i% - 3
+    print fnc$(i%,2); reg%;":"
+next i%
+print fnc$(2,40);"CBASIC2 CALCULATOR." 
+print fnc$(3,39);"*********************" 
+print fnc$(15,14);"RESULT." 
+print fnc$(18,2);"From Function :" 
+print fnc$(19,2);"First Number." 
+print fnc$(21,2);"Second Number." 
+print fnc$(5,43);"INPUT AREA." 
+print fnc$(7,38);"First Number or R." 
+print fnc$(10,38);"     Operator." 
+print fnc$(13,38);"Second Number or R." 
+print fnc$(17,39);"SYSTEM MESSAGE LINE." 
+print fnc$(20,39);"NB R is the result if" 
+print fnc$(21,39);"just R but register if" 
+print fnc$(22,39);"followed by register" 
+print fnc$(23,39);"number." 
+print fnc$(2,66);"FUNCTIONS." 
+b1$ = " "
+b2$ = "  "
+b3$ = "   "
+b4$ = "    "
+for i% = 1 to 12
+    i2% = i% + 12
+    i3% = i% + 24
+    if len(f$(1,i%)) = 1 then text$ = b4$
+    if len(f$(1,i%)) = 2 then text$ = b3$
+    if len(f$(1,i%)) = 3 then text$ = b2$
+    if len(f$(1,i%)) = 4 then text$ = b1$
+    text$ = text$ + f$(1,i%)
+    text$ = text$ + b1$
+    if len(f$(1,i2%)) = 1 then text$ = text$ + b4$
+    if len(f$(1,i2%)) = 2 then text$ = text$ + b3$
+    if len(f$(1,i2%)) = 3 then text$ = text$ + b2$
+    if len(f$(1,i2%)) = 4 then text$ = text$ + b1$
+    text$ = text$ + f$(1,i2%)
+    text$ = text$ + b1$
+    if len(f$(1,i3%)) =1 then text$ = text$ + b4$
+    if len(f$(1,i3%)) =2 then text$ = text$ + b3$
+    if len(f$(1,i3%)) =3 then text$ = text$ + b2$
+    if len(f$(1,i3%)) =4 then text$ = text$ + b1$
+    text$ = text$ + f$(1,i3%)
+    print fnc$(i% + 3,63); text$ 
+next i%
+print fnc$(19,64);"Angular Mode."
+print fnc$(20,67);angle.flag$
+return rem ** end of fill screen with fixed labels **
+
+200 rem ***** get characters *****
+print fnc$(8,37);
+input f.no$
+if ucase$(left$(f.no$,1)) <> "R" \
+    then first.number = val(f.no$) \
+    else i% = val(right$(f.no$,1)) : \
+         first.number = calc.reg(i%)
+print fnc$(18,37);"                       " :rem blanks to message line
+print fnc$(11,37);
+input op$
+gosub 500 :rem test for function
+print fnc$(14,37);
+if function.flag$ = "OPERATOR"  \
+    then input s.no$  \
+    else s.no$ = "0.0"
+if ucase$(left$(s.no$,1)) <> "R" \
+    then second.number = val(s.no$) \
+    else i% = val(right$(s.no$,1)) : \
+         second.number = calc.reg(i%)
+return :rem ** End of get characters **
+
+300 rem ***** Select function *****
+for i% = 1 To k%
+   if ucase$(op$) = f$(1,i%) then select% = i%
+next i%
+if select% > 0 then \
+    on select% gosub \
+     600,   \    rem :   +
+     700,   \    rem :   -
+     800,   \    rem :   *
+     900,   \    rem :   /
+    1000,   \    rem :   CLR
+    1100,   \    rem :   PI
+    1200,   \    rem :   SQ
+    1300,   \    rem :   RT
+    1400,   \    rem :   CHS
+    1500,   \    rem :   INT
+    1600,   \    rem :   FR
+    1700,   \    rem :   ABS
+    1800,   \    rem :   %
+    1900,   \    rem :   STO
+    2000,   \    rem :   COMB
+    2100,   \    rem :   REC
+    2200,   \    rem :   PERM
+    2300,   \    rem :   SIN
+    2400,   \    rem :   COS
+    2500,   \    rem :   TAN
+    2600,   \    rem :   ASIN
+    2700,   \    rem :   ACOS
+    2800,   \    rem :   ATAN
+    2900,   \    rem :   PWR
+    3000,   \    rem :   LN
+    3100,   \    rem :   EXP
+    3200,   \    rem :   LOG
+    3300,   \    rem :   ALOG
+    3400,   \    rem :   DEG
+    3500,   \    rem :   RAD
+    3600,   \    rem :   #D
+    3700,   \    rem :   #R
+    3800,   \    rem :   CLR-R
+    3900,   \    rem :   FACT
+    4000,   \    rem :   D%
+    4100    \    rem :   END
+    else print fnc$(18,37);"ERROR ON OPERATOR !  "
+select% = 0
+return :rem ** End of select function **
+
+400 rem ***** Write blanks to input areas *****
+print fnc$(8,37);b1.line$
+print fnc$(11,37);b1.line$
+print fnc$(14,37);b1.line$
+return :rem ** End of write blanks to input areas **
+
+500 rem ***** Test for function *****
+function.flag$ = "FUNCTION"
+    if        op$  = "+" then function.flag$ = "OPERATOR" :return
+    if        op$  = "-" then function.flag$ = "OPERATOR" :return
+    if        op$  = "*" then function.flag$ = "OPERATOR" :return
+    if        op$  = "/" then function.flag$ = "OPERATOR" :return
+    if        op$  = "%" then function.flag$ = "OPERATOR" :return
+    if ucase$(op$) = "PWR" then function.flag$ = "OPERATOR" :return
+    if ucase$(op$) = "COMB" then function.flag$ = "OPERATOR" :return
+    if ucase$(op$) = "PERM" then function.flag$ = "OPERATOR" :return
+    if ucase$(op$) = "D%" then function.flag$ = "OPERATOR"
+return :rem ** End of test for function **
+
+600 rem : +
+calc.reg(0) = first.number + second.number
+gosub 7000 :rem display results
+return
+
+700 rem : -
+calc.reg(0) = first.number - second.number
+gosub 7000 :rem display results
+return
+
+800 rem : *
+calc.reg(0) = first.number * second.number
+gosub 7000 :rem display results
+return
+
+900 rem : /
+calc.reg(0) = first.number / second.number
+gosub 7000 :rem display results
+return
+
+1000 rem :clr
+return
+
+1100 rem :pi
+calc.reg(0) = first.number * 3.141592654
+gosub 7000 :rem display results
+return
+
+1200 rem :sq
+calc.reg(0) = first.number * first.number
+gosub 7000 :rem display results
+return
+
+1300 rem :rt
+calc.reg(0) = sqr(first.number)
+gosub 7000 :rem display results
+return
+
+1400 rem :chs
+calc.reg(0) = 1 - first.number
+gosub 7000 :rem display results
+return
+
+1500 rem :int
+calc.reg(0) = int(first.number)
+gosub 7000 :rem display results
+return
+
+1600 rem :fr
+temp = int(first.number)
+calc.reg(0) = first.number - temp
+gosub 7000 :rem display results
+return
+
+1700 rem :abs
+calc.reg(0) = abs(first.number)
+gosub 7000 :rem display results
+return
+
+1800 rem :%
+calc.reg(0) = first.number * second.number / 100
+gosub 7000 :rem display results
+return
+
+1900 rem :sto
+print fnc$(16,37);
+input "Type in reg no : ";reg.no%
+print fnc$(16,37);"                      " 
+calc.reg(reg.no%) = first.number
+display = calc.reg(reg.no%)
+movecursor$ = fnc$(reg.no% + 3,6)
+print movecursor$;
+gosub 5000 :rem display
+return
+
+2000 rem :comb
+nn% = int%(first.number)
+rr% = int%(second.number)
+pp% = nn% - rr%
+result1 = 1.0
+result2 = 1.0
+if rr% > 25 then \
+    print fnc$(18,37);"Second number too large." : \
+    return
+for i% = 1 to rr%
+    result1 = result1 * nn%
+    nn% = nn% - 1
+next i%
+if pp% > 42 then  \
+    print fnc$(18,37);"Difference too large." : \
+    return
+for i% = 1 to rr%
+    result2 = result2 * i%
+next i%
+calc.reg(0) = result1 / result2 
+gosub 7000 :rem display result
+return
+
+2100 rem :rec
+calc.reg(0) = 1 / first.number
+gosub 7000 :rem display results
+return
+
+2200 rem :perm
+nn% = int%(first.number)
+rr% = int%(second.number)
+if rr% > 25 then \
+    print fnc$(18,37);"Second number too large." : \
+    return
+calc.reg(0) = 1.0
+for i% = 1 to rr%
+    calc.reg(0) = calc.reg(0) * nn%
+    nn% = nn% - 1
+next i%
+gosub 7000 :rem display result
+return
+
+2300 rem :sin
+gosub 8000 :rem test for degrees
+calc.reg(0) = sin(no.of.radians)
+gosub 7000 :rem display results
+return
+
+2400 rem :cos
+gosub 8000 :rem test for degrees
+calc.reg(0) = cos(no.of.radians)
+gosub 7000 :rem display results
+return
+
+2500 rem :tan
+gosub 8000 :rem test for degrees
+calc.reg(0) = tan(no.of.radians)
+gosub 7000 :rem display results
+return
+
+2600 rem :asin
+temp = first.number / (sqr(1.0 - first.number * first.number))
+temp = atn(temp)
+if angle.flag$ = "DEGREES" \
+    then calc.reg(0) = temp / 1.74532925E-2 \
+    else calc.reg(0) = temp
+gosub 7000 :rem display results
+return
+
+2700 rem :acos
+pi = 3.141592654
+temp = first.number / sqr(1.0 - first.number * first.number)
+temp = pi / 2.0 - atn(temp)
+if angle.flag$ = "DEGREES" \
+    then calc.reg(0) = temp / 1.74532925E-2 \
+    else calc.reg(0) = temp
+gosub 7000 :rem display results
+return
+
+2800 rem :atan
+temp = atn(first.number)
+if angle.flag$ = "DEGREES" \
+    then calc.reg(0) = temp / 1.74532925E-2 \
+    else calc.reg(0) = temp
+gosub 7000 :rem display results
+return
+
+2900 rem :pwr
+calc.reg(0) = first.number ^ second.number
+gosub 7000 :rem display results
+return
+
+3000 rem :ln
+calc.reg(0) = log(first.number)
+gosub 7000 :rem display results
+return
+
+3100 rem :exp
+calc.reg(0) = exp(first.number)
+gosub 7000 :rem display results
+return
+
+3200 rem :log
+calc.reg(0) = log(first.number) / log(10)
+gosub 7000 :rem display results
+return
+
+3300 rem :alog
+calc.reg(0) = 10 ^ first.number
+gosub 7000 :rem display results
+return
+
+3400 rem :deg
+calc.reg(0) = first.number / 1.74532925E-2
+gosub 7000 :rem display results
+return
+
+3500 rem :rad
+calc.reg(0) = first.number * 1.74532925E-2
+gosub 7000 :rem display results
+return
+
+3600 rem :#d
+angle.flag$ = "DEGREES"
+print fnc$(20,67);"         "
+print fnc$(20,67);angle.flag$
+return
+
+3700 rem :#r
+angle.flag$ = "RADIANS"
+print fnc$(20,67);"         "
+print fnc$(20,67);angle.flag$
+return
+
+3800 rem :clr-r
+for reg.no% = 1 to 9
+    calc.reg(reg.no%) = 0.0
+    display = calc.reg(reg.no%)
+    movecursor$ = fnc$(reg.no% + 3,6)
+    print movecursor$;
+    gosub 5000 :rem display
+next reg.no%
+return
+
+3900 rem :fact
+if first.number > 49 then \
+    print fnc$(18,38);"Number too large." : \
+    return
+calc.reg(0) = 1.0
+for i% = 1 to int%(first.number)
+  calc.reg(0) = calc.reg(0) * i%
+next i%
+gosub 7000 :rem display results
+return
+
+4000 rem :d%
+temp = first.number - second.number
+calc.reg(0) = temp / second.number * 100
+gosub 7000 :rem display results
+return
+
+4100 rem :end
+continue.flag$ = "STOP"
+return
+
+5000 rem ***** Form display picture *****
+print b2.line$ 
+print movecursor$;
+if display = 0 then \
+    print using pic2$;blk$,display : \
+    return
+if abs(display) > 99999999999  or abs(display) < 1.0E-2 \
+    then print using pic0$; blk$,display :  \
+    return
+dd$ = str$(display)
+p% = match(".",dd$,1)
+if p% = 0 then \
+    print using pic2$;blk$,display : \
+    return
+print using pic1$;blk$,display
+return :rem ** End of form display picture **
+
+7000 rem ***** Display results *****
+movecursor$ = fnc$(16,6)
+print movecursor$;
+display = calc.reg(0)
+gosub 5000 :rem display
+movecursor$ = fnc$(20,6)
+print movecursor$;
+display = first.number
+gosub 5000 :rem display
+movecursor$ = fnc$(22,6)
+print movecursor$;
+display = second.number
+gosub 5000 :rem display
+print fnc$(18,16);"       "
+print fnc$(18,16);op$ 
+return :rem ** End of display results **
+
+8000 rem ***** test for degrees *****
+if angle.flag$ = "DEGREES"  \
+   then no.of.radians = first.number * 1.74532925E-2  \
+   else no.of.radians = first.number
+return :rem ** End of test for degrees **
+

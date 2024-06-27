@@ -1,0 +1,241 @@
+                             CP/M Utilities
+
+     These  utilities have been written over the years by an  unofficial 
+consortium of myself,  Neil Harrison,  and Richard Russell. The programs 
+have been through many revisions,  but are believed to be as bug free as 
+programs  can be.  Unfortunately,  no sources for these programs can  be 
+distributed yet,  however, almost all the programs are very hardware and 
+software   independant   providing  your  system  meets  the   following 
+requirements:
+
+          Z-80 CPU
+          Standard CP/M V2.2 or later 
+
+Any specific requirements are detailed in the program descriptions.
+
+Many  programs  make a direct access to the CBIOS jump  table.  This  is 
+calculated using the warm start jump in locations 1 & 2.  Some  programs 
+do  direct  access to disk sectors via CBIOS calls.  The disk sizes  are 
+calculated via the DPB blocks in CP/M so they should be correct for  all 
+systems. However, they have only been fully tested on the following disk 
+systems:
+          Single Density 8" IBM format
+          Single and Double Sided 5" Superbrain
+          Various 5" Winchester systems
+
+I would be grateful to know of any disk formats that the programs do not 
+work  with  correctly  (providing  you  can  provide  me  with  DETAILED 
+descriptions of the disk format used - just saying it does not work on a 
+"SUPERFROG MASTER Triple Density System with XYZ Dos" is no use unless I 
+happen to know the machine in question !). 
+
+Note  that DSKED and FCOM require a compatible terminal  for  operation. 
+Work  is  in  progress  on making these  programs  adaptable  for  other 
+terminals,  but until then, if you dont have a suitable display, write a 
+protocol converter in your Bios. The control codes used are as follows:
+
+     ^D   -    Clear from cursor to end of screen
+     ^E   -    Clear from cursor to end of line
+     ^G   -    Ring Bell
+     ^H   -    Cursor Left
+     ^J   -    Line Feed
+     ^K   -    Cursor Up
+     ^L   -    Cursor Right
+     ^M   -    Carriage Return
+     ^N   -    Inverse video off
+     ^O   -    Inverse video on
+     ^Z   -    Clear screen
+     ESC H-    Inverse video on
+     ESC=LineChar - Cursor Postitioning (4 character sequence)
+               Line 1 = " ",Line 2 = "!" etc
+               Char 1 = " ",Char 2 = "!" etc
+
+These  are  generally  the same as many ADM,  SOROC  and  Memory  mapped 
+terminals.
+
+
+
+BCOM
+Binary file compare utility. Command:
+
+          BCOM file1.ext file2.ext
+
+Compares file1 with file2 and prints any differences in hex and ascii.
+
+DISK
+This lists the directory on the screen,  with the size of each file, and 
+disk  space used,  etc.  Various formats are possible,  these  are  some 
+variations:
+
+ DISK          - Lists all directory files on the current disk
+ DISK B:       - Lists all directory files on disk B:
+ DISK *.HEX    - Lists all directory files matching *.HEX
+ DISK B: A:    - Lists directory & system files on disk B:
+ DISK A: ID    - Types file ID, then lists dir files on A:
+
+The disk size information is obtained from the DPB table within CP/M.
+
+DSKED
+Single  sector disk editor.  Allows direct read/writes to disk  sectors. 
+A full command summary is included in the program. This program requires 
+a compatible terminal for operation.
+
+DUMP
+File dump program. Dumps a file in Hex and Ascii. Command:
+
+          DUMP filename.ext
+
+If  the  extension  is .COM,  then the start address is  100,  else  the 
+address starts at 0.
+
+EDIT (From a CP/M User Group Program)
+This  text editor is a vast improvement on the standard CP/M text editor 
+'ED'. The full documentation for this is in a seperate file, 'EDIT.DOC'. 
+Command:
+
+          EDIT N:filename.ext (X)
+
+Edit commands:
+ #A  - Append text from input file
+ +B  - Move cursor to start (or end) of text
+Cstring1$string2$ - Change 'string1' to 'string2'
++#D  - Delete # Characters from cursor
+  E  - End edit, write file to disk
+  H  - Halt until a key is pressed
+  Itext$ - Insert text at cursor
+ #J  - Jump to line number
++#K  - Kill # lines from cursor
++#L  - Move # lines from cursor (L = to start of line)
++#M  - Move # characters from cursor
+  N  - as S,but searches disk as well
+ #O$ - output # lines to default save file
+ #Ofilename.ext$ - output # lines to file 'filename.ext'
+ #P  - Print page of text
+  Q  - Quit with no file changes (requires confirmation)
+  R$ - Read default save file at cursor
+  Rfilename.ext$ - Read file 'filename.ext' at cursor
+  Sstring$ - Search for 'string'
++#T  - Type # lines from pointer (T for current line)
+  V  - Verify file parameters
+ #W  - Write # lines to disk
+ -X  - Define macro (80 characters max)
+-2X  - Print macro
+ #X  - Use macro
+  Y  - Type 5 lines each side of the cursor
+  Z  - Move cursor to end of buffer
+ #<commandstring> - Execute 'commandstring' # times
+
+Commands preceded by '+' may be either + or -
+# preceding a command letter is eqivalent to '65000'
+'ESC' is used as a command seperator (echoed as '$')
+2 consecutive escapes execute the command buffer
+
+EPRINT
+This  program  allows the printing of multiple files on an  Epson  MX-80 
+printer. Command:
+
+          EPRINT afn1/sw1/sw2.. afn2/sw1/sw2.. ....
+
+Where  each  filename may be ambiguous or unique.  The filename  may  be 
+followed by one or more switches, which are executed as the command line 
+is scanned.
+
+/P   -    Print filename & page at the top of each page
+/I   -    Ignore embedded form feeds in file
+/A   -    Inhibit auto page feeds (every 64 lines)
+/E   -    Select emphasized print mode
+/D   -    Select double print mode
+/C   -    Select condensed print mode
+/R   -    Reset print mode to power on
+/F   -    Inhibit printing a Form Feed at the end of the file
+
+Switches  P,I,A & F have a toggle action,  i.e.  EPRINT file1/P  file2/P 
+will print file1 with page headers, and file2 without.
+
+ERASE
+This program allows the selective erasing of a group of files. Command:
+
+          ERASE afn1 afn2 ....
+
+Where each file may be unique or anbiguous.  Each filename is printed in 
+turn.  After  all the responses have been entered,  followed by a  final 
+confirmation, the files specified are erased.
+
+FCOM
+This  program  compares  2 ASCII files,  stopping at any  line  that  is 
+different.  One  line  of either or both files may be skipped,  and  the 
+comparison continues. Command:
+
+          FCOM filename1 filename2
+
+If  filename2  is omitted,  filename.BAK is used as the 2nd  file.  This 
+program requires a compatible display for operation.
+
+IMAGE
+This  program replaces COPY as a track by track disk  copier.  Any  disk 
+size is automatically catered for, and copying may be done from any disk 
+to  any  other disk (provided they are the same  size!).  Either  system 
+tracks, data tracks or all tracks may be copied. Command:
+
+          IMAGE (s:)function d:
+
+Where s:  is an optional source disk (if not given,  the current disk is 
+used)
+If function is 'SYSTEM' then the system tracks are copied
+If function is 'DATA' then the data tracks are copied
+If function is 'ALL' then all tracks are copied
+d:  specifies the destination disk,  and must be given.  If there is  an 
+error in the command syntax,  a breif review is printed, and the program 
+aborted.
+
+MFT, MFT1 (from Dr. Dobbs Program)
+Multiple  file  transfer utility.  There are two versions,  MFT1  for  a 
+single  drive system which prompts for disk changes etc,  and MFT for  a 
+dual  drive  system,  which transfers files to the  other  disk  without 
+operator intervention.  The more memory you have,  the less disk changes 
+!.  Note  that  several  filenames  (ambiguous or  unambiguous)  may  be 
+included in the command line. Command: 
+
+           MFT (d:)afn1.ext afn2.ext afn3.ext afn4.ext .....
+
+d: is an optional destination disk specifier (MFT always transfers files 
+from the current disk).  If d:  is not given, MFT transfers files to the 
+'other' disk,  e.g. if A: is the current disk, files will be transferred 
+to disk B:.  If D: is the current disk, files will be transferred to C:. 
+This program transfers files much faster than PIP,  but does not  verify 
+them.  It  should  not be used to transfer more than 64 files at a  time 
+unless you enjoy watching the computer crash !!!.
+
+UNERASE
+Enables the unerasing of an accidentaly deleted file. All files that are 
+potentially  possible  to undelete will be listed,  and a  Y/N  response 
+required for each one. Note that there is no guarantee that the file has 
+not been overwritten, UNERASE just checks that no other (undeleted) file 
+is using the same disk data space. Command:
+
+          UNERASE
+
+UNLOAD
+This  program converts a CP/M binary file to a standard Intel hex  file, 
+type HEX.  Command: 
+
+          UNLOAD filename.ext (OFFSET)
+
+The  optional  OFFSET  parameter is a HEX value (0-FFFF)  which  is  the 
+starting Intel load address. If not given, the start address defaults to 
+100H for a .COM file, and 0 for any other type of file. 
+
+VERIFY
+This  program checks that all sectors of a disk can be read.  This  will 
+work  with  any  size disk.  Will also read a file (or files)  to  check 
+it/them. Command:
+
+          VERIFY         - Checks current disk
+          VERIFY B:      - Checks disk B:
+          VERIFY A:FRED  - Checks file FRED on drive A:
+          VERIFY *.Z80 *.HEX ... - Checks all *.Z80 and *.HEX files
+
+WORDS
+Counts the number of words and characters in a file. Command: 
+
+          WORDS filename.ext

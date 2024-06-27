@@ -1,0 +1,95 @@
+
+procedure ready;
+begin
+ repeat
+  by:=port[status] and 128;
+ until by=128;
+end;
+
+procedure initialise;
+begin
+  ready;
+  for i:=1 to 4 do
+    port[status]:=0;
+  ready;
+  port[data]:=init_;
+end;
+
+procedure moveto(x,y : integer);
+begin
+  if x<left+1 then x:=left+1;
+  if x>right-1 then x:=right-1;
+  if y<top+1 then y:=top+1;
+  if y>bottom-1 then y:=bottom-1;
+  ready;
+  port[data]:=mto_;
+  ready;
+  port[data]:=lo(x);
+  port[data]:=hi(x);
+  port[data]:=lo(y);
+  port[data]:=hi(y);
+end;
+
+procedure sccol(c : byte);
+begin
+  ready;
+  port[data]:=sccol_;
+  ready;
+  port[data]:=c;
+end;
+
+function iccol:byte;
+begin
+ ready;
+ port[data]:=$8D;
+ ready;
+ iccol:=port[data];
+end;
+
+procedure sstle(c : byte);
+begin
+  ready;
+  port[data]:=sstle_;
+  ready;
+  port[data]:=c;
+end;
+
+procedure lto(x,y : integer);
+begin
+  if x<left+1 then x:=left+1;
+  if x>right-1 then x:=right-1;
+  if y<top+1 then y:=top+1;
+  if y>bottom-1 then y:=bottom-1;
+  ready;
+  port[data]:=lto_;
+  ready;
+  port[data]:=lo(x);
+  port[data]:=hi(x);
+  port[data]:=lo(y);
+  port[data]:=hi(y);
+end;
+
+
+procedure ffill;
+begin
+  ready;
+  port[data]:=ffill_;
+end;
+
+ procedure setcwp(c : byte);
+begin
+  ready;
+  port[data]:=scwp_;
+  ready;
+  port[data]:=c;
+end;
+
+ procedure setcdp(c : byte);
+begin
+  ready;
+  port[data]:=scdp_;
+  ready;
+  port[data]:=c;
+end;
+
+

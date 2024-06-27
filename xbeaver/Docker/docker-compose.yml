@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  xbeaver:
+    container_name: "xbeaver"
+    restart: always
+    build: .
+    privileged: true
+    image: "johnnewcombe/xbeaver:1.3"
+    ports:
+      - target: 5901
+        published: 5901
+      - target: 6901
+        published: 6901
+    volumes:
+      - /Users/john/.xbeaver:/root/xbeaver

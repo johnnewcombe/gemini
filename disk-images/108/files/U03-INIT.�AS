@@ -1,0 +1,34 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+print clear$
+print :print :print :print
+print "         INITIALISING VARIABLES."
+tot.inst% = 400
+length% = 35
+print.flag$ = "NO"
+res.flag$ = "NO"
+dat.flag$ = "NO"
+end.data = 9E61
+delete.data = 1E61
+blank.data = 2E61
+dim data.no(401),instruction$(401)
+dim object$(401),register(222)
+for i% = 1 to 400
+    instruction$(i%) = "X"
+    data.no(i%) = blank.data
+next i%
+instruction$(1) = "END"
+data.no(1) = end.data
+chain "PROG"
+stop
+

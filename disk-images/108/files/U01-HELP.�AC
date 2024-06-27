@@ -1,0 +1,166 @@
+;HELP: a program to page through a (documentation) file
+;
+;COMMENTS IN LOWER CASE BY THE AUTHOR, JPR PALFREY.
+;COMMENTS IN UPPER CASE ADDED BY SJ WITHERS (FOR BETTER OR
+; WORSE!)
+;
+;WRITTEN FOR MICROSOFT'S MACRO ASSEMBLER, BUT MAY WORK WITH 
+; OTHERS USING ZILOG MNEMONICS.
+;
+.Z80
+;
+;EQUATES FOR EASIER READING
+DFCB	EQU	5CH
+TAB	EQU	9
+LF	EQU	10
+CR	EQU	13
+EOF	EQU	26
+SPACE	EQU	32
+;
+;MACROS TO HELP ACCESS CP/M FUNCTIONS AND FOR COMMON OPERATIONS
+SETBYT	MACRO	ADDR,VALUE
+	LD	HL,ADDR
+	LD	(HL),VALUE
+	ENDM
+INCBYT	MACRO	ADDR
+	LD	HL,ADDR
+	INC	(HL)
+	ENDM
+DECBYT	MACRO	ADDR
+	LD	HL,ADDR
+	DEC	(HL)
+	ENDM
+FDOS	MACRO	FUNC
+	LD	C,FUNC
+	CALL	5
+	ENDM
+DCIO	MACRO	CHAR
+	LD	E,CHAR
+	FDOS	6
+	ENDM
+OUT$	MACRO	PTR$
+	LD	DE,PTR$
+	FDOS	9
+	ENDM
+OPENF	MACRO	FCB
+	LD	DE,FCB
+	FDOS	15
+	ENDM
+READF	MACRO	FCB
+	LD	DE,FCB
+	FDOS	20
+	ENDM
+;
+;start program
+	OUT$	PQUEST
+	FDOS	1
+	CP	'P'
+	JP	Z,ANSP
+	CP	'p'
+	JP	Z,ANSP
+	JP	SKIP
+ANSP:	SETBYT	OUTDEV,5
+SKIP:	OUT$	CRLF
+	SETBYT	DFCB+9,  'D'		;IF YOU DO NOT WANT A
+	SETBYT	DFCB+10, 'O'		;DEFAULT SUFFIX OF DOC
+	SETBYT	DFCB+11, 'C'		;DELETE THESE LINES
+	LD	A,(DFCB+1)
+	CP	SPACE
+	JP	NZ	FCBOK		;If no name after HELP,
+	SETBYT	DFCB+1, 'H'		;use HELP.DOC.
+	SETBYT	DFCB+2,	'E'		;CHANGE TO ANOTHER NAME, OR
+	SETBYT	DFCB+3, 'L'		;DELETE IF YOU WISH.
+	SETBYT	DFCB+4,	'P'
+FCBOK:	OPENF	DFCB			;open specified file
+	CP	0FFH
+	JP	NZ,LOOP1
+	OUT$	NOFILE
+	JP	0
+;start main loop
+LOOP1:	LD	HL,RPTR		;check if end of buffer reached
+	LD	A,0FFH
+	CP	(HL)
+	JP	NZ,NOREAD
+	READF	DFCB		;if end of buffer, read new record
+	CP	0
+	JP	NZ,0
+	SETBYT	RPTR,80H	;reset RPTR to beginning of buffer
+	JP	GETCH
+NOREAD:	INC	(HL)
+GETCH:	LD	HL,(RPTR)	;get next character from buffer
+	LD	A,(HL)
+	CP	EOF
+	JP	Z,0
+	CP	TAB
+	JP	NZ,NOTTAB
+EXPTAB:	LD	E,SPACE		;expand TAB characters
+	LD	A,(OUTDEV)	;output space to output device
+	FDOS	A
+	CALL	EOLQ
+	DECBYT	POS8
+	LD	A,(HL)
+	CP	0
+	JP	NZ,EXPTAB
+	LD	(HL),8
+	JP	LOOP1
+NOTTAB:	LD	E,A		;character is not a TAB
+	PUSH	AF
+	LD	A,(OUTDEV)
+	FDOS	A		;output character to output device
+	POP	AF
+	CP	CR
+	JP	NZ,NOTCR
+	SETBYT	POS8,8
+	CALL	NEWLN
+	JP	LOOP1
+NOTCR:	CP	SPACE
+	JP	M,LOOP1		;don't count control characters
+	DECBYT	POS8
+	LD	A,(HL)
+	CP	0
+	JP	NZ,POS8NZ
+	LD	(HL),8
+POS8NZ:	CALL	EOLQ
+	JP	LOOP1
+;
+;subroutines:
+EOLQ:	INCBYT	LPOS		;has end of line been reached?
+	LD	A,(HL)
+	CP	81
+	RET	NZ
+NEWLN:	SETBYT	LPOS,1		;end of line routine
+	LD	A,(OUTDEV)
+	CP	6
+	RET	NZ
+	INCBYT	LNUM		;if output to the screen,
+	LD	A,(HL)		; count number of lines
+	CP	24		; and pause after 23
+	JP	Z,WAIT
+	RET
+WAIT:	DCIO	0FFH		;wait for any key to be typed
+	CP	0
+	JP	Z,WAIT
+	CP	CR
+	JP	Z,ONELN		;TYPE ONE MORE LINE IF RETURN PRESSED
+	CP	3
+	JP	Z,0		;ABORT IF ^C
+	SETBYT	LNUM,1
+	RET	
+ONELN:	SETBYT	LNUM,23
+	RET
+;
+;MESSAGES:
+PQUEST:	DEFB	'HELP : jpr palfrey : 29 jan 1981',CR,LF
+	DEFB	'Printer or screen (p/s)? $'
+NOFILE:	DEFB	'File not found$'
+CRLF:	DEFB	CR,LF,'$'
+;
+;VARIABLES:
+RPTR:	DEFB	0FFH		;indicates position in read buffer
+	DEFB	0
+LNUM:	DEFB	1		;counts number of output lines
+LPOS:	DEFB	1		;indicates position in output line
+OUTDEV:	DEFB	6		;output device: 5=printer, 6=screen
+POS8:	DEFB	8		;TAB expansion variable
+	END
+

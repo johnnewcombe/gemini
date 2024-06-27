@@ -1,0 +1,670 @@
+	SUBTTL CP/M PLUS Data Equates
+	PAGE
+
+VER	DEFL 4			;Version 4 module
+
+	.Z80
+
+;Revision 2.2	Allowed for user selection of drive size witin a Winchester
+;Revision 3.0	Allowed for systems with terminals and no VFC/IVC
+;Revision 3.1	Allowed for user selection of directory allocation
+;Revision 3.2	Seperate SHD routines, smaller keyboard buffer
+;Revision 3.3	Alternate IVC/SVC permitted with MAP CPU
+;Revision 3.4	Winchester seen as 1 track per head
+;Revision 4.00	Radical rewrite to permit external assignment
+
+VNMAC	MACRO
+	DEFB "4.00"
+	ENDM
+
+VERNUM	MACRO
+	VNMAC
+	DEFB "  05/02/85"
+	ENDM
+
+T	EQU -1			;T(rue)
+F	EQU NOT T		;F(alse)
+
+;These equates are less likely to change
+;Equates likely to change are entered in SYSTEM.MAC
+
+;	****************************
+;	*	DISK EQUATES       *
+;	****************************
+
+;Drive and format density
+DDEN	EQU 0			;Double density
+SDEN	EQU 1			;Single density
+;Drive and format type
+TP96	EQU 0			;96tpi drive or format
+TP48	EQU 1			;48tpi drive/format
+TP8	EQU 2			;8" drive/format
+;Side handling
+TRKCRY	EQU 0			;Tracks carry on from track 0 side 2
+TRKREV	EQU 1			;Tracks are reversed on side 2
+SSID	EQU 2			;Single sided
+SECCYL	EQU 3			;Sectors continue on side 2 (starting again at 0)
+TRKCYL	EQU 4			;Track Cylindrical, (Even side 1 Odd side 2)
+
+SPSK	EQU 1			;Special sector skew (defined by macro)
+
+;Winchester drive assignment
+R201	EQU 1			;Rodime 201
+MS3	EQU 2			;Mini Scribe 3
+R103	EQU 3			;Rodime 103
+R204	EQU 4			;Rodime 204
+R202	EQU 5			;Rodime 202
+B6188	EQU 6			;BASF 6188 (15Mbyte)
+ST212	EQU 7			;Seagate ST212
+B6185	EQU 8			;BASF 6185 (27Mbyte)
+ATAS46	EQU 9			;ATASI 3046
+NEXTW	EQU 10			;Next available assignment Winchester
+
+;Floppy drive assignment
+STNDRD	EQU 1			;Standard 96 tpi DS drives
+MICROP	EQU 2			;Micropolis
+PERTEC	EQU 3			;Pertec FD250
+DR7200	EQU 4			;DRE 7200 8"
+CAN96	EQU 5			;Canon 1/3rd height 96tpi
+CAN48	EQU 6			;Canon 1/3rd height 48tpi
+NEXTF	EQU 7			;Next available assignment Drive
+
+;Format assignment, These must be the same as those in FORMATS.DAT
+NULLF	EQU 255			;Empty format for assignment
+MAP96D	EQU 1			;MAP 96tpi DSDD
+MAP96S	EQU 2			;MAP 96tpi SSDD
+MAP48	EQU 3			;MAP 48tpi DSDD
+IBMS	EQU 4			;Standard 8" SSSD
+NASS	EQU 5			;Nascom 96tpi SSDD
+SBRAIN	EQU 7			;Superbrain QD 48tpi DSDD (35Tk)
+EZPRIN	EQU 8			;Easi-Print 96tpi DSDD
+GEMSD	EQU 11			;Gemini 48tpi DSSD
+BBC80	EQU 24			;BBC CP/M 96tpi DSSD
+;BBC special skew macro
+SPK24	MACRO
+SP24:	DEFB 0,1,4,5,8,9,2,3,6,7
+	ENDM
+TAND8	EQU 76			;TANDY 8" DSDD
+
+;Winchester data
+;Rodime 201
+CYL1	EQU 320			;Cylinders
+RWC1	EQU 132			;Reduced write cylinder
+HDS1	EQU 2			;Heads
+WPC1	EQU 0			;Write pre-comp cylinder
+
+;Mini Scribe 3
+CYL2	EQU 612			;Cylinders
+RWC2	EQU 612			;Reduced write cylinder
+HDS2	EQU 2			;Heads
+WPC2	EQU 0			;Write pre-comp cylinder
+
+;Rodime 103
+CYL3	EQU 192			;Cylinders
+RWC3	EQU 96			;Reduced write cylinder
+HDS3	EQU 6			;Heads
+WPC3	EQU 0			;Write pre-comp cylinder
+
+;Rodime 204
+CYL4	EQU 320			;Cylinders
+RWC4	EQU 132			;Reduced write cylinder
+HDS4	EQU 8			;Heads
+WPC4	EQU 0			;Write pre-comp cylinder
+
+;Rodime 202
+CYL5	EQU 320			;Cylinders
+RWC5	EQU 132			;Reduced write cylinder
+HDS5	EQU 4			;Heads
+WPC5	EQU 0			;Write pre-comp cylinder
+
+;BASF 6188 
+CYL6	EQU 360			;Cylinders              
+RWC6	EQU 256			;Reduced write cylinder 
+HDS6	EQU 4			;Heads                  
+WPC6	EQU 128			;Write pre-comp cylinder
+
+;Seagate ST212
+CYL7	EQU 306			;Cylinders              
+RWC7	EQU 306			;Reduced write cylinder  (not supported)
+HDS7	EQU 4			;Heads                  
+WPC7	EQU 128			;Write pre-comp cylinder
+
+;BASF 6185
+CYL8	EQU 440			;Cylinders              
+RWC8	EQU 256			;Reduced write cylinder 
+HDS8	EQU 6			;Heads                  
+WPC8	EQU 128			;Write pre-comp cylinder
+
+;ATASI 3046
+CYL9	EQU 645			;Cylinders              
+RWC9	EQU 645/2		;Reduced write cylinder 
+HDS9	EQU 7			;Heads                  
+WPC9	EQU 0			;Write pre-comp cylinder
+
+;Drive parameters
+;All purpose 96 tpi DS drive parameters, linked headload with motor
+;Includes TEAC FD55, TOSHIBA, CANNON, BASF
+STP1	EQU 3			;Step rate
+;HDL1	EQU 0			;Head load timing
+STL1	EQU 20			;Track settling time
+;DTY1	EQU TP96		;96tpi drive
+
+;Micropolis
+STP2	EQU 10			;Step rate
+;HDL2	EQU 0			;Head load timing
+STL2	EQU 10			;Track settling time
+;DTY2	EQU TP96		;96tpi drive
+
+;Pertec
+STP3	EQU 25			;Step rate
+HDL3	EQU 35			;Head load timing
+STL3	EQU 10			;Track settling time
+DTY3	EQU TP48		;48tpi drive
+
+;DRE 7200 8"
+STP4	EQU 6			;Step rate
+HDL4	EQU 35			;Head load timing
+STL4	EQU 14			;Track settling time
+DTY4	EQU TP8			;8" drive
+
+;Canon 1/3rd height drives 96 tpi, not linked head load with motor
+STP5	EQU 3			;Step rate
+HDL5	EQU 20			;Head load timing
+STL5	EQU 10			;Track settling time
+;DTY5	EQU TP96		;96tpi drive
+
+;Canon 1/3rd height drives 48 tpi
+STP6	EQU 6			;Step rate
+HDL6	EQU 20			;Head load timing
+STL6	EQU 10			;Track settling time
+DTY6	EQU TP48		;48tpi drive
+
+;First Format data macro
+FDAT1 MACRO @FN,FY_,DN_,SC_,BK_,DL_,MT_,OF_,MS_,
+FTY&@FN	EQU FY_
+DEN&@FN	EQU DN_
+SEC&@FN	EQU SC_
+BLK&@FN	EQU BK_
+DAL&@FN	EQU DL_
+TPS&@FN	EQU MT_
+OFF&@FN	EQU OF_
+SPS&@FN EQU MS_
+	ENDM
+
+;Second Format data macro
+FDAT2 MACRO @FN,UL_,EM_,CS_,CT_,SW_,SF_,DT_,BF_,SY_,DM_,TK_
+	IF UL_ NE 0
+UAL&@FN	EQU UL_
+	ENDIF
+	IF EM_
+EXM&@FN	EQU EM_
+	ENDIF
+	IF CS_ NE 0
+CGS&@FN	EQU CS_
+	ENDIF
+	IF CT_ NE 0
+CGT&@FN	EQU CT_
+	ENDIF
+	IF SW_ NE 0
+SKW&@FN	EQU SW_
+	ENDIF
+	IF SF_
+SOF&@FN	EQU SF_
+	ENDIF
+	IF DT_
+INV&@FN	EQU DT_
+	ENDIF
+	IF BF_
+BSF&@FN	EQU BF_
+	ENDIF
+	IF SY_
+SCY&@FN	EQU SY_
+	ENDIF
+	IF DM_
+DDM&@FN	EQU DM_
+	ENDIF
+;;Logical Tracks
+	IF (CS_ EQ SECCYL) OR (CS_ EQ SSID)
+MXT&@FN	EQU TPS&@FN
+	ELSE
+MXT&@FN	EQU TPS&@FN*2
+	ENDIF
+;;Logical sectors
+	IF (CS_ EQ SECCYL)
+MXS&@FN	EQU SPS&@FN*2
+	ELSE
+MXS&@FN	EQU SPS&@FN
+	ENDIF
+
+	ENDM
+
+;Null format, NULLF
+;This format is designed to provide :-
+;700 allocation blocks
+;512 directory entries
+;Data and Directory buffers for 1024 byte sectors
+;Skew tables for 50 sectors per track (Allocated internally)
+	FN DEFL NULLF
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,   0,   0,1024, 2048,  8,140,  0, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,  SSID,  0,   0,  F,  F,  F,  F,  F
+
+;MAP 80 96tpi DSDD
+	FN DEFL MAP96D
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,DDEN, 512, 4096,  1, 80,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   0,  F,  F,  F,  F,  F
+
+;MAP 80 96tpi SSDD
+	FN DEFL MAP96S
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,DDEN, 512, 4096,  1, 80,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,  SSID,  0,   0,  F,  F,  F,  F,  F
+
+;MAP 80 48tpi DSDD
+	FN DEFL MAP48
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP48,DDEN, 512, 2048,  2, 35,  1, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,SECCYL,  0,   0,  F,  F,  F,  F,  F
+
+;IBM 3740 8" SSSD
+	FN DEFL IBMS
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN, TP8,SDEN, 128, 1024,  2, 77,  2, 26
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  T,  SSID,  0,   6,  T,  F,  F,  F,  F
+
+;NASCOM 96TPI SSDD
+	FN DEFL NASS
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,DDEN, 512, 2048,  2, 77,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,  SSID,  0,   0,  T,  F,  F,  F,  F
+
+;SUPERBRAIN 48tpi DSDD (35Tk)
+	FN DEFL SBRAIN
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP48,DDEN, 512, 2048,  1, 35,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   2,  T,  T,  F,  F,  F
+
+;EASI-PRINT 96TPI DSDD
+	FN DEFL EZPRIN
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,DDEN, 512, 2048,  6, 80,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   0,  F,  F,  F,  F,  F
+
+;Gemini/Henlec 48tpi DSSD
+	FN DEFL GEMSD
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP48,SDEN, 128, 1024,  2, 35,  3, 18
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   4,  T,  F,  F,  F,  F
+
+;BBC CP/M 96tpi DSSD
+	FN DEFL BBC80
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,SDEN, 256, 2048,  2, 80,  3, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKREV,  0,SPSK,  F,  F,  T,  F,  F
+
+;TANDY 8"  DSSD
+	FN DEFL TAND8
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN, TP8,DDEN,1024, 2048,  3, 77,  2,  8
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   3,  T,  F,  F,  F,  F
+
+	SUBTTL Utility Macros
+	PAGE
+
+;	******************************
+;	*	UTILITY MACROS       *
+;	******************************
+
+;Make an address label for current location from param 1 & 2
+MAKLOC	MACRO B,@X1
+B&@X1:
+	ENDM
+
+;Make a label called param 1&2 from 3&4
+MAKLAB	MACRO B1,@X1,B2,@X2
+B1&@X1	DEFL B2&@X2
+	ENDM
+
+;Make label called param 1 from 2&3&4
+M3LAB	MACRO LBL,B,@X1,@X2
+LBL	DEFL B&@X1&@X2
+	ENDM
+
+;Make a label called param 1 from 2&3
+MLAB1	MACRO LBL,B,@X
+	IFDEF B&@X
+LBL	DEFL B&@X
+	ELSE
+LBL	DEFL 0
+	ENDIF
+	ENDM
+
+;Make 2 labels called param 1 from 2&3, and param 4 from 5&6
+MLAB2	MACRO LBL1,B1,@X1,LBL2,B2,@X2
+	IFDEF B1&@X1
+LBL1	DEFL B1&@X1
+	ELSE
+LBL1	DEFL 0
+	ENDIF
+	IFDEF B2&@X2
+LBL2	DEFL B2&@X2
+	ELSE
+LBL2	DEFL 0
+	ENDIF
+	ENDM
+
+;Display a selected label during assembly
+SHOW	MACRO MESSG,LAB,RAD
+	.RADIX RAD
+	PRSIZE MESSG,%LAB,RAD
+	.RADIX 10
+	ENDM
+
+DEC	EQU 10
+HEX	EQU 16
+
+PRSIZE	MACRO MESSAG,LABEL,RADX
+	IF2
+	.PRINTX " &MESSAG LABEL RADX "
+	ENDIF
+	ENDM
+
+;Test for multi macro expansion, return FIRST T if first call
+MULTI MACRO X,@X,@Y
+FIRST	DEFL F
+
+	IF1
+X&@X&@Y	DEFL X&@X&@Y+1
+	IF X&@X&@Y LT 2
+FIRST	DEFL T
+	ENDIF
+	ENDIF
+
+	IF2
+X&@X&@Y	DEFL X&@X&@Y+100
+	IF X&@X&@Y LT 200
+FIRST	DEFL T
+	ENDIF
+	ENDIF
+
+	ENDM
+
+;Assign skew space for assignable drive
+ASGSKW	MACRO @DN
+SK&@DN:	DEFS 50
+	ENDM
+
+;Make a special skew table
+SPCSKW	MACRO @FM
+	IF1
+P&@FM	DEFL P&@FM+1		;;Each skew once only
+	IF P&@FM GT 1
+	EXITM
+	ENDIF
+	ENDIF
+
+	IF2
+P&@FM	DEFL P&@FM+100		;;Each skew once only
+	IF P&@FM GT 199
+	EXITM
+	ENDIF
+	ENDIF
+
+	SPK&@FM
+	ENDM
+
+;Make a standard skew
+;	SKEW MACRO
+;1 Physical sectors per track
+;2 Skew factor
+
+SKEW	MACRO @S,@K
+	LOCAL ?B,?S
+K&@S&@K:
+?B	DEFL 0		;;Start with base 0
+?S	DEFL 0		;;Start with sector 0
+
+	REPT @S
+	DEFB ?S
+?S	DEFL ?S+@K	;;Add skew factor
+	IF ?S GE @S	;;Overflow
+?S	DEFL ?S-@S
+	IF ?S EQ ?B	;;Return to old base
+?S	DEFL ?S+1
+?B	DEFL ?B+1
+	ENDIF
+	ENDIF
+	ENDM
+
+	ENDM
+
+	SUBTTL Signon message macros
+	PAGE
+
+;	*************************************
+;	*	SIGNON MESSAGE MACROS       *
+;	*************************************
+
+WINMES	MACRO
+
+	IF DRVW EQ R201
+	DEFB "RODIME R201"
+	ENDIF
+
+	IF DRVW EQ MS3
+	DEFB "M/SCRIBE 3"
+	ENDIF
+
+	IF DRVW EQ R103
+	DEFB "RODIME 103"
+	ENDIF
+
+	IF DRVW EQ R204
+	DEFB "RODIME 204"
+	ENDIF
+
+	IF DRVW EQ R202
+	DEFB "RODIME 202"
+	ENDIF
+
+	IF DRVW EQ B6188
+	DEFB "BASF 6188"
+	ENDIF
+
+	IF DRVW EQ ST212
+	DEFB "SEAGAT 212"
+	ENDIF
+
+	IF DRVW EQ B6185
+	DEFB "BASF 6185"
+	ENDIF
+
+	IF DRVW EQ ATAS46
+	DEFB "ATASI 3046"
+	ENDIF
+
+	ENDM
+
+DRVMES	MACRO ?DT
+;;Drives
+	IF ?DT EQ STNDRD
+	DEFB "DS  96tpi"
+	ENDIF
+
+	IF ?DT EQ MICROP
+	DEFB "MICROPOLIS"
+	ENDIF
+
+	IF ?DT EQ PERTEC
+	DEFB "PERTEC 250"
+	ENDIF
+
+	IF ?DT EQ DR7200
+	DEFB "DRE 7200"
+	ENDIF
+
+	IF ?DT EQ CAN96
+	DEFB "CANON  96"
+	ENDIF
+
+	IF ?DT EQ CAN48
+	DEFB "CANON  48"
+	ENDIF
+
+	ENDM
+
+;Formats
+FRMMES	MACRO ?FM
+
+	IF ?FM EQ NULLF
+	DEFB "ASSIGNABLE"
+	ENDIF
+
+	IF ?FM EQ MAP96D
+	DEFB "MAP96 DS"
+	ENDIF
+
+	IF ?FM EQ MAP96S
+	DEFB "MAP96 SS"
+	ENDIF
+
+	IF ?FM EQ MAP48
+	DEFB "MAP 48tpi"
+	ENDIF
+
+	IF ?FM EQ IBMS
+	DEFB "IBM 3740"
+	ENDIF
+
+	IF ?FM EQ NASS
+	DEFB "NASCOM SS"
+	ENDIF
+
+	IF ?FM EQ SBRAIN
+	DEFB "S/BRAIN QD"
+	ENDIF
+
+	IF ?FM EQ EZPRIN
+	DEFB "EASI-PRINT"
+	ENDIF
+
+	IF ?FM EQ GEMSD
+	DEFB "GEMINI SD"
+	ENDIF
+
+	IF ?FM EQ BBC80
+	DEFB "BBC CPM 80"
+	ENDIF
+
+	IF ?FM EQ TAND8
+	DEFB "TANDY 8in "
+	ENDIF
+
+	ENDM
+
+;VIRTUAL DISK FORMAT
+SECV	EQU 128			;Sector size
+BLKV	EQU 2048		;Allocation size
+MXSV	EQU 4096/SECV		;Sectors per 4K track
+MXTV	EQU 15*16		;15 arrays of 16 tracks (1Mb)
+OFFV	EQU 16			;Reserved 4K tracks
+
+;FDC ports
+F2797	EQU 0E0H		;FDC always here
+FDCCOM	EQU F2797		;Command register
+FDCSTA	EQU F2797		;Status register
+FDCTRK	EQU F2797+1		;Track register
+FDCSEC	EQU F2797+2		;Sector register
+FDCDAT	EQU F2797+3		;Data register
+DRVPRT	EQU F2797+4		;Drive select port
+STAPRT	EQU F2797+4		;DRQ/IRQ/READY
+
+;2797 Commands
+RESTOR	EQU 08H			;Restore command
+SEKTRK	EQU 18H			;Seek comand
+RDSEC	EQU 88H			;Read Sector
+WRSEC	EQU 0A8H		;Write sector
+CLRFDC	EQU 0D0H		;Clear command
+READID	EQU 0C0H		;Read ID header
+STEPIN	EQU 48H			;Step in
+STPOUT	EQU 68H			;Step out
+WRTRK	EQU 0F0H		;Write track
+
+;VDISK parameters
+PPAG	EQU 0FEH		;Mapping port
+PAGE0	EQU 0C0H		;
+
+;Specify if SIOs CTC channel is clocked at 1 or 2 Mhz
+SLOW	EQU 1			;1Mhz
+FAST	EQU 2			;2Mhz
+
+;	*******************************
+;	*	GENERAL EQUATES       *
+;	*******************************
+
+MSCNT	EQU 0F9H		;0F9H=4MHz
+
+;CP/M details
+BDOS	EQU 5
+CCP	EQU 0100H		;Console Command Processor load address
+CCPLEN	EQU 0C80H		;Length of CCP.COM
+FCBLEN	EQU 32			;File Control Block length
+RECSIZ	EQU 0080H		;CP/M record size
+
+;Common control characters
+CTLC	EQU 3
+BELL	EQU 7
+BS	EQU 8
+TAB	EQU 9
+LF	EQU 0AH
+CS	EQU 0CH
+CR	EQU 0DH
+CTLQ	EQU 11H
+CTLS	EQU 13H
+CX	EQU 18H
+CLS	EQU 1AH
+ESC	EQU 1BH
+
+;Equates for mode byte bit fields
+
+MBINP	EQU 00000001B		;Device may do input
+MBOUT	EQU 00000010B		;Device may do output
+MBIO	EQU MBINP+MBOUT
+
+MBSOFT	EQU 00000100B		;Software selectable baud rates
+
+MBSERL	EQU 00001000B		;Device may use protocol
+MBXNXF	EQU 00010000B		;XON/XOFF protocol enabled
+
+NOBAUD	EQU 0		;No baud rate associated with this device
+B50	EQU 1		;50 baud
+B75	EQU 2		;75 baud
+B110	EQU 3		;110 baud
+B134	EQU 4		;134.5 baud
+B150	EQU 5		;150 baud
+B300	EQU 6		;300 baud
+B600	EQU 7		;600 baud
+B1200	EQU 8		;1200 baud
+B1800	EQU 9		;1800 baud
+B2400	EQU 10		;2400 baud
+B3600	EQU 11		;3600 baud
+B4800	EQU 12		;4800 baud
+B7200	EQU 13		;7200 baud
+B9600	EQU 14		;9600 baud
+B19200	EQU 15		;19.2k baud
+
+VIDWID	EQU 80
+VIDHT	EQU 25
+

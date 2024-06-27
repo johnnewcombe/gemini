@@ -1,0 +1,118 @@
+Procedure Repack_batchfile;
+var
+  zf : FILE of labelprint;
+begin
+ if Batchexists=TRUE then
+ begin
+  flush(batchfile);
+  reset(batchfile);
+  assign(zf,'B:COPY.$$$');
+  rewrite(zf);
+  while not eof(batchfile) do
+  begin
+    read(batchfile,batchitem);
+    if batchitem.QtyToPrint>0 then
+     write(zf,batchitem);
+  end;
+  close(batchfile);
+  close(zf);
+  erase(batchfile);
+  rename(zf,'MASTER.Q'+labext);
+  assign(batchfile,'B:MASTER.Q'+labext);
+  reset(batchfile);
+  maxnum:=filesize(batchfile);
+ end; {if batchexists}
+end;  {of repack_file}
+
+Procedure display_queue;
+var
+  posn,sl : integer;
+begin
+  posn:=1;
+  gotoxy(1,10);
+  flush(batchfile);
+  reset(batchfile);
+  while not eof(batchfile) do
+  begin
+    read(batchfile,batchitem);
+    with batchitem do
+    begin
+     gotoxy(1,posn+9);
+     write(posn:3,'   Label= ',labelname:10);
+     gotoxy(27,posn+9);
+     write('Qty to Print= ',QtyToPrint,' ');
+     clreol;
+     posn:=posn+1;
+    end;  {of with}
+  end; {of while}
+  if posn<16 then
+  begin
+   gotoxy(1,posn+9);
+   write(posn:3);
+  end;
+end;  {of display_queue}
+
+Procedure Var_update;
+begin
+  reset(tempf);
+  while not eof(tempf) do
+  begin
+    read(tempf,lab);
+    if lab.mode='V' then
+    begin
+      update_current;
+      set_area_boundries;
+      sccol(black);sstle(0);
+      breakline(lab.text);
+      i:=length(lab.text);
+      lab.text:='';
+      repeat
+        Key_use(Blank);
+        sccol(black);
+        breakline(lab.text);
+        put_cursor;
+        gotoxy(1,8);
+        write('Enter variable data: ');clreol;
+        getinput(i,22,8,lab.text,'b',fin,1);
+        sccol(red);
+        breakline(lab.text);
+        Key_use(OK);
+        repeat
+          gotoxy(1,8);
+          write('Amend or Accept ? ');clreol;
+          read(kbd,ans);
+        until ans in [^F,^X];
+      until ans= ^X; {end of variable entry}
+      sccol(green);
+      breakline(lab.text);
+      remove_cursor;
+      lab.mode:='T';
+      seek(tempf,filepos(tempf)-1);
+      write(tempf,lab);
+    end; {if mode=V}
+  end; {eof tempf}
+end;  {of var_update}
+
+Procedure Num_of_copies;
+var
+  numtoprint : str5;
+  testq : real;
+begin
+ repeat
+  repeat
+   gotoxy(1,8);
+   write('Enter number of copies required (Maximum 32000): ');
+   clreol; numtoprint:='';
+   getinput(5,49,8,numtoprint,'n',fin,1);
+   val(numtoprint,testq,j);
+  until testq<=32000;
+  val(numtoprint,batchitem.qtytoprint,j);
+ until (j=0) or (fin=TRUE);
+ batchExists:=TRUE;
+ batchitem.labelname:=labname;
+ batchitem.QueName:=qname;
+ seek(batchfile,entrynum);
+ write(batchfile,batchitem);
+end; {of num_of_copies}
+
+

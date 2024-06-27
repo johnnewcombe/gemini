@@ -1,0 +1,203 @@
+VERS	EQU 5			;Version 4 module
+
+	.XLIST
+	TITLE BIOS FOR CP/M 3.0
+;COPYRIGHT (C) MAP 80 SYSTEMS LTD.
+	.Z80
+	.SFCOND
+
+	IF1
+	.PRINTX "*** PASS 1 ***"
+	ENDIF
+
+	IF2
+	.PRINTX "*** PASS 2 ***"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     DATA.MAC .........."
+	INCLUDE DATA		;Data equates
+	IF VER NE VERS
+	.PRINTX "DATA.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   SYSTEM.MAC .........."
+	INCLUDE SYSTEM		;System equates
+	IF VER NE VERS
+	.PRINTX "SYSTEM.MAC is incorrect version"
+	ENDIF
+
+	SHOW NUMBER_OF_FLOPPIES,NDRVF,DEC
+	SHOW NUMBER_OF_WINIS,NDRVW,DEC
+
+;System Control Block equates
+	EXTRN @CIVEC,@COVEC,@AIVEC,@AOVEC,@LOVEC,@BNKBF
+	EXTRN @CRDMA,@CRDSK,@VINFO,@RESEL,@FX,@USRCD 
+	EXTRN @MLTIO,@ERMDE,@ERDSK,@MEDIA,@BFLGS
+	EXTRN @DATE,@HOUR,@MIN,@SEC,?ERJMP,@MXTPA
+
+;Time sub-routine
+	EXTRN ?TIME
+
+	SUBTTL Jump Table
+	PAGE
+
+	DSEG			;Base label of data area
+DATAB:
+	CSEG			;Base label of code area
+CODEB:
+
+;BIOS Jump vector.
+;All BIOS routines are invoked by calling these entry points.
+BIOS:	JP ?BOOT		;Initial entry on cold start
+WBOOT:	JP ?WBOOT		;Reentry on program exit, warm start
+	JP ?CNIST		;Return console input status
+	JP ?CONIN		;Return console input character
+	JP ?CONOT		;Send console output character
+	JP ?LIST		;Send list output character
+	JP ?AUXOT		;Send auxilliary output character
+	JP ?AUXIN		;Return auxilliary input character
+	JP ?HOME		;Set disks to logical home
+	JP ?SELDK		;Select disk drive, return disk parameter info
+	JP ?SETRK		;Set disk track
+	JP ?SETSC		;Set disk sector
+	JP ?SETDM		;Set disk I/O memory address
+	JP ?READ		;Read physical block(s)
+	JP ?WRITE		;Write physical block(s)
+	JP ?LSTST		;Return list device status
+	JP ?SCTRN		;Translate logical to physical sector
+	JP ?CNOST		;Return console output status
+	JP ?AXIST		;Return aux input status
+	JP ?AXOST		;Return aux output status
+	JP ?DEVTB		;Return address of device def table
+	JP ?CINIT		;Change baud rate of device
+	JP ?GETDV		;Return address of disk drive table
+	JP ?MULIO		;Set multiple record count for disk I/O
+	JP ?FLUSH		;Flush BIOS maintained disk caching
+	JP ?MOVE		;Block move memory to memory
+	JP ?TIME		;Signal Time and Date operation
+	JP ?BKSEL		;Select bank for code execution and default DMA
+	JP ?SETBK		;Select different bank for disk I/O DMA operations.
+	JP ?XMOVE		;Set source and destination banks for one operation
+	JP USERF		;Execute user function
+	JP 0			;Reserved for future expansion
+	JP 0			;Reserved for future expansion
+
+;Pointers
+	DEFW POINTR		;Location of workspace pointers
+
+	IF MAP
+;Put interrupt vectors here to ensure they sit in same 100H page
+;Get to 10H boundary
+	DEFS ((($-CODEB-1) AND 0FFF0H)+10H)-($-CODEB),0FFH
+
+;Interrupt vectors, these must all be on the same 100H page
+INTVEC:
+;This must occur on a 10H boundary
+MPSIOV:	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+;On board SIO
+CPSIOV:	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+;MPI CTC
+MPCTCV:	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+;On board CTC
+CPCTCV:	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+;On board PIO
+CPPIOV:	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	DEFW NULLI
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........    3BOOT.MAC .........."
+	INCLUDE 3BOOT		;High level device IO
+	IF VER NE VERS
+	.PRINTX "3BOOT.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........    CHRIO.MAC .........."
+	INCLUDE CHRIO		;Low level MAP CPU
+	IF VER NE VERS
+	.PRINTX "CHRIO.MAC is incorrect version"
+	ENDIF
+
+	IF MAP OR G813
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     MAP4.MAC .........."
+	INCLUDE MAP4		;4k mapping
+	IF VER NE VERS
+	.PRINTX "MAP4.MAC is incorrect version"
+	ENDIF
+
+	ELSE
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........    MAP32.MAC .........."
+	INCLUDE MAP32		;32k paging
+	IF VER NE VERS
+	.PRINTX "MAP32.MAC is incorrect version"
+	ENDIF
+
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   HIDISK.MAC .........."
+	INCLUDE HIDISK		;High level disk IO
+	IF VER NE VERS
+	.PRINTX "HIDISK.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX ".......... DSKSTRUC.MAC .........."
+	INCLUDE DSKSTRUC	;Disk structures
+	IF VER NE VERS
+	.PRINTX "DSKSTRUC.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........   FLOPPY.MAC .........."
+	INCLUDE FLOPPY		;Low level disk IO
+	IF VER NE VERS
+	.PRINTX "FLOPPY.MAC is incorrect version"
+	ENDIF
+
+	IF DRVW
+VER	DEFL 0			;Clear VER
+	.PRINTX "..........     WINI.MAC .........."
+	INCLUDE WINI		;Winchester bits
+	IF VER NE VERS
+	.PRINTX "WINI.MAC is incorrect version"
+	ENDIF
+
+	ENDIF
+
+	CSEG
+CODET:				;Code end
+	DSEG
+DATAT:				;Data end
+
+;	SHOW CODE_SIZE,CODET-CODEB,HEX
+;	SHOW DATA_SIZE,DATAT-DATAB,HEX
+
+	END	

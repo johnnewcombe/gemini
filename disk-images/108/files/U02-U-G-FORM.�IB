@@ -1,0 +1,39 @@
+
+U.K. CP/M Users Group - Program Submission Form
+
+Submission Date: 26 FEB 81 
+
+File name: LETTER.BAS - TEXT FORMATTING & JUSTIFICATION PROG. 
+           PRINT.BAS - PRINTS COPIES OF JUSTIFIED FILES.
+
+Author: MIKE MAGNAY  
+       GANYMEDE WANTAGE RD. ROWSTOCK
+        DIDCOT OXON OX11OJU
+   TEL ABINGDON 834402
+
+Submitted by: MIKE MAGNAY 
+This program is public domain because: 
+  AUTHORS MOD OF PREVIOUS U.G.PROG.
+Who would this program be useful to: 
+   All CP/M users
+
+Briefly describe the program function: 
+JUSTIFIES AND FORMATS TEXT. FILE SAVE OF FORMATTED TEXT.
+
+Where is further documentation available: 
+INST.FMI IS BOTH THE INSTRUCTIONS & AN EXAMPLE.
+MODIFICATION OF <FORMAT> BY B.RATOFF, U.S.U.G.VOL 3.19
+
+Hardware dependencies: 
+PRINTER - IT IS INTENDED THAT THE .BAS FILE BE PATCHED BY
+THE USER TO SUIT SPECIAL FEATURES OF HIS/HER PRINTER.
+PATCHES FOR FUTURE VOLS?
+
+Software dependencies: 
+SHOULD COMPILE & RUN ON ALL VERSIONS OF BASIC E.
+
+Source processor: N/A 
+
+How easy is the code to modify: 
+   FAIRLY STRAIGHTFORWARD
+

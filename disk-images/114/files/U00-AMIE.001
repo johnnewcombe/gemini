@@ -1,0 +1,29 @@
+#
+;name			type	pp1	pp2	I/O	H/W
+;				PRC	PRC	INP	HRD
+;
+'Gemini QDDS 5in'		D	-	-	CPM[fo:gemqdds]	-
+"Gemini DDDS 5in"		D	-	-	CPM[fo:gemddds]	-
+"Gemini CP/M 3.5in"		D	-	-	CPM[fo:gem3.5]	-
+'Specify CP/M format'		D	-	-	CPM		-
+'Gemdd on LH drive'		D	-	-	CPM[fo:gemddds(0)]	-
+'IBMXT 9 sector MSDOS'		D	-	-	MSDOS[fo:IBMXT9DM]	-
+'MSDOS select format'		D	-	-	MSDOS		-
+'Memory buffer'			I	-	-	CPM[dv:M]	-
+'Select disk buffer'		I	-	-	CPM[dv:]	-
+#
+;
+;name			type	pp1	pp2	I/O	H/W
+;				PRC	PRC	OUT	HRD
+;
+'Gemini DDDS 5"		D	-	-	CPM[fo:gemddds]	-
+'Gemini QDDS 5"		D	-	-	CPM[fo:gemqdds]	-
+'Gemini CP/M 3.5"	D	-	-	CPM[fo:gem3.5]	-
+'Specified CP/M'	D	-	-	CPM		-
+'Gemdd on LH drive'	D	-	-	CPM[fo:gemddds(0)]	-
+'IBMXT 9 sector MSDOS'	D	-	-	MSDOS[fo:IBMXT9DM]	-
+'MSDOS select format'	D	-	-	MSDOS		-
+'Memory buffer'		I	-	-	CPM[dv:M]	-
+'Select disk buffer'	I	-	-	CPM[dv:]	-
+#
+

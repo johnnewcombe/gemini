@@ -1,0 +1,42 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+clear$ = chr$(26)
+cursor$ = chr$(27) + "="
+c.offset% = 31
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+print clear$
+%chain 100,13000,400,900
+print : print :print :print
+print :print
+print "                     PROGRAMMABLE CALCULATOR."
+print "                    **************************"
+print :print
+print "    MENU."
+print "   '''''''"
+print :print
+print " 1 : Calculator."
+print
+print " 2 : Programmable calculator."
+print
+print " 3 : Exit program."
+print :print
+option% = 5
+while option% < 1 or option% > 3
+    input "Type in option number : ";option%
+wend
+if option% = 1 then \
+    chain "CALC"
+if option% = 2 then \
+    chain "INIT"
+stop
+

@@ -1,0 +1,40 @@
+MS-DOS Utilities - 
+Directory of files on the disc
+Show Disc Parameters
+Filing System check
+Erase files from the disc
+Change name of files on the disc
+Return to Main Menu
+Number of files = 
+ or <Esc> to return
+Disc Statistics
+Number of files examined 999
+Bytes Available 999999
+ Bytes Occupied 999999
+Rename File
+Current name is
+           The disc was written by 
+                  Bytes per Sector 
+               Sectors per Cluster 
+                  Reserved Sectors 
+                    Number of FATs 
+  Number of Root Directory Entries 
+Number of Sectors in Logical Image 
+                  Media Descriptor 
+         Number of Sectors per FAT 
+       Number of Sectors per Track 
+                   Number of Heads 
+          Number of Hidden Sectors 
+Leave
+Erase
+Prompt before delete
+Prompt for each file
+Erase all selected files
+Please type new name
+Initialise the disc
+Special Initialisation Required
+Use the "Format Disc" option of the Main Menu
+This operation will erase all the files on the disc
+Type 'Y' to perform this operation
+Any other key to abandon this action
+

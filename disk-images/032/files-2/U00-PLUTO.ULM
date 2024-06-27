@@ -1,0 +1,377 @@
+
+procedure ready;
+begin
+ repeat
+  by:=port[status] and 128;
+ until by=128;
+end;
+
+procedure initialise;
+begin
+  ready;
+  for i:=1 to 4 do
+    port[status]:=0;
+  ready;
+  port[data]:=init_;
+end;
+
+procedure moveto(xc,yc : integer);
+begin
+  if xc<left+1 then xc:=left+1;
+  if xc>right-1 then xc:=right-1;
+  if yc<top+1 then yc:=top+1;
+  if yc>bottom-1 then yc:=bottom-1;
+  ready;
+  port[data]:=mto_;
+  ready;
+  port[data]:=lo(xc);
+  port[data]:=hi(xc);
+  port[data]:=lo(yc);
+  port[data]:=hi(yc);
+end;
+
+procedure sccol(c : byte);
+begin
+  ready;
+  port[data]:=sccol_;
+  ready;
+  port[data]:=c;
+end;
+
+procedure sstle(c : byte);
+begin
+  ready;
+  port[data]:=sstle_;
+  ready;
+  port[data]:=c;
+end;
+
+procedure lto(x,y : integer);
+begin
+  if x<left+1 then x:=left+1;
+  if x>right-1 then x:=right-1;
+  if y<top+1 then y:=top+1;
+  if y>bottom-1 then y:=bottom-1;
+  ready;
+  port[data]:=lto_;
+  ready;
+  port[data]:=lo(x);
+  port[data]:=hi(x);
+  port[data]:=lo(y);
+  port[data]:=hi(y);
+end;
+
+
+procedure ffill;
+begin
+  ready;
+  port[data]:=ffill_;
+end;
+
+
+
+ procedure setcwp(c : byte);
+begin
+  ready;
+  port[data]:=scwp_;
+  ready;
+  port[data]:=c;
+end;
+
+ procedure setcdp(c : byte);
+begin
+  ready;
+  port[data]:=scdp_;
+  ready;
+  port[data]:=c;
+end;
+
+
+
+
+procedure rsel(x : integer);
+begin
+ ready;
+ port[data]:=$B8;
+ ready;
+  port[data]:=x;
+end;
+
+procedure wprot(x : integer);
+begin
+  ready;
+  port[data]:=$8C;
+  ready;
+  port[data]:=x;
+end;
+
+
+PROCEDURE dump_pluto(xx1,yy1,xx2,yy2 : integer);
+type
+  bitarray=array[1..580] of boolean;
+var i,c : integer;
+ eight : array[1..200] of byte;
+ status : byte;
+ finish : boolean;
+ line, crl : integer;
+ sixpos, lastdata : integer;
+ oddline, evenline : bitarray;
+ arraypos, binpos : integer;
+ bt : integer;
+ result,tb : byte;
+ sixline : sixbyte;
+ f1, f2 : FILE of byte;
+ end_one, end_two,last_line : integer;
+
+procedure place(b : byte);
+begin
+  sixline[sixpos]:=b;
+  if (sixpos=128) or (finish=TRUE) then
+  begin
+    blockwrite(fname,sixline,1);
+    sixpos:=1;
+  end
+  else
+  sixpos:=sixpos+1;
+end; {of place}
+
+procedure convert_to_six(Var a : bitarray);
+var
+  temp : byte;
+
+begin
+  arraypos:=1;
+  repeat
+    temp:=64;
+     if a[arraypos]=TRUE then temp:=temp or 1;
+     if a[arraypos+1]=TRUE then temp:=temp or 2;
+     if a[arraypos+2]=TRUE then temp:=temp or 4;
+     if a[arraypos+3]=TRUE then temp:=temp or 8;
+     if a[arraypos+4]=TRUE then temp:=temp or 16;
+     if a[arraypos+5]=TRUE then temp:=temp or 32;
+    place(temp);
+    arraypos:=arraypos+6;
+  until arraypos>=binpos;
+end;  {of convert_to_six}
+
+procedure dump_to_file(xd,yd : integer; pdumpf : str14);
+var
+  total, bytes_to_read : integer;
+  f_b : file of byte;
+begin
+  assign(f_b,pdumpf);
+  rewrite(f_b);
+  bytes_to_read:=xd*yd;
+  for total:=1 to bytes_to_read do
+  begin
+    result:=port[data];
+    write(f_b,result);
+  end;
+  close(f_b);
+end;
+
+Procedure Printronix;
+begin
+  FOR line:=1 to last_line do
+  begin
+    lastdata:=0;
+    FOR crl:=1 to end_one do
+    begin
+     if eof(f1) then eight[crl]:=0 else
+     read(f1,eight[crl]);
+     if eight[crl]>0 then lastdata:=crl;
+    end;
+
+    if twoscreens=TRUE then
+    begin
+     FOR crl:=end_one+1 to end_one+end_two do
+     begin
+       if eof(f2) then eight[crl]:=0 else
+       read(f2,eight[crl]);
+       if eight[crl]>0 then lastdata:=crl;
+     end;
+    end;
+
+    IF lastdata=0 then
+    begin
+      place(5); place(64); place(13); place(10);
+    end
+    else
+    begin
+       binpos:=1;
+       for count:=1 to lastdata do
+         if eight[count]=0 then
+         begin
+           for c:=1 to 4 do
+           begin
+             oddline[binpos]:=FALSE;
+             evenline[binpos]:=FALSE;
+             binpos:=binpos+1;
+           end;
+         end
+         else
+         begin
+           tb:=eight[count];
+           oddline[binpos]:=(tb and 128) >0;
+           evenline[binpos]:=(tb and 64) >0;
+           binpos:=binpos+1;
+           oddline[binpos]:=(tb and 32) >0;
+           evenline[binpos]:=(tb and 16) >0;
+           binpos:=binpos+1;
+           oddline[binpos]:=(tb and 8) >0;
+           evenline[binpos]:=(tb and 4) >0;
+           binpos:=binpos+1;
+           oddline[binpos]:=(tb and 2) >0;
+           evenline[binpos]:=(tb and 1) >0;
+           binpos:=binpos+1;
+        end; {of for(count)}
+        for c:=1 to 4 do
+           begin
+             oddline[binpos]:=FALSE;
+             evenline[binpos]:=FALSE;
+             binpos:=binpos+1;
+           end;
+        binpos:=binpos-4;
+
+       place(4);
+       convert_to_six(evenline);
+       place(13); place(10); place(5);
+       convert_to_six(oddline);
+       place(13); place(10);
+    end;
+  end;  {of for(line)}
+  finish:=TRUE;
+  for count:=sixpos to 127 do
+   sixline[count]:=0;
+  sixpos:=128;
+  place(0);
+end; {of printronix}
+
+
+Procedure Epson;
+const
+  m : array[1..8] of byte = (128,64,32,16,8,4,2,1);
+var
+  v : array[1..1600] of byte;
+  b : byte;
+  l,k,c,x,y : integer;
+
+begin
+  place(27); place(51); place(24);
+  for k:=1 to trunc(last_line/8+0.875) do
+  begin
+    Fillchar(v,sizeof(v),0);
+    lastdata:=0;
+    for l:=1 to 8 do
+    begin
+     for x:=1 to end_one do
+     begin
+       if eof(f1) then
+        b:=0
+       else
+        read(f1,b);
+       for y:=1 to 8 do
+       begin
+         c:=(x*8)+y;
+         if (b and m[y])>0 then v[c]:=(v[c] or m[l]);
+         if v[c]>0 then lastdata:=c;
+       end;
+     end;
+    end;
+
+     if twoscreens then
+     begin
+      for l:=1 to 8 do
+      begin
+       for x:=1 + end_one to end_one+end_two do
+       begin
+         if eof(f2) then
+           b:=0
+         else
+          read(f2,b);
+         for y:=1 to 8 do
+         begin
+           c:=(x*8)+y;
+           if (b and m[y])>0 then v[c]:=(v[c] or m[l]);
+           if v[c]>0 then lastdata:=c;
+         end;
+       end;
+      end;
+     end;
+
+     if lastdata=0 then
+     begin
+       place(13); place(10);
+     end
+     else
+     begin
+       place(27); place(ord('*')); place(1);
+       place(lastdata MOD 256); place(lastdata div 256);
+       for count:=1 to lastdata do
+        place(v[count]);
+       place(13); place(10);
+     end;
+  end; {of lines}
+  finish:=TRUE;
+  for count:=sixpos to 127 do
+   sixline[count]:=0;
+  sixpos:=128;
+  place(0);
+end;  {of epson}
+
+
+begin    {dump_pluto}
+  if bdr=FALSE then rsel(green) else rsel(white);
+  sixpos:=1; lastdata:=0; finish:=false;
+  setcwp(1);
+  end_one:=trunc(xx1/8+0.875);
+  end_two:=trunc(xx2/8+0.875);
+  if yy1>yy2 then last_line:=yy1 else last_line:=yy2;
+  moveto(1,1);
+  ready;
+  port[data]:=$BE;
+  ready;
+  port[data]:=lo(xx1);
+  port[data]:=hi(xx1);
+  port[data]:=lo(yy1);
+  port[data]:=hi(yy1);
+  dump_to_file(end_one,yy1,workdrive+'P1.DAT');
+  assign(f1,workdrive+'P1.DAT');reset(f1);
+
+  if twoscreens=TRUE then
+  begin
+    setcwp(2);
+    moveto(1,1);
+    ready;
+    port[data]:=$BE;
+    ready;
+    port[data]:=lo(xx2);
+    port[data]:=hi(xx2);
+    port[data]:=lo(yy2);
+    port[data]:=hi(yy2);
+    dump_to_file(end_two,yy2,workdrive+'P2.DAT');
+    assign(f2,workdrive+'P2.DAT');reset(f2);
+  end;
+  Case printertype of
+   'P' : printronix;
+   'E' : epson;
+  end; {of case}
+
+end; {of dump_pluto}
+
+
+procedure output(VAR ch : byte);
+begin
+  inline($DB/$B4/    {IN A,B4}
+         $1F/        {RRA}
+         $38/$FB/    {JR,C }
+         $2A/ch/     {LD HL,(CH)}
+         $7E/        {LD A,(HL)}
+         $D3/$B5/    {OUT (B5),A}
+         $AF/        {XOR A}
+         $D3/$B4/    {OUT (B4),A}
+         $3C/$3C/    {INC A INC A}
+         $D3/$B4     {OUT (B4),A}
+);
+end;
+

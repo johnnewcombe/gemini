@@ -1,0 +1,22 @@
+CRCK.COM
+--------
+
+        Origin: US CP/M Users' Group, revised Richard Beal.
+
+        This utility displays the CRC type checksums of all the files on
+the disk. Will accept ambiguous and unambiguous file names.
+
+Command syntax is as follows:
+
+>CRC
+
+Will search for a CRCKLIST.CRC file on the disk and compare it with  the
+files present, reporting any errors found and the absence of any file.
+
+>CRC [d:]*.* [F]
+
+Will generate CRCs for the ambiguous or unambiguous files  specified  on
+the  optional  drive [d:] specified. The inclusion of the [F] will cause
+the CRCs to be sent to a file called CRCKLIST.CRC on the default  drive.
+Note  the square brackets indicate these are optional parameters and the
+square brackets themselves should not be entered in the command line.

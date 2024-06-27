@@ -1,0 +1,713 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+rem ************************************************************
+rem : Editor for program source files.ie TEXT.
+rem : Requires a terminal with clear screen and an addressable
+rem : curser.
+rem ************************************************************
+print clear$
+blk$ = " "
+b.line$ = " "
+for i% = 2 to length%
+    b.line$ = b.line$ + blk$
+next i%
+dim temp.inst$(tot.inst% + 1)
+print :print
+print "            Editor."
+print "           *********"
+print :print
+ed.flag$ = "ED"
+while ed.flag$ = "ED"
+    input "#";answer$
+    com$ = ucase$(answer$)
+    err$ = "YES"
+    if com$ = "I" then err$ = "NO" : \
+        gosub 122 :rem insert text
+    if com$ = "S" then err$ = "NO" : \
+        gosub 123 :rem save on disc
+    if com$ = "T" then err$ = "NO" : \
+        gosub 124 :rem type page
+    if com$ = "L" then err$ = "NO" : \
+        gosub 127 :rem load from disc
+    if com$ = "P" then err$ = "NO" : \
+        gosub 190 :rem print buffer
+    if com$ = "C" then err$ = "NO" : \
+        gosub 200 :rem clear buffer
+    if match("$",com$,1) > 0 then err$ = "NO" : \
+        com$ = answer$ : \
+        gosub 210 :rem search and replace
+    if com$ = "E" then err$ = "NO" : \
+        ed.flag$ = "EXIT"
+    if err$ = "YES" then print "COMMAND NOT RECOGNISED !"
+wend
+chain "PROG"
+stop
+
+122 rem ***** Insert text *****
+top% = 0
+while instruction$(top%) <> "END"
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+print "There is room for ";room%;" more lines."
+input "Type in line number where text is to be inserted : ";l.no%
+if l.no% > top% then l.no% = top%
+print clear$
+start% = l.no%
+line$ = " "
+l.no% = l.no% - 1
+while line$ <> "#"
+    l.no% = l.no% + 1
+    if l.no% = room%  \
+        then print "BUFFER FULL : Insertion terminated." : \
+             line$ = "#" \
+        else print l.no%; : \
+             input " :";line$
+    if line$ <> "#" then \
+        temp.inst$(l.no%) = line$
+    if len(line$) > length% then \
+        l.no% = l.no% - 1 : \
+        print "INPUT LINE TOO LONG RE-INPUT !" : \
+        print "Line is ";len(line$);" characters." : \
+        print "Max permissable is ";length%;" characters."
+wend
+insert.size% = l.no% - start%
+move% = top% - start% + 1
+top% = top% + 1
+for i% = 1 to move%
+    top% = top% - 1
+    new% = top% + insert.size%
+    instruction$(new%) = instruction$(top%)
+next i%
+for i% = 0 to (insert.size% - 1)
+    new% = start% + i%
+    instruction$(new%) = temp.inst$(new%)
+next i%
+print clear$
+return :rem ** End of insert text **
+
+123 rem ***** Save source program *****
+gosub 128 :rem name file
+create f4$ as 4
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    print #4;instruction$(i%)
+wend
+close 4
+return :rem ** End of save source program **
+
+124 rem ***** Type page *****
+pic$ = "###&/...5....0....5....0....5....0..../"
+print clear$
+print :print
+print "Each page typed is 20 lines at 2 instructions per line"
+print
+print "The bottom 3 lines are used for typing editor commmands."
+print
+input "Type in the line number where display is to start : ";l.no%
+gosub 125 :rem type lines
+type.flag$ = "ED"
+while type.flag$ = "ED"
+    bulk$ = "NOT BULK"
+    print fnc$(22,20);"                         "
+    print fnc$(22,20);
+    input "COMMAND : ";answer$
+    com1$ = ucase$(answer$)
+    t.flag$ = "NOT FOUND"
+    print fnc$(21,10);"                                         "
+    if match("$",com1$,1) > 0 then \
+        com1$ = answer$ : \
+        t.flag$ = "FOUND" : \
+        gosub 210 : \ rem search & replace
+        com1$ = "$" : \
+        gosub 125 :rem type lines
+    if com1$ = "P" then \
+        l.no% = l.no% + 40 : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if com1$ = "-P" then \
+        l.no% = l.no% - 41 : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if match("B",com1$,1) > 0 then \
+        bulk$ = "BULK" : \
+        gosub 140 : \ rem bulk instructions
+        gosub 125 : rem type lines
+    if match("T",com1$,1) > 0 then \
+        l.no% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if match("D",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        instruction$(lin2%) = " " : \
+        gosub 126 :rem amend display
+    if match("R",com1$,1) > 0 and bulk$ <> "BULK" then \
+        print fnc$(22,20);"                            " : \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        print fnc$(22,20);"                           " : \
+        print fnc$(21,1);lin2%;" : ";instruction$(lin2%);" :  "; : \
+        print "Type in instruction." : \
+        print lin2%; : \
+        input " :";instruction$(lin2%) : \
+        print fnc$(21,1);"                                "; : \
+        print "                                " : \
+        print "                                               " : \
+        gosub 126 : rem amend display
+    if com1$ = "E" then \
+        type.flag$ = "STOP" : \
+        print clear$ : \
+        t.flag$ = "FOUND"
+    if com1$ = "C" then \
+        t.flag$ = "FOUND" : \
+        gosub 129 : \ rem close up blank lines
+        gosub 125 : rem type lines
+    if match("I",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        gosub 130 : \ rem insert line
+        gosub 125 :rem type lines
+    if match("S",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        p% = match("S",com1$,1) : \
+        t% = len(com1$) : \
+        s% = match("#",com1$,p%) : \
+        lin1% = abs(val(right$(com1$,(t% - s% + 1)))) : \
+        temp.inst$ = instruction$(lin1%) : \
+        instruction$(lin1%) = instruction$(lin2%) : \
+        instruction$(lin2%) = temp.inst$ : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if t.flag$ <> "FOUND" then \
+        print fnc$(21,10);"ERROR *** COMMAND NOT FOUND ***"
+wend
+return :rem ** End of type page **
+
+125 rem ***** Type lines *****
+if l.no% < 1 then l.no% = 1
+top% = 1
+while instruction$(top%) <> "END"
+    top% = top% + 1
+wend
+print clear$
+for i% = 1 to 20
+    print fnc$(i%,1);
+    lin1% = l.no% + i% - 1
+    lin2% = l.no% + i% + 19
+    if lin1% >= top% then return
+    print using pic$ ;lin1%,":",instruction$(lin1%)
+    if lin2% < top% then \
+        print fnc$(i%,41); : \
+        print using pic$ ;lin2%,":",instruction$(lin2%)
+next i%
+return :rem ** End of type lines **
+
+126 rem ***** Amend display *****
+rem test for replacement string being too long
+while len(instruction$(lin2%)) > length%
+    print fnc$(21,1);"ERROR : Line is ";len(instruction$(lin2%)); 
+    print " characters long.MAX allowed is ";length%;".RE-INPUT !" 
+    b2.line$ = blk$
+    for i% = 1 to len(instruction$(lin2%))
+        b2.line$ = b2.line$ + blk$
+    next i%
+    print b2.line$
+    print fnc$(22,1);lin2%;
+    input " :";instruction$(lin2%)
+    print fnc$(22,1);
+    print "                                                   "
+    print fnc$(21,1);"                                      ";
+    print "                                      "
+wend
+temp% = lin2% - l.no% + 1
+if temp% <= 20 \
+    then movecursor$ = fnc$(temp%,1) \
+    else movecursor$ = fnc$(temp% - 20,41)
+print movecursor$;b.line$
+print movecursor$;
+print using pic$ ;lin2%,":",instruction$(lin2%)
+return :rem ** End of amend display **
+
+127 rem ***** Load source program *****
+gosub 128 :rem name file
+open f4$ as 4
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    read #4 ;instruction$(i%)
+wend
+n% = i% + 1
+for i% = n% to tot.inst%
+    instruction$(i%) = "X"
+next i%
+print "Program loaded is ";(n% - 1);" instructions long."
+close 4
+return :rem ** End of load source program **
+
+128 rem ***** Name source file *****
+print clear$
+print :print :print
+print "All disc files used by this program to store results have"
+print "ambiguous filenames of '.SRC'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.SRC'."
+print :print
+input "Type in filename : ";f4$
+f4$ = f4$ + ".SRC"
+return :rem ** End of name file **
+ 
+129 rem ***** Close up blank lines *****
+count% = 0
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    if instruction$(i%) = " " \
+        then count% = count% + 1 \
+        else new% = i% - count% : \
+             instruction$(new%) = instruction$(i%)
+wend
+return :rem ** End of close up blank lines **
+
+130 rem ***** Insert line during 'T' *****
+if lin2% < 1 or lin2% > tot.inst% then \
+    print "Line number beyond range." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+i% = lin2%
+while instruction$(i%) <> "END" and instruction$(i%) <> " " \
+                                and  i% < tot.inst%
+    i% = i% + 1
+wend
+if i% = tot.inst% then \
+    print "Too many instructions to insert more." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+if instruction$(i%) = " " then \
+    i% = i% - 1
+while i% >= lin2%
+    instruction$(i% + 1) = instruction$(i%)
+    i% = i% - 1
+wend
+l% = 40
+print fnc$(22,20);"                                     "
+while l% > 35
+    print fnc$(21,10);"                                      "
+    print "                                                       "
+    print fnc$(21,10);" Type in line to be inserted."
+    input " :";instruction$(lin2%)
+    l% = len(instruction$(lin2%))
+wend
+return :rem ** End of insert line during 'T' *****
+
+140 rem ***** Block instructions *****
+lin2% = 0
+lin1% = abs(val(com1$))
+if lin1% = 0 then \
+    return
+p% = match("B",com1$,1)
+t% = len(com1$)
+s% = match("#",com1$,p%)
+if s% = 0 then \
+    return
+lin3% = abs(val(right$(com1$,(t% - s% + 1))))
+p% = match(":",com1$,s%)
+if p% = 0 then \
+    p% = t% + 1
+s% = match("#",com1$,p%)
+if s% > 0 then \
+    lin2% = abs(val(right$(com1$,(t% - s% + 1))))
+if match("C",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 145 : \ rem copy lines
+    return
+if match("M",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 150 : \ rem move lines
+    return
+if match("R",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 155 : \ rem replace lines
+    return
+if match("D",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 160 : \ rem delete lines
+    return
+if match("I",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 165 : \ rem insert lines
+    return
+return :rem ** End of block instructions **
+
+145 rem ***** Copy lines *****
+if lin3% = 1 or lin3% = 0 then \
+    gosub 147 : \ rem place line
+    instruction$(lin2%) = instruction$(lin1%) : \
+    return
+top% = 0
+while instruction$(top%) <> "END"
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+if lin3% > room% then \
+    print "There are too many instructions to insert a block" : \
+    print "of ";lin3%;".There are only ";room%;" lines left." : \
+    print "Type any character to continue : " : \
+    dummy% = conchar% : \
+    return
+for i% = 1 to lin3%
+    l% = lin1% + i% - 1
+    temp.inst$(i%) = instruction$(l%)
+next i%
+top% = top% + 1
+while top% > lin2%
+    top% = top% - 1
+    new% = top% + lin3% 
+    instruction$(new%) = instruction$(top%)
+wend
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    instruction$(new%) = temp.inst$(i%)
+next i%
+return :rem ** End of copy lines **
+
+147 rem ***** Place line *****
+if lin2% < 1 or lin2% > tot.inst% then \
+    print "Line number beyond range." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+i% = lin2%
+while instruction$(i%) <> "END" and instruction$(i%) <> " " \
+                                and  i% < tot.inst%
+    i% = i% + 1
+wend
+if i% = tot.inst% then \
+    print "Too many instructions to insert more." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+if instruction$(i%) = " " then \
+    i% = i% - 1
+while i% >= lin2%
+    instruction$(i% + 1) = instruction$(i%)
+    i% = i% - 1
+wend
+return :rem ** End of place line **
+
+150 rem ***** Move lines *****
+if lin2% = 0 then \
+    return
+p% = lin2% - lin1%
+if p% > 0 and lin3% >= p% then \
+    print :print : \
+    print "Error move is within move block." : \
+    print "Type any character to continue : " : \
+    dummy% = conchar% : \
+    return
+if lin3% >= (tot.inst% - 1) then \
+    return
+for i% = 1 to lin3%
+    old% = lin1% + i% - 1
+    temp.inst$(i%) = instruction$(old%)
+next i%
+if lin1% < lin2% \
+    then gosub 152 \ rem move lines forward
+    else gosub 154 : rem move lines backward
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    instruction$(new%) = temp.inst$(i%)
+next i%
+return :rem ** End of move lines **
+
+152 rem ***** Move lines foreward *****
+p% = lin2% - lin1%
+for i% = 1 to p%
+    old% = lin1% + i% + lin3% - 1
+    new% = lin1% + i% - 1
+    instruction$(new%) = instruction$(old%)
+next i%
+return :rem ** End of move lines foreward **
+
+154 rem ***** Move lines backward *****
+p% = lin1% - lin2%
+for i% = 1 to p%
+    old% = lin1% - i%
+    new% = lin1% - i% + lin3%
+    instruction$(new%) = instruction$(old%)
+next i%
+return :rem ** End of move lines backward **
+
+155 rem ***** Replace lines *****
+if lin3% >= (tot.inst% - 1) then \
+    return
+if lin3% = 0 then \
+    return
+if lin3% = 1 then \
+    print :print :print : \
+    print "Line ";lin1%; : \
+    input " : ";instruction$(lin1%) : \
+    return
+print :print :print
+for i% = 1 to lin3%
+    new% = lin1% + i% - 1
+    l% = 40
+    while l% > 35
+        print "Line ";new%;
+        input " : ";instruction$(new%)
+        l% = len(instruction$(new%))
+    wend
+next i%
+return :rem ** End of replace lines **
+
+160 rem ***** Delete lines *****
+if lin3% >= tot.inst% then \
+    return
+if lin3% = 0 then \
+    return
+if lin3% = 1 then \
+    instruction$(lin1%) = " " : \
+    return
+for i% = 1 to lin3%
+    new% = lin1% + i% - 1
+    instruction$(new%) = " "
+next i%
+count% = 0
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    if instruction$(i%) = " " \
+        then count% = count% + 1 \
+        else new% = i% - count% : \
+             instruction$(new%) = instruction$(i%)
+wend
+return :rem ** End of delete lines **
+
+165 rem ***** Insert lines *****
+lin2% = lin1%
+if lin3% = 1 or lin3% = 0 then \
+    gosub 147 : \ rem place line
+    print :print :print : \
+    print "Line ";lin1%; : \
+    input " : ";instruction$(lin1%) : \
+    return
+top% = 0
+while instruction$(top%) <> "END"
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+if lin3% > room% then \
+    print "There are too many instructions to insert a block" : \
+    print "of ";lin3%;".There are only ";room%;" lines left." : \
+    print "Type any character to continiue : " : \
+    dummy% = conchar% : \
+    return
+top% = top% + 1
+while top% > lin2%
+    top% = top% - 1
+    new% = top% + lin3% 
+    instruction$(new%) = instruction$(top%)
+wend
+print :print :print
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    l% = 40
+    while l% > 35
+        print "Line ";new%;
+        input " : ";instruction$(new%)
+        l% = len(instruction$(new%))
+    wend
+next i%
+return :rem ** End of insert lines **
+
+190 rem ***** Print buffer *****
+top% = 0
+while instruction$(top%) <> "END"
+    top% = top% + 1
+wend
+print "There are ";top%;" lines in the buffer."
+print
+opt% = 0
+while opt% < 1 or opt% > 4
+    print "    OPTIONS."
+    print
+    print "  1 : Print the whole buffer with page ejects."
+    print 
+    print "  2 : Print the whole buffer without page ejects."
+    print
+    print "  3 : Print part of buffer with page ejects."
+    print
+    print "  4 : Print part of buffer without page ejects."
+    print
+    input "     Type in option number : ";opt%
+wend
+option% = opt%
+while option% > 2
+    option% = 1
+    print "Specify the first and last line numbers to be printed :-"
+    print
+    input "First : ";lin1%
+    input "Last  : ";lin2%
+    if lin1% > = lin2% then \
+        option% = 3
+    if lin2% > top% then \
+        option% = 3
+    if lin1% < 1 then \
+        option% = 3
+wend
+if opt% = 1 or opt% = 3 \
+    then option% = 1 \
+    else option% = 2
+lprinter
+print :print :print
+j% = 1
+for i% = lin1% to lin2%
+    if option% = 1 and (j% * 60) = i% then \
+        j% = j% + 1 : \
+        print :print :print : \
+        print :print :print
+    d$ = str$(i%)
+    l% = len(d$)
+    if l% = 1 then \
+        print "    ";
+    if l% = 2 then \
+        print "   ";
+    if l% = 3 then \
+        print "  ";
+    print d$;" : ";instruction$(i%)
+next i%
+while option% = 1 and (j% * 60) <> i%
+    print
+    i% = i% + 1
+wend
+if option% = 1 then \
+    print :print :print : \
+    print
+console
+return :rem ** End of print buffer **
+
+200 rem ***** Clear buffer *****
+answer$ = "N"
+while ucase$(answer$) <> "Y"
+    input "CLEAR BUFFER.   (Y/N) : ";answer$
+    if ucase$(answer$) = "N" then \
+        return
+wend
+for i% = 1 to tot.inst%
+    instruction$(i%) = "X"
+next i%
+instruction$(1) = "END"
+return :rem ** End of clear buffer **
+
+210 rem ***** Search and replace *****
+if com$ <> "T" then \
+    com1$ = com$
+t% = len(com1$)
+f1% = match("$",com1$,1)
+f2% = match("$",com1$,(f1% + 1))
+if f2% = (f1% + 1) or f2% = t% then \
+    print :print :print : \
+    print "ERROR : Search string should follow first $ and replace" : \
+    print "        string should follow second $ !" : \
+    print :print : \
+    print "Type any character to continue : "; : \
+    dummy% = conchar% : \
+    return
+search$ = mid$(com1$,(f1% + 1),(f2% - f1% - 1))
+replace$ = right$(com1$,(t% - f2%))
+lin1% = 0
+lin2% = 0
+if f1% > 1 then \
+    com1$ = left$(com1$,f1%) : \
+    gosub 215 :rem set lin1%
+if lin2% = 0 and com$ = "T" then \
+    lin2% = lin1%
+if lin2% = 0 and com$ <> "T" then \
+    lin2% = tot.inst%
+if lin1% > lin2% then \
+    print :print :print : \
+    print "ERROR : Second line less than first." : \
+    print "Type any character to continue : " : \
+    dummy% = conchar% : \
+    return
+f1% = len(search$)
+if instruction$(lin1%) = "X" then \
+    return
+if lin1% = lin2% then \
+    i% = lin1% : \
+    gosub 225 : \ rem search line
+    return
+if lin2% = (lin1% + 1) then \
+    i% = lin1% : \
+    gosub 225 : \ rem search line
+    return
+for i% = lin1% to lin2%
+    if instruction$(i%) = "X" then \
+        return
+    gosub 225 :rem search line
+next i%
+return :rem ** End of search and replace **
+
+215 rem ***** set lin1% *****
+lin1% = val(com1$)
+if lin1% > 0 \
+    then gosub 220 \ : rem set lin2%
+    else lin1% = 1
+return :rem ** End of set lin1% **
+
+220 rem ***** Set lin2% *****
+t% = len(com1$)
+p% = match(":",com1$,1)
+if p% = 0 then \
+    return
+s% = match("#",com1$,p%)
+if s% = 0 then \
+    return
+lin2% = val(right$(com1$,(t% - s% + 1)))
+if lin2% > tot.inst% then \
+    lin2% = tot.inst%
+return :rem ** End of set lin2% **
+
+225 rem ***** Search line *****
+p% = match(search$,instruction$(i%),1)
+if p% > 0 then \
+    t% = len(instruction$(i%)) : \
+    temp$ = left$(instruction$(i%),(p% - 1)) : \
+    temp$ = temp$ + replace$ : \
+    temp$ = temp$ + right$(instruction$(i%),(t% - p% - f1% + 1)) : \
+    gosub 230 : rem check for new line length
+return :rem ** End of search line **
+
+230 rem ***** Check length of new line *****
+t1% = len(temp$)
+if t1% > length% then \
+    print :print :print : \
+    print "Line number ";i%;" can not be replaced as the new line " : \
+    print "would have a length of ";t1% : \
+    print "Type any character to continue : "; : \
+    dummy% = conchar% : \
+    return
+instruction$(i%) = temp$
+t% = len(instruction$(i%))
+p% = match(search$,replace$,1)
+if p% > 0 then \
+    return
+gosub 225 :rem search line
+return :rem ** End of check length of new line **
+

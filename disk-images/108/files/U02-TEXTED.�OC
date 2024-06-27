@@ -1,0 +1,811 @@
+
+                  MACRO TEXT EDITOR FOR CP/M SYSTEM.
+                  **********************************
+
+The Text Editor described herein is based upon an excellent Editor (X111)
+available from the Intel Program Library. It is a very fast random
+access Text Editor with first class capability. Macro commands are stored
+on a disc file and are automatically loaded when the edit session is started.
+A backup file is automatically created and maintained for text security.
+
+******************
+RUNNING THE EDITOR
+******************
+
+EDITOR SYNTAX: ED111[,] [:FX:INFILE] TO [:FX:OUTFILE]
+
+,	Comma after ED111 suppresses auto append and EDIT.MAC readin
+
+:FX:INFILE may be either a new or existing file. If :FX:OUTFILE is not specified
+the INFILE will be opened for input and a temporary file EDIT.TMP created for
+output. When the session is ended with E or ER command all files are closed
+and INFILE is renamed INFILE.BAK and EDIT.TMP is renamed INFILE.
+If OUTFILE is specified then EDIT.TMP is renamed OUTFILE. In all cases a
+backup file is automatically maintained and contains the file content prior to
+this edit session.
+The editor itself may be located on any disc drive but EDIT.MAC must be on
+drive :F0: else it will not load automatically. The backup file and EDIT.TMP
+will be located on the same drive as INFILE.
+
+*************
+COMMAND ENTRY
+*************
+
+When you are using the editor an asterisk * is displayed at the left margin
+if the editor is ready to accept a command. The commands are all one or two
+letters and must be terminated by two escape characters. The escapes are
+echoed as $$.
+
+
+COMMAND PARAMETERS.
+*******************
+There are two types of parameters that may be included with editor commands,
+these are iteration and data parameters.
+An iteration parameter specifies how many times the command is to be performed
+and always comes before the command code.
+A data parameter specifies the data on which the command is to operate and
+always comes after the command code. An escape character is required to
+separate multiple fields in a data parameter.
+
+DISPLAY OF CONTROL KEYS.
+************************
+Control keys other than tab,escape and carriage return are displayed as
+an up arrow followed by the corresponding control letter. E.g. Control A
+is echoed as ^A, Null is echoed as ^@ .
+
+ABORTING COMMANDS.
+******************
+A command may be aborted completely before it has been terminated by entering
+^C. ^C can also be used to terminate the execution of a command in progress.
+
+CORRECTING TYPING ERRORS.
+*************************
+You may correct typing errors in command or text strings by pressing the
+RUBOUT key which will backspace the cursor and delete one character each time
+it is pressed. You may also use ^X to delete a line and ^R to re-display a line
+already typed.
+
+^A-LITERALISE.
+**************
+To input escape characters into your file, precede them with ^A.
+^A is a literalising character which overrides the editor semantics
+of the following character. ^A's are kept in the command string
+only and do not get into the text buffer.
+
+^Z-ECHO CARRIAGE RETURN.
+************************
+An unliteralised ^Z, when typed in the middle of a command string, will
+cause a carriage return/line feed to be echoed to the console, but nothing
+will go into the command string.
+
+TEXT FORMATTING
+***************
+When entering formatted text it is not necessary to enter line feeds
+as they are inserted automatically.
+
+^I-Tab
+******
+Tab characters make it easy to line up columns and may be entered using ^I.
+The tabs are initially defined for every 8 character positions. When ^I is
+entered the cursor advances to the next tab position.
+
+CONTROL OF PROCESSING
+*********************
+
+
+^S and ^Q Suspend and resume processing.
+****************************************
+Entry of a ^S whilst the Editor is processing a command will cause processing
+to be suspended until a ^Q is entered.
+
+
+***************
+EDITOR COMMANDS
+***************
+
+Many editor commands may have iterative and/or data parameters. You may
+enter multiple commands on the same line. Execution is from left to right.
+When data is included it must be separated from the next command by a single
+escape. An escape must also be used as a separator between multiple data fields.
+
+TEXT POINTER
+************
+The editor keeps a pointer into the data in a file at all times. It always
+points between characters. When many of the editor commands are issued the
+action takes place from where the pointer is located. The following B,Z,L,C
+and F commands all manipulate the pointer.
+
+B-Beginning of Text
+*******************
+The B command moves the pointer before the first character in the file. It
+is the normal default pointer position for commands which do not specifically
+move it elsewhere.
+
+Z-End of Text
+*************
+The Z command moves the pointer immediately following the last character
+of the file.
+
+L-Line
+******
+The L command moves the pointer before the first character of the next line
+in the file. You may specify an iterative parameter to move the pointer
+backwards or forwards as many lines as you please. If no parameter is specified
+a value of 1 is assumed.
+A value 0 will move the pointer to the beginning of the current line.
+
+C-Character
+***********
+The C command moves the pointer a specified number of characters forward or
+backward in the file. You may specify a positive or negative iterative
+parameter with the command. A negative parameter moves the pointer backward.
+If the beginning or end of the file is reached before the specified number
+is reached the pointer stops at the beginning or end.
+
+F-Find
+******
+The F command searches the file for a character string specified in the
+command. The search begins at the current pointer location and continues until
+the string is found or the end of file is encountered. If the string is found
+the pointer is left immediately following the last character of the string.
+If the string is not found the pointer is not moved from its current position.
+If the F command is used inside a string of commands an escape must be used
+to terminate the character string. For a match all characters must match,
+including non printing characters.
+
+If you use a null string for the F command (or the first string of an S
+command) then the editor will use the last string you specified in a similar
+command. For example if you type FXYZ$0LT$$ and get the wrong XYZ, you
+can type F$0LT$$ and get the next XYZ. You must not use intervening commands
+which accept filenames as they use the same buffer as F and S.
+
+UB-Backup to Beginning of found string.
+***************************************
+If you execute an F find, then the UB command will backspace the current 
+pointer to the beginning of the found string.
+
+I-Insert
+********
+The I command inserts text into the file immediately before the pointer. All
+data following the I command is inserted until a command terminator is entered.
+The pointer remains immediately following the data.The total length of an I
+command may not exceed the command buffer size.
+
+S-Substitute Text
+*****************
+The S command finds a character string and substitutes another character
+string for it. The substitution is made only if an exact match is found. After
+a successful match the pointer is left immediately following the inserted data.
+The search is started from the current pointer location and continues until
+an exact match is found or the end of file is encountered. There is no limit
+to the amount of data that can be inserted with an S command but the search
+argument may not exceed 31 characters. If more characters are supplied only
+the first 31 are used and only the first 31 are replaced with the new text.
+
+D-Delete Character
+******************
+The D command deletes the number of characters specified in the command. If
+the iterative parameter is positive or unsigned the deletions are done from
+the pointer forward. If the parameter is negative the deletions are done from
+the pointer backwards. The pointer is left between the remaining characters on
+either side of the deletion.
+
+K-Kill Line
+***********
+The K command deletes all characters in a line beginning at the current
+location of the pointer. Characters in the line which precede the pointer are
+not deleted. The carriage return at the end of the line is deleted. If the
+iterative parameter is positive or unsigned the command deletes the remaining
+portion of the line containing the pointer and the following specified number
+of lines up to the end of file. If the parameter is negative the command starts
+at the pointer and deletes backward the number of lines specified. If no
+parameter is specified then 1 is assumed.
+
+T-Type
+******
+The T command displays a line on the console output device. If the iterative
+parameter is positive the editor starts displaying at the pointer and continues
+for the specified number of lines. If the iterative parameter is negative the
+editor displayes the required number of lines that precede the pointer. A
+parameter of zero displays from the beginning of a line to the pointer and
+a parameter of one displays from the pointer to just after the next carriage
+return. The T command does not move the pointer.
+
+
+TERMINATING AND SAVING YOUR FILE.
+*********************************
+There are two basic commands to exit the editor and return control to CP/M,
+one saves work from the editing session on to disc and the other does not.
+
+E-Exit
+******
+The E command saves the entire file from beginning to end. If the beginning
+of the file has already been written out (using W) this part, plus the part
+which may be in memory and any remaining on disc up to the end of file is
+saved. Control is then returned to CP/M.
+
+ER-Exit and Repeat.
+*******************
+This command functions as the E but restarts the edit. It allows one to
+save work that has been done and eliminates the overhead of retyping the
+command to start again. The buffer pointer will be positioned at the beginning
+of the workspace.
+
+Q-Quit
+******
+The Q command causes a query QUIT? If the response is Y then the editor
+returns control to CP/M without updating INFILE. If the response is not
+Y then the editor prompts for a new command.
+
+W-Write
+*******
+The W command saves on disc a specified number of lines from the beginning of
+the file. All lines that are output are deleted from memory thus avoiding
+any possibility that these lines will be duplicated when an E command is
+issued. The W command is usually used when editing large files which cannot
+be completely contained in memory.
+
+DISK ERROR PROTECT.
+*******************
+The editor will not let you do an E,ER,G,P,UG or UP command if the disc
+drives are not ready.
+If disaster strikes upon exit, e.g. disc full, text may be recovered
+from memory by the following procedure.
+	a.Enter the editor via ED111, [filename]. Be sure to use the
+comma to prevent EDIT.MAC or any other file from loading.
+	b.When the editor signs on type UQ$$
+	c.You now have all of free memory to edit. Delete what is not
+required.
+	d.Use the /P command to send memory to the desired file.
+	e.Quit via Q.
+
+READING TEXT FROM DISC.
+**********************
+
+A-Append
+********
+The A command reads bytes of text from disc into memory. The text is appended
+at the end of that already in memory. After appending the current size of text,
+gap and command buffer are displayed.
+
+AUTO APPEND.
+************
+When editing a file that currently exists memory will automatically be
+filled from the file. This is done before the prompt is given and may
+be suppressed by placing a comma immediately after the word ED111 in the console
+invocation.
+
+
+MEMORY STRUCTURE.
+*****************
+The command buffer is fixed at 1/12 of available memory. Auto append fills up
+to 5/6 with text, leaving a minimum gap of another 1/12.
+
+0A-Allocation of Memory
+***********************
+The 0A command gives the current size of text, gap and command buffer.
+
+UC-Update command buffer size.
+******************************
+You may change the size of the command buffer by the command nUC$$ where n
+is the required size. The minimum size allowable is 240 and this value will
+be assumed unless n is greater than 240. The command buffer size is saved
+by th UP command, if the normal default size needs to be restored before
+saving the command -UC will restore this value but not change the current
+size.
+
+COMMAND SIZE EXCEEDS GAP WARNING.
+*********************************
+A warning bell will sound whenever the size of your typed command is within
+3 of the size of the gap. This prevents you from unintentionally inserting
+more text than will fill the gap. You will get the warning after the UQ
+command, since the gap size is then zero.
+
+COMMAND OPERATORS.
+******************
+
+/ Slash
+*******
+The symbol / can be substituted for the iterative parameter in the A command,
+and in all line oriented commands. Its semantics are "apply the following
+function to the entire text buffer".
+	/A	Fill up the entire text buffer (5/6 of available memory)
+		with input.
+	/K	Kill the entire text buffer
+	/L	Same as Z
+	/OO	Output the text buffer and keep in memory
+	/Pf	Put the entire text buffer to a side file f
+	/T	Type the entire text buffer
+	/W	Write the text buffer and flush from memory
+Except for the /L command the pointer is always left at the beginning of the
+text buffer.
+
+: Colon
+*******
+A colon placed before a command in place of a number will cause the command
+to act upon all text between the current pointer and the end of file. If a
+minus sign precedes the colon, the command acts upon all text between the
+beginning of the file and the current pointer.
+
+VALUE STACK.
+************
+
+; SEMICOLON VALUE STACK.
+************************
+There is an 8 word array in which you can store 16 bit values generated by
+various means. You may recall these values by typing ; ;2 ;3 ;4 ;5 ;6 ;7 or ;8
+
+anywhere a number is expected. You may set the bottom ; to n by typing nUN.
+You may roll the stack up with US and down with -US. You may input two bytes
+from the text file into ;n with the command nUI. If you want the second byte
+masked out, use the command nUH. You may output ;n as two bytes of text
+inserted into the file with the command nUO.
+If a semicolon value exceeds 32767, it will be interpreted as a negative
+number when it is recalled. Conversely, negative numbers input via UN are
+input as sixteen bit quantities with the top bit set.
+
+ARITHMETIC.
+***********
+The command UA adds ;2 to ; and collapses the stack downward, leaving the
+sum in ; . The command -UA subtracts ; from ;2 and the command UM multiplies
+;2 by ; . Both these operations collapse the stack in the same way as addition.
+The command -UM divides ;2 by ; leaving the quotient in ;2 and the remainder
+in ;  no stack collapsing takes place. All arithmetic operations interpret
+the stack values as unsigned 16 bit integers.
+
+UX-EXCHANGE.
+************
+nUX exchanges ;n with ; and -nUX exchanges .n with .1 . These commands, in
+conjunction with the roll commands, allow you to permute the stack members
+as may be required.
+
+V MARKERS.
+**********
+The V command sets a marker at the current location of the text pointer
+Eight of these markers may be set using
+		nV where 1<=n<=8
+These markers may then be used to delimit line oriented commands and to
+perform block moves. To delimit line oriented commands use
+	.nK	delete all text between V marker n and the current pointer
+	.nL	return to V mark n
+	.nOO	output text between V mark n and present pointer
+	.nPf	put text between V mark n and present pointer to side file f
+	.nT	type all text between V mark n and present pointer
+	.nW	write and flush text between V mark n and present pointer
+	.nFs	find string s between V mark n and present pointer
+	.nSss	substitute string s between V mark n and present pointer
+
+ROLLING THE V STACK
+You may roll the 8 values up with the command UV and roll them down with
+-UV (i.e. UV sends marker N to marker N+1 and marker 8 to 1, -UV sends
+marker N to marker N-1 and marker 1 to marker 8). Thus you can use the 
+array as a stack with UVV being the push operation and .L-UV being the pop
+operation. This allows definition of macros which use the V marks but
+preserve the bottom V marks.
+
+TEXT SWITCHING OR REARRANGING.
+******************************
+
+P-Put.
+******
+The P command allows one to put lines of text to a specified file. The number 
+of lines is taken from the current pointer position. The syntax of the 
+command is
+	nPf$	where	n = number of lines (positive or negative)
+			P = the command
+			f = any CP/M device or filename
+			$ = delimiting escape character
+Lines written out are not deleted from the workspace.
+
+
+G-Get
+*****
+The G command allows one to get text from any CP/M file. The
+text is inserted at the current position of the buffer pointer. If there
+is not room in the buffer for the file, all text from the beginning of
+the workspace to the buffer pointer is written out until the remaining
+text fits into the buffer. If text is written out and you want to edit
+that text use ER to restart the edit. The syntax of the command is
+	Gf$	where	f is any CP/M device or filename.
+If you leave out the filename you will get an inline block move from the
+V mark.
+
+BLOCK MOVES
+***********
+The command nG$$ will get n lines from the .1 V mark and insert them
+at the present position. The escape key must immediately follow the G.
+The 8 V marks allow you to delimit in-memory block moves from both
+ends. You can mark the beginning of your source block with V, the end with
+2V, and then go to the destination insert point. The command .2G$$ will
+now move the block (but will not delete the source block).
+
+OO-Output
+*********
+The OO command acts like the W command, except that lines are output from the
+current pointer position rather than from the beginning, and the lines are
+not flushed from memory. The command is most useful when extensively
+rearranging a file.
+
+COMMAND STRING ITERATIONS
+*************************
+You may repeat a command string or a single command any number of times
+by enclosing the command string in angle brackets < > preceded by a number
+that specifies the number of times that the command string is to be performed.
+Note that a single escape $ character is required to separate a data string
+from the final angle bracket.
+Iteration command strings may be nested up to 8 deep.
+
+CONDITION TESTING ON ITERATION OPERATIONS.
+******************************************
+You can, within iterations do condition testing. If the condition is true,
+control proceeds normally. If the condition is false, commands between the
+test and the next iteration are skipped. The iteration either exits or loops
+depending on whether the iteration value has been exhausted. The tests are
+as follows
+	nUE	tests ; = ;n
+	-nUE	tests ; <> ;n
+	nUL	tests ; < ;n
+	-nUL	tests ; >= ;n
+
+Y-Yes prompt.
+*************
+A special condition test is the Y command, which pauses for console input
+and returns condition true if a Y is typed, and condition false if anything
+other than a Y or G is typed. If a G is typed, condition true is returned
+for this yes prompt and for all future yes prompts until the next * prompt
+is given.
+
+URx-Character test.
+*******************
+Continue if the character following the current pointer is x.
+
+
+UY-String found test.
+*********************
+Continue if the string in the previous Fs command was found.
+
+UT-Until Terminate test.
+************************
+The command UT is a test with slightly different semantics than the Y,UL,UE
+tests. UT is placed at the end of an iteration, if when it is encountered
+the current pointer is at the end of the text buffer, the iteration value
+is reduced to 1 so that the iteration is exited. For example the command
+/<IXXX$LUT>$$ places the string XXX at the beginning of every line.
+The command -UT does the iteration exit unconditionally, it is invoked in
+situations where you want to loop until a previous condition tests true.
+
+
+*******
+MACROS.
+*******
+
+Command strings may be named and recalled.
+
+N-Name
+******
+To define a macro, type N followed by an ASCII character other than a blank.
+Then type the command string. The definition is terminated by a double escape
+which is included in the definition. You may define as many macros as you
+want. You may delete ALL macros by typing N $$.
+
+R-Recall.
+*********
+To recall a macro command string, type R followed by the ASCII character which
+was used to name it.
+
+MACROFILES.
+***********
+
+UP-U Put
+********
+The command UP followed by a file name will send all macros to that file. In
+addition, the user adjustable internal flags (auto append switch, rubout
+semantics, line semantics, joker character, number base and command buffer
+size) are sent to the file.
+
+UG-U Get.
+*********
+The command UG followed by a filename reads
+the macrofile in. The internal flags are overwritten, but the macro buffer
+is merely added to. Thus you can collect macros from different files. In
+addition, the file EDIT.MAC if it exists will be automatically loaded when
+the editor signs on. If EDIT.MAC contains a macro whose name is 0FFH
+(defined by N^DFF^Dstring), then that macro is automatically executed after
+the input file is read in. You can thus use the J literal output command
+to have your macrofile sign on, and/or perform automatic manipulations on
+your file.
+
+
+MACRO DISPLAY AND DELETION.
+***************************
+
+UD-U Display.
+*************
+The command UD will display a list of all macros currently in memory. The
+names are given in reverse order of when they were defined.
+
+Mx-Macro x.
+***********
+The command Mx will display the definition string of macro x.
+
+UKx-U Kill x.
+*************
+Command UKx will delete macro x. A macro need not be deleted before defining
+another with the same name but only the last one defined will be accessable for
+use or deletion.
+
+MACRO PARAMETERS.
+*****************
+You may pass four kinds of parameters to macros. You may pass a single
+value n into a macro by putting n before the call. The value is substituted
+for every occurance of an = sign in the macro. For example you can define
+NA=L=T$$ and call 23RA$$ to get 23L23T$$. You can pass up to 127 strings
+to a macro by placing the strings following the macro call. The strings
+are delimited by single escapes. To read the strings, place ^B's in the
+macro. The strings (without the delimiting escapes) will be substituted
+for the ^B's in the order that they are encountered in the macro. For
+iteration loops, the string pointer is reset to what it was at the beginning
+of the iteration, so that ^B's within iterations will give the same strings
+over and over again. For example, NS=<S^B$^B$0TT>$$ defines a macro which
+repeatedly substitutes and displays the line on which substitution occurs.
+If you type 10RSABC$XYZ$$ you will get 10 substitutions of XYZ for ABC with
+the 10 involved lines displayed.
+Each ^F in a macro will cause a prompt for console input of one character.
+After entry of the character macro expansion will continue with the ^F
+replaced by the entered character.
+The fourth kind of parameter passing is the post execution parameter.
+If an unliteralised ^E is encountered in a macro expansion, the editor
+exits completely from the macro expansion mode and prompts for more keyboard
+input. The advantage here is that you can be in the middle of a command
+when this happens. For example the macro NI-5TI^E$$ prints for insertion
+input. Furthermore, the ^E prompt is always followed by a backspace, so
+that what you are typing in will appear on the screen just as it will in
+the file (i.e. without a *I).
+
+MACRO CALL NESTING.
+*******************
+You may nest macro calls to a depth of 8. Control B string substitutions
+count as a nesting level. You may not define macros within macro calls.
+
+EDITING MACROS.
+***************
+Two commands are available which allow you to edit a macro without deleting
+and redefining it.
+
+
+-Mx-Get macro to text.
+**********************
+The -Mx command will get macro x from the macro store and insert it into
+the text buffer at the current pointer position. If the macro is to be
+edited and returned to the macro store then the text buffer must be emptied
+before getting the macro.
+
+X-Replace macro.
+****************
+The X command will move a macro from the text buffer into the macro store.
+
+-UD-Get macro menue to text.
+****************************
+The -UD command may be used to get the current macro menue to the text
+buffer at the current pointer position.
+
+***********************
+MISCELLANEOUS COMMANDS.
+***********************
+
+^D-Hexidecimal input.
+*********************
+This is valuable for editing hex (binary code) files. To enter the hex input
+mode, use control D. Any number of hex digits may now be entered (subject to
+memory limitations). Any characters which are not legal hex digits will not
+be accepted and will not be echoed. The hex string must be terminated by
+another control D. If an odd number of digits was entered, the editor will
+reprompt with D, the final digit should then be entered and followed by
+control D. Control R may be typed at any time. If it is typed after the final
+control D, the characters displayed may not all be properly printable.
+Warning:
+Do not rubout across either the terminating or beginning control D as the
+editor will get confused about whether it is in hex mode or not. Use control X
+and retype the line.
+
+H-Hexidecimal display.
+**********************
+The command nH will display in hex the next n bytes from the pointer. n may
+be negative. With care it is possible to edit object or other non ASCII files.
+
+J-Message output.
+*****************
+The command J followed by a string outputs that string to the console. The
+command -J does the same thing, only control characters are sent directly
+instead of being translated into up arrow characters.
+These message commands are useful for several purposes. You can write
+display macros which mark the current position with a special character in
+the display. You can put a sign-on message in your default 0FFH macro. You
+can put a question message before a yes prompt.
+
+UJ-Clear screen
+***************
+The command UJ is intended as a "clear screen" command. It sends two
+characters which may be set for your terminal by 8UFx and 9UFx.
+
+UU-Command tail display.
+************************
+The command UU displays the command tail which invoked this edit session
+(without the word EDIT). The command tail is also displayed with the word
+EXIT whenever an E or ER is executed.
+
+
+UZ-Input file size.
+*******************
+The nUZ command sets ;n to the number of text bytes between the current
+pointer and the end of file. The -nUZ command sets ;n to the number of bytes
+between the beginning of the file and the current pointer.
+
+******************************
+USER ADJUSTABLE INTERNAL FLAGS
+******************************
+
+RUBOUT AND BLANK SEMANTICS ADJUST.
+**********************************
+In the absence of EDIT.MAC the editor loads with a backspace character set
+to 08H and a blank character set to 20H (^H and space, respectively). All
+blanks are echoed using the blank character, and all rubouts are echoed
+backspace-blank-backspace. If your terminal uses other codes to achieve these
+characters, you will want to change them. UFx changes the blank character
+to x and 2UFx changes the backspace character to x.
+
+SEMANTICS OF LINE ORIENTED COMMANDS.
+************************************
+All line oriented commands search for line feeds. To change their
+semantics so that they search for some other character (e.g. form feeds for
+page oriented commands, or carriage returns) type 5UF followed by the new
+character.
+
+JOKER CHARACTER.
+****************
+A question mark, when included anywhere after the first character of an F
+string or the first string of an S, will match any character on a one for
+one basis. The joker character may be changed from ? to any other character
+by issuing the command 4UF followed by the new character.
+
+DECIMAL OUTPUT, BASE CHANGE.
+****************************
+The command nUW inserts the decimal value of ;n as a string of digits in the
+text body. The command -nUW changes the base to any value between 2 and 16.
+The base change command also affects the display of the UC command, if the base
+is 10 you will get that base in the UC command. If the base is not 10 then
+executing UC will change the base back to 10. The base is also used to
+determine the width of display in the H command.
+
+ECHO SUPPRESS.
+**************
+The command 10UF1 causes all console echoing to cease. This facilitates
+
+macros which allow page editing. The command 10UF0 restores the normal echo.
+
+D.R.BACK  21 JULY 1981
+
+
+Commands (except O) may be either upper or lower case
+
+EDITOR SYNTAX: ED111[,] [:FX:INFILE] TO [:FX:OUTFILE]
+
+.	Full stop after ED111 suppresses auto append and EDIT.MAC readin
+
+
+nA	Append n bytes from input file to memory; go to beginning
+B	Go to beginning
+nC	Move pointer n bytes
+nD	Delete n bytes
+E	Exit
+ER	Exit and Reenter editor
+Fs	Find string s
+nG$	Insert n lines from the first V marker (n>0)
+.nG$	Insert the block from .1 to .n at the current position (.1<.n)
+Gf	Insert the entire file f at the current position
+nH	Display n bytes in Hex
+Is	Insert string s
+Js	Output string s to console
+-Js	Output string s to console without translating controls
+nK	Delete n lines
+nL	Move pointer n lines
+Mx	Display content of macro x
+-Mx	Get content of macro x to text at current pointer
+Nxs	Name a macro x comprising string s
+N $	Delete all macros from memory
+nOO	Output n lines from pointer without flushing (n>0)
+nPf	Put n lines to a side file f (deletes old f if it exists)
+Q	Abort the editing session
+Rx	Recall macro x
+Sss	Substitute second string for first string
+nT	Type n lines
+UA	Add ;1 := ;2 + ;1
+-UA	Subtract ;1 := ;2 - ;1
+UB	Back up to beginning of string just found
+nUC	Update command buffer size and display current memory allocation
+-UC	Reset command buffer size default
+UD	Display macro menu
+-UD	Insert macro menu to text at current pointer
+nUE	Continue if ;1 = ;n
+-nUE	Continue if ;1 <> ;n
+UFx	Set blankout character for this console
+2UFx	Set backspace character for this console
+3UFx	Set number base (display only)
+4UFx	Set joker character
+5UFx	Set linefeed semantic
+6UFx	Set prompt character
+
+8UFx	Set first UJ character
+9UFx	Set second UJ character
+10UFx	Set command echo 0=on 1=off
+11UFx	Set tab length
+12UFx	Set delimiter echo character
+UGf	Get macro file f
+nUH	High byte maskout of ;n
+nUI	Insert two ASCII text bytes into ;n
+UJ	Clear the console screen (not 4024)
+-UJ	Backspace one character (eat prompt)
+UKx	Delete macro x
+nUL	Continue if ;1 < ;n
+-nUL	Continue if ;1 >= ;n
+UM	Multiply ;1 := ;1 * ;2
+-UM	Divide ;2 by ;1 leave quotient in ;2 remainder in ;1
+nUN	Set ;1 to n
+nUO	Output ;n (2 bytes ASCII) to text file
+UPf	Put all flags and macros to macro file f
+UQ	Unquit i.e. edit raw memory
+URx	Continue if character after current pointer = x
+US	Roll semicolon stack down
+-US	Roll semicolon stack up
+UT	Until terminate i.e. do not iterate if pointer is at end of text
+-UT	Do not iterate under any circumstances
+UU	Display edit command tail
+UV	Roll V mark stack down
+-UV	Roll V mark stack up
+nUW	Write ;n in decimal to text
+-nUW	Change base from decimal to n for UW and UC commands (n ASCII)
+nUX	Exchange ;n and ;1
+-nUX	Exchange .n and .1
+UY	Continue if string in previous Fs command was found
+nUZ	Set ;n to number of text bytes between current position and end
+-nUZ	Set ;n to number of text bytes between beginning and current position
+nV	Set V mark n to current position
+nW	Write n lines from beginning and flush from memory
+nX	Replace macro(s) from text to macro store
+Y	Yes prompt
+Z	Go to end of buffer
+
+:	Apply following command to text between current pointer and end
+-:	Apply command to text between beginning and current pointer
+;n	Use semicolon stack value for this command
+=	Use passed in macro value for this command
+/	Apply following A,K,L,O,P,T or W command to entire text buffer
+.n	Apply following F,K,L,O,P,S or T command to text between V marker n
+	and the current pointer
+
+
+^A	Literalise the following character
+^B	Use string following macro call for input
+^C	Return to command status and re prompt
+^D	Enter or leave Hex input mode
+^E	Exit macro expansion mode (possibly in mid instruction)
+^F	In a macro ^F is replaced by a character obtained from console
+^I	Tab
+^Q	Continue processing (used after ^S)
+^R	Redisplay current command line
+^S	Suspend processing
+^X	Delete current command line
+^Z	Echo a carriage return but do not put anything into command string
+RUBOUT	Delete one character from current command line
+ESCAPE	Delimiter character. Echoed as $. Two escapes terminate current command
+<>	Angle brackets. Delimit repeated commands
+
+Special Commands
+0A	Display current memory allocation
+1811UTx	Change delimiter/command terminator from ESC to x
+
+mmands
+
+Special Commands
+0A	Display current memory allocation
+181

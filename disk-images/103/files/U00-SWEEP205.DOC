@@ -1,0 +1,704 @@
+		NSWP - A disk maintenance utility.
+
+
+		Dave Rand
+		10232 - 160 Street
+		Edmonton, Alberta
+		Canada
+		T5P 3E9
+
+
+
+
+
+
+			I N D E X
+			*********
+
+
+                                      Page
+Introduction ........................  3
+     Overview of NSWP ...............  4
+     Invoking NSWP ..................  5
+Single file commands ................  6
+     Help ...........................  7
+     Forward and Backward ...........  7
+     Exiting ........................  8
+     Finding a file .................  8
+     Viewing and Printing ...........  8
+     Deleting a file ................  8
+     Copying ........................  9
+     Renaming .......................  9
+     The Space command .............. 11
+     The Log command ................ 11
+Introduction to Multifile Commands .. 12
+     The Tag command ................ 12
+     Wildcard tagging ............... 13
+     The Untag command .............. 13
+     The Mass copy command .......... 13
+     After the mass (Again) ......... 14
+     Erasing files .................. 14
+     Squeezing and Unsqueezing files. 14
+     Setting file status ............ 15
+Epilogue ............................ 16
+Credits ............................. 16
+Contributions ....................... 16
+
+
+Introduction
+
+NSWP  is  new  disk  utility than can replace many of  the   more  common 
+utilities that are used,  such as STAT, PIP, USQ, SQ, TYPE, PRINT, SWEEP, 
+DISK7, PROT, and others. In only 12K of disk space, it replaces over 100K 
+of utilities!
+
+NSWP is written entirely in assembly language,   and will run on any CP/M 
+2.x,  3.x or MP/M based system with no changes. Since it is coded in 8080 
+assembler,   any 8080,  8085 or Z80 compatible processor will serve. Note 
+that this program WILL NOT run on CP/M 1.4.
+
+When NSWP was conceived,   the dominant file utility was SWEEP,  and thus 
+NSWP  is syntax compatible with SWEEP,   but with many  extensions.  This 
+allows you to directly rename NSWP to SWEEP,  if you so desire,  with  no 
+retraining period.
+
+I  hope that you enjoy this program,  and use it well.  Any problems,  or 
+suggestions  may be directed to myself at the address on the first  page, 
+or on one of the following RCP/Ms:
+
+Edmonton RCP/M - (403) 454-6093 (300 or 1200 baud)
+Stadium  RCP/M - (403) 479-3450 (300 baud only)
+
+or voice at:     (403) 484-4114
+
+			Disclaimer and warning
+
+While  this  program  has been tested on many systems,  I  will  have  no 
+liability or responsibilty to the user or any other person or entity with 
+respect to any liability, loss or damage caused, or alledged to be caused 
+directly or indirectly by this program,  including,  but not limited  to, 
+any  interruption of service,  loss of business,  anticipatory profits or 
+consequential damages resulting from the use of this program.
+
+Furthermore,  although  this  program  has been placed  into  the  public 
+domain, I retain all copyrights to this program, both in the U.S.A and in 
+Canada,  and pursuant to this,  this program MAY NOT BE SOLD BY ANY PARTY 
+unless  specifically authorized by the author,  Dave  Rand,  in  writing, 
+previous to the first copy being sold.  As well,  this program MAY NOT BE 
+INCLUDED IN ANY OTHER PACKAGE FOR SALE, even if this program is indicated 
+as  being  'in the public domain'.  All of the above applies to both  the 
+original  as well as derived,  or modified copies of  the  original.  Any 
+modified  copies  of  this  program MUST NOT have  the  copyright  notice 
+violated, changed or altered.
+
+Please report any copyright violations to the author, at one of the above 
+telephone numbers. Thank you.
+
+
+
+
+		NSWP 2 -  A disk maintenance utility
+
+
+			NSWP Overview
+
+NSWP is a directory and file manipulation program. With it, you can copy, 
+delete,  rename, unsqueeze and squeeze files. The documentation following 
+is split into two major sections: A tutorial for the inexperienced, and a 
+reference  section.  The reference normally will be used  in  conjunction 
+with  the  program  to  answer specific  questions  regarding  NSWP.  The 
+tutorial is a broad coverage of all of the functions,  and should be read 
+through at least once.
+
+The most important thing to remember when using NSWP is that it  provides 
+a list of your files in ALPHABETICAL order. Moving around in this list is 
+quite easy, and will soon become second nature.
+
+In this documentation,  all user input is underlined.  As well,  when the 
+"current"  file  is referenced in this documentation,  it means the  file 
+just to the left of your input.  This "current" file is often referred to 
+as the file you are "on".
+
+
+Invoking NSWP
+
+To  make  effective  use  of NSWP,  you must  know  the  various  options 
+available to you when you invoke NSWP. Here are some of the options:
+
+A>NSWP
+This format simply loads NSWP,  and scans the default drive and user  for 
+filenames.  Once inside NSWP,  you may change to a different drive and/or 
+user,  but  when you exit you will be returned to the drive/user that you 
+called NSWP from.
+
+A>NSWP *.COM
+This  format  loads  NSWP and scans the current drive and  user  for  all 
+filenames with the extension '.COM'. Note that NSWP can find system files 
+as well, so no additional information need be given.
+
+A>NSWP B:*.COM *
+The  presence of the second asterisk indicates to NSWP that you  wish  to 
+scan all user areas of the indicated disk drive.  In this case, all '.COM 
+files on all user areas on drive B.
+
+Combinations  of  the above are acceptable,  and you may even log to  all 
+user areas, and find all files with the specification '*.* *'.
+
+Once  inside NSWP you are presented with a menu,  then a report of  which 
+drive  and user you are logged to,  how much space is taken by the  files 
+you have specified,  how many files have been found with the  specificat-
+ions given, and how much space is left on the disk. A sample follows:
+
+Drive A0: 596K in 36 files. 735K free.
+A special format of this line shows that you are logged to all user areas:
+
+Drive B*: 950K in 234 files. 2956K free.
+
+From this point, you may execute any of the menu options.
+
+A special display occurs if no files are found with the specification you 
+have given, or if there are no files in the given drive/user area(s):
+
+No files.
+
+This  display  may also occur if you delete all the files out of a  given 
+specification.  When this occurs,  your menu choices are limited to  ONLY 
+'S', 'L' or 'X'. This allows you to see the free Space on a drive, to Log 
+to another drive/user,  or to eXit.  No other choices are valid, nor will 
+they be accepted.
+
+
+Command Structure
+
+There  are two primary types of commands in NSWP:  those that act on  one 
+file  and  those that act on many files.  We will go through  them  both. 
+Before doing that though, let's try moving around in NSWP first.
+
+To  move  in  NSWP,  you  must first understand that the  files  on  your 
+selected  drive/user  will be presented to you in a  sorted  manner.  The 
+files are sorted in this order: Filename, File extension, user area:
+
+  1. B0: -WORK   .001   0K :
+  2. B0: ARCADD  .COM   4K :
+  3. B0: ARCCOPY .COM   2K :
+
+As you can see,  the files are numbered for your convenience. You may not 
+directly use these numbers.  As you can see,  the file size is also shown 
+(rounded to the nearest block size).
+
+Note  that if you have enabled the reverse video sequence  (see  Epilog), 
+you may see some of the letters in the filename printed in reverse video. 
+The chart below shows how to decode this information.
+
+     FFFFFFFF RSA
+     12345678 /YR
+     |||||||| OSC
+
+  4. B0: ARCDEL  .COM   2K : 
+
+As you can see, this looks confusing. Really, though, it is not. The tags 
+F1-F8  normally are not used,  but NSWP allows you set F1-F4 for your own 
+use. The R/O tag means that the file may be read, but not written to. The 
+SYS tag means that the file does not appear in normal DIR  listings,  and 
+in  CP/M 3,  MPM and CP/M 86 also means that this file is avaiable to all 
+user areas.  The ARC tag means that,  if set, the file has been backed up 
+since it was last accessed.
+Now  that  you understand how files are presented,  we can go  through  a 
+sample session. Remember, user input is underlined.
+
+
+A>NSWP B:
+
+NSWEEP  -  Version 2.00   02/11/1984
+           (c) Dave Rand, 1984
+           Edmonton, Alberta
+
+Drive B0:  850K in  64 files.  118K free.
+
+  1. B0: -WORK   .001   0K : <SP>
+  2. B0: ARCADD  .COM   4K : <SP>
+  3. B0: ARCCOPY .COM   2K : <CR>
+  4. B0: ARCDEL  .COM   2K : <CR>
+  5. B0: ARCDIR  .COM   2K : B
+  4. B0: ARCDEL  .COM   2K : B
+  3. B0: ARCCOPY .COM   2K : B
+  2. B0: ARCADD  .COM   4K : B
+  1. B0: -WORK   .001   0K : X
+A>
+
+
+Help
+     At any point, you may request the main help menu by pressing '?'.
+
+  1. B0: -WORK  .001  0K : ?
+
+NSWEEP  -  Version 2.00   02/11/1984
+           (c) Dave Rand, 1984
+           Edmonton, Alberta
+
+A - Retag files        | Q - Squeeze/Unsqeeze tagged files
+B - Back one file      | R - Rename file(s)
+C - Copy file          | S - Check remaining space
+D - Delete file        | T - Tag file for transfer
+E - Erase T/U files    | U - Untag file
+F - Find file          | V - View file
+L - Log new disk/user  | W - Wildcard tag of files
+M - Mass file copy     | Y - Set file status.
+P - Print file         | ? - Display this help
+X - Exit to CP/M       | cr, sp - Forward one file
+
+
+Moving forward and backward
+
+As you can see,  the two most common commands will be moving forward  and 
+backwards  through  the directory.  Either the SPACE bar (<SP>),  or  the 
+RETURN key (<CR>) may be used to move forward.  To move backwards, simply 
+use the 'B' key. Note that all commands in NSWP can be either in upper or 
+lowercase.  Internally,  lowercase will be converted to uppercase. If you 
+reach the end of the directory with either command,  you will be "wrapped 
+around" to the other end automatically.
+Exiting
+
+To exit, just use the 'X' command as shown above. This will return you to 
+the  same drive and user area that you invoked NSWP from,  regardless  of 
+anything you may have done in NSWP.
+
+Finding a file
+
+Since you may have many hundreds of files selected,  you may wish to move 
+rapidly  to a particular file.  You may do this through the 'F',  or FIND 
+command.
+
+  1. B0: -WORK   .001   0K : F Which file? BASCOM
+ 
+  8. B0: BASCOM  .COM  32K : 
+
+The Find command always starts looking from entry number one. You may use 
+the  standard  CP/M syntax for wildcarding (eg:  to find the  first  .HEX 
+file,  you may use *.HEX),  and also note that the Find command will fill 
+all  blank  spaces with question marks.  This makes  the  search  strings 
+'B*.*',  'B',  and 'B??????.' all find the first file beginning with 'B'. 
+As you experiment, you will find other interesting uses for this command.
+
+At this point, you now know how to move through your directory, both rap-
+idly and one step at a time. Let's move on to some more useful commands.
+
+Viewing and Printing a file
+
+The View command, invoked with a 'V', will type the current file onto the 
+screen, unsqueezing the file if required. Note that this command will NOT 
+prevent  you  from listing ANY type of file,  so you must  use  your  own 
+judgement  on what can and cannot be listed.  At the end of each page  on 
+the screen,  view will stop, and allow you to abort the viewing with a ^C 
+or a ^X.  To get one more line from the file,  hit the space bar.  To get 
+another page, hit the <CR> or RETURN key.
+
+The Print command,  invoked with a 'P',  will send the current file, with 
+no modifications or paging, to the current LST: device. You may abort the 
+print with a ^C or ^X. All other features of the View command apply.
+
+Deleting a file
+
+You  can  delete  the current file just by hitting the  'D'  key.  Before 
+deletion occurs, you will be prompted.
+
+ 12. B0: CDP1    .     40K : D Delete file? Y
+ 12. B0: DEAD    .DAT 100K :
+
+
+If any reply other than 'y' or 'Y' is given the file is not  deleted.  If 
+the  file  is deleted,  it is removed from the list and the next file  is 
+given the current file's number. 
+If the file is a Read Only file, you will be prompted again:
+
+ 12. B0: CDP1    .     40K : D Delete file? Y R/O. Delete? Y
+ 12. B0: DEAD    .DAT 100K :
+ 
+
+Copying a file
+
+     While on any file, you may copy that file to:
+
+A) Another name, on the same drive/user
+B) Another name, on a different drive/user
+C) The same name, on a different drive/user
+
+NSWP will prevent you from copying a file to the same drive/user that the 
+source  file resides on.  Other than that,  there are no restrictions  on 
+where  you wish the file to be.  If a file exists on the same  drive/user 
+that you wish to place the destination file, the existing file is deleted 
+automatically,  even if it is Read Only. When NSWP copies a file, all the 
+attributes  of the original file are passed on to the  destination  file. 
+Thus,  if a file is a SYS, R/O file, NSWP will cause the destination file 
+to be SYS, R/O after the file copy has taken place.
+
+ 12. B0: CDP1    .     40K : C Copy to (filespec)? C9:BACK.CDP
+
+If  you  wish to preserve the name of the file,  you may just  enter  the 
+destination  drive/user part of the filespec (eg.  C9:  in the  preceding 
+example would have copied the file to drive C user 9,  retaining the name 
+CDP1). Just entering the drive part of the filespec causes NSWP to retain 
+the user number of the source file.
+
+If  the  filename is followed by a space,  then a 'V',  the file will  be 
+verify read after it is written.  NSWP maintains a CRC of the file as  it 
+is writing the file, and verifies this CRC.
+
+
+Renaming files
+
+     The Rename command ('R') may be used to:
+
+A) Change the name of one file
+B) Change the names of many files
+C) Change the user number of one file
+D) Change the user number of many files
+
+     To just change the name of one file, the syntax is simple:
+
+ 12. B0: CDP1    .     40K : R New name, or *? CDP2
+ 12. B0: CDP2    .     40K :
+
+
+     You may also change the user number of the file, as follows:
+
+ 12. B0: CDP1    .     40K : R New name, or *? B1:CDP2
+ 12. B1: CDP1    .     40K :
+ 
+Note  that if all user areas are not specified in the logon of NSWP,  the 
+file may not be shown on your list when renaming to another user area.
+
+To  change a group of files from one name to another,  you may enter  the 
+following command at any file:
+
+  9. B0: BASIC   .COM  24K : R New name, or *? *
+
+Old name? *.HEX
+New name? *.BAK
+
+At  this point all files with the extension .HEX will be renamed  to  the 
+same filename but with the extension .BAK. You will see a running display 
+on the screen as each file is renamed.  Any valid wildcard may be used to 
+select  the  source  files,  and  the destination  files  will  take  one 
+character from the source for each '?' in the name. An asterisk qualifies 
+as  filling the remainder of the field with '?'.  If the destination file 
+exists, the rename is not made.
+
+You  may  also choose to rename a group of files to  another  user  area, 
+optionally changing their names as well:
+
+  9. B0: BASIC   .COM  24K : R New name, or *? *
+
+Old name?    *.HEX
+New name? B1:*.BAK
+
+
+This  command  will rename all .HEX files on drive B user 0 to  the  same 
+filename,  but  with the extension .BAK,  and place the resultant file in 
+user 1.  You may want to try this command a few times to get the hang  of 
+it, but it is extremely powerful.
+
+
+The Space command
+
+The Space command ('S') simply asks you for a drive code,  then tells you 
+the  remaining  space on the drive you specify.  Before doing  the  space 
+check, a drive reset is performed, so feel free to change disks.
+
+
+The Log Command
+
+The  Log  command  ('L') allows you to change your directory  to  another 
+drive  or user.  Additionally,  it allows you to re-specify the  wildcard 
+mask just like entering the NSWP program from CP/M.  As well,  the  drive 
+system  is  reset,  so again you should be able to change to a  different 
+diskette at this point or to another part of the same diskette.  When the 
+Log command is used, the instructions are reprinted for review.
+
+ 16. B0: DD      .COM   4K : L New drive/user/mask? A14:*.HEX
+
+
+NSWEEP  -  Version 2.00   02/11/1984
+           (c) Dave Rand, 1984
+           Edmonton, Alberta
+
+Drive A14:  44K in  2 files. 1118K free.
+ 
+  1. A14:NSWP    .HEX  22K:
+
+
+
+		Introduction to Multifile commands
+
+Now  that all the commands that affect single files have been  described, 
+it is time to introduce the concept of Multifile commands. These commands 
+are  ones that affect as few as one or as many as all of the files  on  a 
+single  disk.  To affect these files,  though,  we must have some way  of 
+describing  which files need to be affected.  CP/M has a way to do  this, 
+using "wildcards". This program, on the other hand, uses the concept of a 
+file "tag".
+
+The Tag command
+
+Tagging  a  file,  in  its simplest form,  can be  accomplished  just  by 
+depressing  the 'T' key when the file to be tagged appears.  What exactly 
+is  a tag?  A tagged file is a file in the list of filenames that has  an 
+asterisk next to the colon after the name of the file, as shown below.
+
+  9. B0: BASIC   .COM  24K :*
+
+A  tagged  file is different from an untagged file in that  you  may  now 
+request  an operation that deals with several unrelated files (eg.  Files 
+that will not match using only one wildcard).  A sample "tag" session  is 
+shown:
+
+  9. B0: BASIC   .COM  24K : T Tagged files =  24K ( 23K).
+ 10. B0: BRUN    .COM  16K : T Tagged files =  40K ( 39K).
+
+Note  that  the  'T'  command automatically  performs  a  "move  forward" 
+operation.
+
+To the right of the 'Tagged files' message two numbers are displayed. The 
+numbers  are the total size,  in K,  of the files you have tagged so far. 
+This  is useful if,  for example,  you are moving files from one size  of 
+diskette to another, smaller size diskette. If the source disk holds 500K
+and the destination holds 256K,  you can stop the tagging operation  when 
+your  size  is just less than 256K.  The tag function in itself does  not 
+perform  any operation,  other than to mark the file for a future  "mass" 
+operation.
+By  now the astute reader will notice that I have cleverly  skipped  over 
+the function of the second number display,  the one in parenthesis.  This 
+number is the combined size of the tagged files, IN 1K BLOCKS. If you are 
+using  a computer system that supports many different disk sizes/formats, 
+or a system with a hard disk attached, you may already know that CP/M can 
+allocate storage only in "BLOCKS",  and that these "BLOCKS" may be up  to 
+16k  in length.  This means that NSWP would show a file containing,  say, 
+512  bytes in information,  as being up to 16k long,  depending  on  your 
+computer. The second number in the tag display shows how much storage the 
+cumulative  files  would  take  if they were stored  on  a  single-sided, 
+single-density, 8" diskette.
+
+
+Wildcard tagging
+
+Another  way  to tag files is the wildcard tag  function.  This  function 
+accepts a CP/M type wildcard and proceeds to tag all the files that match 
+the wildcard.  To invoke this, just hit 'W' and you will be prompted with 
+the message 'Which files?  '.  Enter any CP/M wildcard,  right down to  a 
+unique filename, and if that file exists it will be tagged and displayed.
+
+
+Untagging files
+
+If you can tag a file, you must be able to Untag a file as well.
+
+  9. B0: BASIC   .COM  24K :*U Tagged files =  16K ( 16K).
+ 10. B0: BRUN    .COM  16K :*
+
+As you can see, the untag function subtracts the current file's size from 
+the total, then displays the total of the remaining files.
+
+
+The mass copy command
+
+Now  that  we have a number of files "tagged",  what do we do with  them? 
+Well,  the Mass copy function is one of those that act on many files. Its 
+purpose is to copy the tagged file(s) from one drive/user area to another 
+drive/user.
+
+ 12. B0: CDP1    .     40K : M
+ Copy to drive/user? A14: V
+
+Copying  --> B0: BRUN  .COM to A14: with verify
+Verifying --> file ok.
+
+The  V  is  optional,  and it indicates that you wish to  have  the  file 
+verified after it is written.
+
+As you can see, the files have been sent to drive A, user 14. If you wish 
+the  tagged  files to reside in the same user area as  the  source  files 
+after the copy, do not specify a user area in the Mass command. This will 
+cause NSWP to put the file in the same user area as the source file.
+NSWP will not allow you to copy a file to the same drive and user area as 
+the source. The copy is simply not made.
+
+
+After the mass
+
+After  any  mass  file operation,  the tags are "reset" as each  file  is 
+copied. Visually, they change from a '*' to a '#'. The files are logical-
+ly untagged,  and will respond as such.  But,  since NSWP remembers them, 
+you can automatically retag these files.  This is useful if, for example, 
+you  need  to copy the same files to a number of different  diskettes  or 
+user areas on a drive. To invoke this, use the 'A' command.
+
+ 12. B0: CDP1    .     40K : A
+
+Retagging--> B0: BRUN  .COM  Tagged files =  16K ( 16K)
+
+
+Erasing files
+
+You may want to copy a group of files,  then delete them from the  source 
+disk after the copy has been made. To do this, you can use either the 'C' 
+command  to copy,  followed by the 'D' command,  which is tedious,  or  a 
+combination of the 'T',  'M',  'A', and the 'E' commands. The 'E' command 
+Erases tagged or untagged files, at your option, on a global scale.
+
+ 12. B0: CDP1    .     40K : E
+Erase Tagged or Untagged files (T/U)? T
+Do you wish to be prompted (Y/N/A)? N
+
+Deleting --> B0: BRUN  .COM
+
+If you specify Untagged files, the untagged files will be erased. You may 
+wish  to  be prompted before each file is to be deleted,  and you can  do 
+this via the second question.
+
+
+Squeezing and Unsqueezing files
+
+The  'Q' command allows you to Squeeze and Unsqueeze tagged  files.  This 
+file  squeeze program is compatible with the  original  squeeze/unsqueeze 
+programs  written in the 'C' language by Richard Greenlaw.  After hitting 
+Q, you will see the prompt:
+
+Squeeze, Unsqueeze or Reverse (S/U/R)? 
+
+After  answering  this skill-testing question,  you will be  asked  which 
+drive/user  you wish to place the destination files.  The syntax here  is 
+the  same as for the Move command,  except it is permissible to  'Q'  the 
+files back to the same drive/user that they originated.
+
+When 'Q' is invoked,  you are asked if you wish to Squeeze,  Unsqueeze or 
+Reverse.  A  carriage return here will return you to the command line  of 
+NSWP.
+If  you select 'S' for Squeeze,  all tagged files will be examined to see 
+if it is "worth" squeezing them.  Files that exibit ANY space  reduction, 
+even  if  it is only one sector,  will be squeezed.  If the files is  not 
+"worth"  squeezing,  the  file will simply be copied to  the  destination 
+drive/user.
+
+If you select 'U' for Unsqueeze, all tagged files will be examined to see 
+if they are squeezed.  If they are, they will be unsqueezed, and moved to 
+the  destination  drive/user.  If they are not squeezed,  then  they  are 
+simply copied.
+
+If  you  select  'R' for Reverse,  all files that are  squeezed  will  be 
+unsqueezed,  and all files that are unsqueezed will be squeezed (if it is 
+worth it), and moved to the destination drive/user.
+
+The most attractive feature of the 'Q' command in general is the  ability 
+to Squeeze files ONLY if it is "worth" it. This means that by using NSWP, 
+you  can archive data into the absolute minimum amount of space possible.  
+The SQ algorithm used in NSWP is better than the one in the original  'C' 
+squeezer,  and  produces  the smallest output file possible with  current 
+technology.
+
+The file squeezer section was done by Jim Lopushinsky, and is copyrighted 
+separately by him. He also has a public domain standalone squeezer.
+
+
+Setting the tagged files status
+
+You may set the attributes of a group of tagged files just like STAT,  or 
+PROT. To do this, tag the files, and select the 'Y' command.
+
+ 12. B0: CDP1    .     40K : Y Which flags (1-4,R,S,A)? R,S
+
+Setting ---> B0: BRUN  .COM to R/O SYS
+
+
+The  flags  you may set are the F1-F4 flags,  as well as the  Read  Only, 
+System,  and  Archive (MP/M,  CP/M 3 only) flags.  Any flags you  do  not 
+specify will be reset. To reset all the flags (IE: Change to R/W, DIR and 
+no "Sysop tag"),  just enter a single comma or space at the "Which flags" 
+prompt.  Note that the flags in the "Which flags" question do not have to 
+be  entered with a comma between them,  as anything (or nothing at  all!) 
+will do.  As far as the program is concerned 'RSA',  'R S A', and 'R,S A' 
+are all valid.
+Notes on NSWP 204
+-----------------
+
+NSWP  204  has  a  few  new features!  First,  limited  CPM  3  has  been 
+established, in that if you have BDOS version over 3.0 (which may include 
+MPM),  you  may now run with ALV banked.  NSWP will use the BDOS call  to 
+obtain the ALV information. This also applies to the 16 bit version.
+
+Before 204,  if you attempted to delete a file that was currently tagged, 
+it was not removed from the tagged file size.  It is correctly handled in 
+all cases now.
+
+NSWP now saves the SP, rather than (SP), in order to support totally non-
+standard implementations of BDOS and CCP.
+
+When using the '?' function, the current disk information, along with the
+tagged file size.
+
+The  copy  file  speed has been further optimized  by  elimination  of  a 
+redundant BDOS call (deleting a file, when we know it ain't there!).
+
+NSWP  has been modified to better support MPM and MPM86 by doing a rename 
+after  a  copy  operation.  This  will  drop  the  copy  speed  slightly, 
+nullifying the effect of the above change.
+
+If you find anything else, please drop me a line...
+
+Notes on NSWP 205
+-----------------
+
+NSWP 204 introduced a bug that would not allow you to copy a file if that 
+file was set to R/O, unless you had a destination that was ALSO R/O!
+                                   
+
+			Epilogue
+
+All  the functions of NSWP have now been described.  The best way to  get 
+more familiar with the program is to actually USE it.  I think it will be 
+one of your most frequently used programs.
+
+There are several things in this version that you will want to alter:
+
+
+103H
+
+This  byte controls the screen length used in the 'V'iew command.  It  is 
+currently set to 23D (17H).
+
+
+104H-10AH - Turn reverse video on
+
+The  first byte in this sequence of seven shows the length of the reverse 
+video on sequence,  which follows at location 105H.  All seven bytes  are 
+currently set to zero.
+
+
+10BH-111H - Turn reverse video off
+
+The  first byte in this seqence of seven shows the length of the  reverse 
+video off sequence,  which follows at location 10DH.  All seven bytes are 
+currently set to zero.
+
+
+			Credits
+
+My  thanks to all who made this program possible,  and especially to Dave 
+Mccrady  for his help in composing the documentation and .HLP  files  for 
+NSWP.  Thanks  also  goes to Jim Lopushinsky,  also  of  Edmonton,  since 
+without  him  the  SQ section of NSWP might never  have  been  completed! 
+Thanks  to  the  use of his SQ section,  NSWP can  produce  the  smallest 
+possible SQ'ed files.
+
+
+		    Contributions
+
+If you like, use and enjoy this program, feel free to send a contribution 
+(suggest $20).   This will help me expand this program, and add even more 
+features.  I am currently working on a CP/M 86 version,  and once that is 
+running,  I  intend to port it to MSDOS.  Suggestions for enhancement are 
+also appreciated, and you may send them to:
+
+Dave Rand
+10232 - 160 Street
+Edmonton, Alberta CANADA
+T5P 3E9

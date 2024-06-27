@@ -1,0 +1,534 @@
+Procedure Repack_file;
+var
+  zf : FILE of labelcont;
+  lowest_pos    : integer;
+  lowest_lab    : labelcont;
+  nomore,
+  write_it,
+  first         : boolean;
+
+begin
+  first:=TRUE;
+  flush(tempf);
+  assign(zf,workdrive+'COPY.$$$');
+  rewrite(zf);
+  repeat   {until all valid "lab"s copied to zf}
+    write_it:=FALSE;
+    reset(tempf);
+    nomore:=TRUE;
+    while not eof(tempf) do
+    begin
+     read(tempf,lab);
+     if lab.stat=TRUE then        {is it valid?}
+     begin
+       nomore:=FALSE;
+       if first=TRUE then
+       begin
+         lowest_lab:=lab;        {now check this against the next}
+         first:=FALSE;
+         lowest_pos:=FilePos(tempf)-1;
+         write_it:=TRUE;
+       end
+       else
+       begin {check in order: AREA, DOWN, ACROSS}
+        if (lab.area<lowest_lab.area) or
+           ((lab.area=lowest_lab.area)and(lab.down<lowest_lab.down)) or
+           ((lab.area=lowest_lab.area)and(lab.down=lowest_lab.down)and
+                                         (lab.across<lowest_lab.across)) then
+        begin
+         lowest_lab:=lab;
+         lowest_pos:=FilePos(tempf)-1;
+         write_it:=TRUE;
+        end;
+       end;
+     end;
+    end;
+    if write_it=TRUE then
+    begin
+     seek(tempf,lowest_pos);
+     read(tempf,lab);
+     lab.stat:=false;
+     seek(tempf,lowest_pos);
+     write(tempf,lab);
+     write(zf,lowest_lab);
+     first:=TRUE;
+    end;
+  until nomore=TRUE;
+  close(tempf);
+  close(zf);
+  erase(tempf);
+  rename(zf,'TEMP.LBL');
+  assign(tempf,workdrive+'TEMP.LBL');
+  reset(tempf);
+end;  {of repack_file}
+
+
+Procedure indicate;
+begin
+  if lab.stat=TRUE then
+  begin
+    remove_cursor;
+    with lab do
+    begin
+      gotoxy(1,11);
+      lowvideo;write('Area ');normvideo;
+      gotoxy(6,11);write(area);
+      areanum:=area;
+      set_area_boundries;
+      gotoxy(10,11);lowvideo;write('X co-ord ');normvideo;
+      gotoxy(25,11);lowvideo;write('Y co-ord ');normvideo;
+      gotoxy(40,11);lowvideo;write('Scale ');normvideo;
+      gotoxy(55,11);lowvideo;write('Font ');normvideo;
+      gotoxy(67,11);lowvideo;write('Pen ');normvideo;
+      if param.contents=Symbolarea then
+      begin
+        cx:=left+5; cy:=top+5;
+        cx1:=0;cy1:=0;
+        put_cursor;
+        gotoxy(19,11);write(' ':3);
+        gotoxy(34,11);write(' ':3);
+        gotoxy(46,11);write(' ':5);
+        gotoxy(60,11);write(' ':3);
+        gotoxy(71,11);write(' ':1);clreol;
+        gotoxy(1,12);
+        lowvideo;write('Symbol= ');normvideo;
+        clreol;
+        gotoxy(1,13);write(text,Conststr(' ',125-length(text)));
+      end
+      else
+      begin
+        cx:=across; cy:=down;
+        cx1:=0; cy1:=0;
+        put_cursor;
+        gotoxy(19,11);write(across:3);
+        gotoxy(34,11);write(down:3);
+        gotoxy(46,11);write(scale:5:2);
+        gotoxy(60,11);write(font:3);
+        gotoxy(71,11);write(pen:1);clreol;
+        gotoxy(1,12);lowvideo;write('Text= ');normvideo;clreol;
+        gotoxy(1,13);write(text,Conststr(' ',125-length(text)));
+      end;
+    end; {of with}
+  end; {of if stat}
+end; {of indicate}
+
+Procedure redraw_label;
+var
+  fp : integer;
+begin
+  fp:=filepos(tempf)-1;
+  if fp<0 then fp:=0;
+  initialise;
+  sccol(blue);
+  sstle(0);
+  left:=0; right:=767;
+  top:=0; bottom:=287;
+  display_label_area;
+  sccol(green);
+  reset(tempf);
+  while not eof(tempf) do
+  begin
+    read(tempf,lab);
+    areanum:=lab.area;
+    put_on_screen;
+  end;
+  seek(tempf,fp);
+end;  {of redraw_label}
+
+
+
+Procedure edit_routine;
+var
+  newstat : boolean;
+  newacross,newdown : integer;
+  newpen,oldpen : byte;
+  newscale,oldscale : real;
+  newfont,oldfont : str14;
+  newtext,oldtext : str125;
+  newmode,command : char;
+  sp : integer;
+  moving : boolean;
+  delflag : boolean;
+  scx, scy : integer;
+
+procedure updateit;
+begin
+           sp:=filepos(tempf)-1;
+           if sp<0 then sp:=0;
+           reset(tempf);
+           if delflag=FALSE then
+           begin
+            if param.contents=TextArea then
+            begin
+             if Moving=FALSE then
+             begin
+               sccol(black);
+               breakline(oldtext);
+             end;
+             if newstat=TRUE then
+             begin
+              if newmode='V' then
+               sccol(cyan)
+              else
+               sccol(green);
+              breakline(newtext);
+             end;
+            end; {of if textareas}
+           end;
+           with lab do
+           begin
+              stat:=newstat;
+              across:=newacross;
+              down:=newdown;
+              scale:=newscale;
+              font:=newfont;
+              pen:=newpen;
+              mode:=newmode;
+              text:=newtext;
+           end; {of with}
+           seek(tempf,sp);
+           write(tempf,lab);
+           sccol(green);
+           Moving:=FALSE;
+           Repack_file;
+           if delflag=TRUE then
+           begin
+             sp:=sp-1;
+             if sp<0 then sp:=0;
+             delflag:=FALSE;
+           end;
+           seek(tempf,sp);
+           read(tempf,lab);
+           command:=^Q;
+end; {of updateit}
+
+begin
+   wait;
+   Moving:=FALSE;
+   delflag:=FALSE;
+   with lab do
+   begin
+    if mode<>'S' then
+     update_current;
+    Key_Use(Edt2);
+    newstat:=stat;
+    newacross:=across;
+    newdown:=down;
+    newscale:=scale;
+    newfont:=font;
+    newpen:=pen;
+    newmode:=mode;
+    newtext:=text;
+    oldtext:=text;
+   end;
+  if newmode='T' then;
+  case newpen of
+   1:penwidth:=1;
+   2:penwidth:=3;
+   3:penwidth:=2;
+   4:penwidth:=3;
+  end; {of case}
+  repeat
+    gotoxy(1,8);
+    if Moving=TRUE then
+    begin
+     write('Re-position text. Press <ENTER>. ');
+     clreol;gotoxy(34,8);
+    end
+    else
+    begin
+     write('Select appropriate operation above.');
+     clreol;
+     gotoxy(37,8);
+    end;
+    cx1:=0; cy1:=0;
+    read(kbd,command);
+    wait;
+    case command of
+     ^A : begin  {Delete}
+            sccol(black);
+            if param.contents=TextArea then
+             breakline(newtext);
+            if param.contents=SymbolArea then
+            begin
+             xoffs:=left; yoffs:=top;
+             delete_symbol(newtext);
+            end;
+            newstat:=false;
+            delflag:=true;
+            updateit;
+          end;
+     ^F : if (param.contents=TextArea) then begin {Font}
+            sccol(black);
+            breakline(newtext);
+            fontchange;
+            oldfont:=newfont;
+            newfont:=fontname;
+            gotoxy(60,11);write(newfont);
+{            sccol(green); }
+            breakline(newtext);
+            if error=1 then
+            begin
+              newfont:=oldfont;
+              sccol(green);
+              breakline(newtext);
+            end
+            else updateit;
+          end;
+     ^S : if (param.contents=TextArea) then begin {Scale}
+            sccol(black);
+            breakline(newtext);
+            loadfont;
+            scalechange;
+            oldscale:=newscale;
+            newscale:=scl;
+            gotoxy(46,11);write(newscale:5:2);
+  {          sccol(green);}
+            breakline(newtext);
+            if error=1 then
+            begin
+             newscale:=oldscale;
+             sccol(green);
+             breakline(newtext);
+            end
+            else updateit;
+          end;
+     ^P : if (param.contents=TextArea) then begin {Pen}
+            sccol(black);
+            breakline(newtext);
+            penchange;
+            oldpen:=newpen;
+            newpen:=curpen;
+            gotoxy(71,11);write(newpen);
+   {         sccol(green);}
+            breakline(newtext);
+            if error=1 then
+            begin
+             newpen:=oldpen;
+             sccol(green);
+             breakline(newtext);
+            end
+            else updateit;
+          end;
+     ^T : begin  {Text/Symbol}
+            oldtext:=newtext;
+            if lab.mode='V' then
+            begin
+              getnumber;
+              newtext:=Conststr('@',Vn);
+            end
+            else
+            begin
+              getinput(125,1,13,newtext,'b',fin,1);
+              clrframe(13,25);
+              gotoxy(1,13);write(newtext);
+              set_area_boundries;
+              if param.contents=TextArea then
+              begin
+               if (lab.key <> '') and (newtext <> oldtext) then
+                lab.modif:=1;
+              end;
+              if param.contents=Symbolarea then
+              begin
+                xoffs:=left; yoffs:=top;
+                delete_symbol(oldtext);
+                put_symbol(newtext);
+              end; {of if symbol}
+            end;
+            if error=1 then
+            begin
+                if lab.mode='V' then
+                 sccol(cyan)
+                else
+                 sccol(green);
+                breakline(oldtext);
+                newtext:=oldtext;
+            end
+            else updateit;
+          end;
+     ^E : if (param.contents=TextArea)  then
+          begin  {Move}
+            cx1:=0; cy1:=0;
+            cx:=newacross;
+            tcx:=cx;
+            cy:=newdown;
+            tcy:=cy;
+            Moving:=TRUE;
+          end;
+
+     #28 : if Moving=TRUE then begin
+                    if cx>left+2 then cx1:=-1;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(19,11);write(cx:3);
+                   end;
+     #22 : if Moving=TRUE then begin
+                    if cx>left+9 then cx1:=-jumpx;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(19,11);write(cx:3);
+                   end;
+     #29 : if Moving=TRUE then begin
+                    if cx<right-2 then cx1:=1;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(19,11);write(cx:3);
+                   end;
+     #23 : if Moving=TRUE then begin
+                    if cx<right-9 then cx1:=jumpx;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(19,11);write(cx:3);
+                   end;
+     #30 : if Moving=TRUE then begin
+                    if cy>top+2 then cy1:=-1;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(34,11);write(cy:3);
+                   end;
+     #11 : if Moving=TRUE then begin
+                    if cy>top+6 then cy1:=-jumpy;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(34,11);write(cy:3);
+                   end;
+     #31 : if Moving=TRUE then begin
+                    if cy<bottom-2 then cy1:=1;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(34,11);write(cy:3);
+                   end;
+     #14 : if Moving=TRUE then begin
+                    if cy<bottom-6 then cy1:=jumpy;
+                    remove_cursor;
+                    put_cursor;
+                    gotoxy(34,11);write(cy:3);
+                   end;
+     #13 : if Moving=TRUE then begin        {Re-position}
+                    scx:=cx; scy:=cy;
+                    cx:=tcx; cy:=tcy;
+                    sccol(black);
+                    breakline(newtext);
+                    cx:=scx; cy:=scy;
+                    sccol(green);
+                    breakline(newtext);
+                    if error=1 then
+                    begin
+                      remove_cursor;
+                      cx:=tcx; cy:=tcy;
+                      gotoxy(1,8); clreol;
+                      lowvideo; write('Line being returned to original place');
+                      delay(2000);normvideo;
+                      sccol(green);
+                      breakline(newtext);
+                    end
+                    else
+                    begin
+                     tcx:=cx; tcy:=cy;
+                     newdown:=cy;
+                     newacross:=cx;
+                     key_use(edt2);
+                    end;
+                    updateit;
+                    indicate;
+                    moving:=FALSE;
+                  end;
+
+     ^Q : begin  {Quit}
+           if (moving=FALSE) then
+           begin
+            gotoxy(1,8);clreol;
+            delflag:=FALSE;
+           end
+           else
+           command:=' ';
+          end;
+    end; {of case}
+    gotoxy(1,8);clreol;
+  until command=^Q;
+  command:=' '; ans:=' ';
+end;  {of edit_routine}
+
+Procedure edit_label;
+var
+  delarea : boolean;
+  as : string[2];
+  an : integer;
+begin
+  reset(tempf);
+  read(tempf,lab);
+  indicate;
+  repeat
+   key_use(Edt1);
+   gotoxy(1,8);
+   write('Use up and down cursor keys then <ENTER> to select line to edit. ');
+   gotoxy(65,8);
+   read(kbd,ans);
+   case ans of
+    ^L  : begin  {Redraw}
+            wait;
+            repack_file;
+            redraw_label;
+            read(tempf,lab);
+            indicate;
+          end;
+    ^A  : begin  {Delete Area}
+           as:='';
+           delarea:=FALSE;
+           repeat
+             gotoxy(1,8);clreol;
+             write('Delete which Area? (or Press ESC) : ');
+             getinput(2,36,8,as,'n',fin,1);
+             val(as,an,j);
+           until ((an in [1..6]) and (j=0)) or (fin=TRUE);
+           if fin=TRUE then exit;
+           wait;write('Deleting area ',an:2);
+           remove_cursor;
+           flush(tempf);
+           reset(tempf);
+           while not EOF(tempf) do
+           begin
+             read(tempf,lab);
+             if lab.area=an then
+             begin
+              delarea:=TRUE;
+              lab.stat:=FALSE;
+              seek(tempf,filepos(tempf)-1);
+              write(tempf,lab);
+             end;
+           end;
+           if delarea=TRUE then
+           begin
+             Repack_file;
+             redraw_label;
+           end
+           else
+           begin
+             gotoxy(1,8);
+             write('NOTHING TO DELETE ');
+             clreol; delay(2000);
+           end;
+           reset(tempf);
+           read(tempf,lab);
+           indicate;
+          end;
+
+    #31 :  if not eof(tempf) then
+           begin
+             read(tempf,lab);
+             indicate;
+           end;
+    #30 : if filepos(tempf)>=2 then
+          begin
+            seek(tempf,filepos(tempf)-2);
+            read(tempf,lab);
+            indicate;
+          end;
+    #13 : edit_routine;
+   end; {of case}
+  until ans=^Q;
+  clrframe(10,25);
+  repack_file;
+  ans:=' ';
+end;
+

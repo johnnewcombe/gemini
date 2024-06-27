@@ -1,0 +1,594 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+rem ***********************************************************
+rem : Editor program to make a data file of real numbers.
+rem : Must have a terminal with clear screen and
+rem : addressable curser.
+rem ***********************************************************
+pic0$ = "###/....../#.############^^-"
+pic1$ = "###/../#,###,###,###,###.############-"
+pic2$ = "###/../#,###,###,###,###-"
+print clear$
+blk$ = " "
+b.line$ = "    "
+for i% = 2 to length%
+    b.line$ = b.line$ + blk$
+next i%
+dim temp.data((tot.inst% + 1))
+print :print
+print "            Editor."
+print "           *********"
+print :print
+ed.flag$ = "ED"
+while ed.flag$ = "ED"
+    input "#";answer$
+    com$ = ucase$(answer$)
+    err$ = "YES"
+    if com$ = "I" then err$ = "NO" : \
+        gosub 122 :rem insert data
+    if com$ = "S" then err$ = "NO" : \
+        gosub 123 :rem save on disc
+    if com$ = "T" then err$ = "NO" : \
+        gosub 124 :rem type page
+    if com$ = "L" then err$ = "NO" : \
+        gosub 127 :rem load from disc
+    if com$ = "P" then err$ = "NO" : \
+        gosub 190 :rem print buffer
+    if com$ = "C" then err$ = "NO" : \
+        gosub 200 :rem clear buffer
+    if com$ = "E" then err$ = "NO" : \
+        ed.flag$ = "EXIT"
+    if err$ = "YES" then print "COMMAND NOT RECOGNISED !"
+wend
+chain "PROG"
+stop
+
+122 rem ***** Insert data *****
+top% = 0
+while data.no(top%) <> end.data
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+print "There is room for ";room%;" more lines."
+input "Type in line number where text is to be inserted : ";l.no%
+if l.no% > top% then l.no% = top%
+print clear$
+start% = l.no%
+line$ = " "
+l.no% = l.no% - 1
+while line$ <> "#"
+    l.no% = l.no% + 1
+    if l.no% = room%  \
+        then print "BUFFER FULL : Insertion terminated." : \
+             line$ = "#" \
+        else print l.no%; : \
+             input " :";line$
+    if line$ <> "#" then \
+        temp.data(l.no%) = val(line$)
+wend
+insert.size% = l.no% - start%
+move% = top% - start% + 1
+top% = top% + 1
+for i% = 1 to move%
+    top% = top% - 1
+    new% = top% + insert.size%
+    data.no(new%) = data.no(top%)
+next i%
+for i% = 0 to (insert.size% - 1)
+    new% = start% + i%
+    data.no(new%) = temp.data(new%)
+next i%
+print clear$
+return :rem ** End of insert text **
+
+123 rem ***** Save data file *****
+gosub 128 :rem name file
+create f2$ as 2
+i% = 0
+while data.no(i%) <> end.data
+    i% = i% + 1
+    print #2;data.no(i%)
+wend
+close 2
+return :rem ** End of save source program **
+
+124 rem ***** Type page *****
+print clear$
+print :print
+print "Each page typed is 20 lines at 2 numbers per line"
+print
+print "The bottom 3 lines are used for typing editor commmands."
+print
+input "Type in the line number where display is to start : ";l.no%
+gosub 125 :rem type lines
+type.flag$ = "ED"
+while type.flag$ = "ED"
+    bulk$ = "NOT BULK"
+    print fnc$(22,20);"                         "
+    print fnc$(22,20);
+    input "COMMAND : ";answer$
+    com1$ = ucase$(answer$)
+    t.flag$ = "NOT FOUND"
+    print fnc$(21,10);"                                         "
+    if com1$ = "P" then \
+        l.no% = l.no% + 40 : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if com1$ = "-P" then \
+        l.no% = l.no% - 41 : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if match("B",com1$,1) > 0 then \
+        bulk$ = "BULK" : \
+        gosub 140 : \ rem bulk instructions
+        gosub 125 :rem type lines
+    if match("T",com1$,1) > 0 then \
+        l.no% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if match("D",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        data.no(lin2%) = delete.data : \
+        gosub 126 :rem amend display
+    if match("R",com1$,1) > 0 and bulk$ <> "BULK" then \
+        print fnc$(22,20);"                            " : \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        print fnc$(22,20);"                           " : \
+        print fnc$(21,1);lin2%;" : ";data.no(lin2%);" : "; : \
+        print "Type in replacement data." : \
+        print lin2%; : \
+        input " :";data.no(lin2%) : \
+        print fnc$(21,1);"                                "; : \
+        print "                                " : \
+        print "                                               " : \
+        gosub 126 : rem amend display
+    if com1$ = "E" then \
+        type.flag$ = "STOP" : \
+        print clear$ : \
+        t.flag$ = "FOUND"
+    if com1$ = "C" then \
+        t.flag$ = "FOUND" : \
+        gosub 129 : \ rem close up blank lines
+        gosub 125 : rem type lines
+    if match("I",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        t.flag$ = "FOUND" : \
+        gosub 130 : \ rem insert line
+        gosub 125 : rem type lines
+    if match("S",com1$,1) > 0 and bulk$ <> "BULK" then \
+        lin2% = abs(val(com1$)) : \
+        p% = match("S",com1$,1) : \
+        t% = len(com1$) : \
+        s% = match("#",com1$,1) : \
+        lin1% = abs(val(com1$)) : \
+        temp.data = data.no(lin1%) : \
+        data.no(lin1%) = data.no(lin2%) : \
+        data.no(lin2%) = temp.data : \
+        t.flag$ = "FOUND" : \
+        gosub 125 :rem type lines
+    if t.flag$ <> "FOUND" then \
+        print fnc$(21,10);"ERROR *** COMMAND NOT FOUND ***"
+wend
+return :rem ** End of type page **
+
+125 rem ***** Type lines *****
+if l.no% < 1 then l.no% = 1
+top% = 1
+while data.no(top%) <> end.data
+    top% = top% + 1
+wend
+print clear$
+for i% = 1 to 20
+    print fnc$(i%,1);
+    lin1% = l.no% + i% - 1
+    lin2% = l.no% + i% + 19
+    if lin1% >= top% then return
+    disp% = lin1%
+    display = data.no(lin1%)
+    gosub 9000 :rem display
+    if lin2% < top% then \
+        print fnc$(i%,41); : \
+        disp% = lin2% : \
+        display = data.no(lin2%) : \
+        gosub 9000 : rem display
+next i%
+return :rem ** End of type lines **
+
+126 rem ***** Amend display *****
+temp% = lin2% - l.no% + 1
+if temp% <= 20 \
+    then movecursor$ = fnc$(temp%,1) \
+    else movecursor$ = fnc$(temp% - 20,41)
+print movecursor$;b.line$
+print movecursor$;
+disp% = lin2%
+display = data.no(lin2%)
+gosub 9000 :rem display
+return :rem ** End of amend display **
+
+127 rem ***** Load source data file *****
+gosub 128 :rem name file
+open f2$ as 2
+i% = 0
+while data.no(i%) <> end.data
+    i% = i% + 1
+    read #2 ;data.no(i%)
+wend
+n% = i% + 1
+for i% = n% to tot.inst%
+    data.no(i%) = blank.data
+next i%
+print "Data file loaded is ";(n% - 1);" instructions long."
+close 2
+return :rem ** End of load source program **
+
+128 rem ***** Name source file *****
+print clear$
+print :print :print
+print "All disc files used by this program to store data files have"
+print "ambiguous filenames of '.DAT'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.DAT'."
+print :print
+input "Type in filename : ";f2$
+f2$ = f2$ + ".DAT"
+return :rem ** End of name file **
+ 
+129 rem ***** Close up blank lines *****
+count% = 0
+i% = 0
+while data.no(i%) <> end.data
+    i% = i% + 1
+    if data.no(i%) = delete.data \
+        then count% = count% + 1 \
+        else new% = i% - count% : \
+             data.no(new%) = data.no(i%)
+wend
+return :rem ** End of close up blank lines **
+
+130 rem ***** Insert line during 'T' *****
+if lin2% < 1 or lin2% > tot.inst% then \
+    print "Line number beyond range" : \
+    print "Type any key to continue:" : \
+    dummy% = conchar% : \
+    return
+i% = lin2%
+while data.no(i%) <> delete.data and data.no(i%) <> end.data \ 
+                                 and i% < tot.inst%
+    i% = i% + 1
+wend
+if i% = tot.inst% then \
+    print "Too many data elements to add more." : \
+    print "Type any character to continue:" : \
+    dummy% = conchar% : \
+    return
+if data.no(i%) = delete.data then \
+    i% = i% - 1
+while i% >= lin2%
+    data.no(i% + 1) = data.no(i%)
+    i% = i% - 1
+wend
+print fnc$(22,20);"                                   "
+print fnc$(21,10);
+print lin2%;" : ";data.no(lin2%);" : Type in new item of data : "
+print lin2%;" : ";
+input data.no(lin2%)
+return :rem ** End of insert line during 'T' **
+
+140 rem ***** Block instructions *****
+lin2% = 0
+lin1% = abs(val(com1$))
+if lin1% = 0 then \
+    return
+p% = match("B",com1$,1)
+t% = len(com1$)
+s% = match("#",com1$,p%)
+if s% = 0 then \
+    return
+lin3% = abs(val(right$(com1$,(t% - s% + 1))))
+p% = match(":",com1$,s%)
+if p% = 0 then \
+    p% = t% + 1
+s% = match("#",com1$,p%)
+if s% > 0 then \
+    lin2% = abs(val(right$(com1$,(t% - s% + 1))))
+if match("C",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 145 : \ rem copy lines
+    return
+if match("M",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 150 : \ rem move lines
+    return
+if match("R",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 155 : \ rem replace lines
+    return
+if match("D",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 160 : \ rem delete lines
+    return
+if match("I",com1$,1) > 0 then \
+    t.flag$ = "FOUND" : \
+    gosub 165 : \ rem insert lines
+    return
+return :rem ** End of block instructions **
+
+145 rem ***** Copy lines *****
+if lin3% = 1 or lin3% = 0 then \
+    gosub 147 : \ rem place line
+    data.no(lin2%) = data.no(lin1%) : \
+    return
+top% = 0
+while data.no(top%) <> end.data
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+if lin3% > room% then \
+    print "There are too many items of data to insert a block" : \
+    print "of ";lin3%;".There are only ";room%;" lines left." : \
+    print "Type any character to continue : " : \
+    dummy% = conchar% : \
+    return
+for i% = 1 to lin3%
+    l% = lin1% + i% - 1
+    temp.data(i%) = data.no(l%)
+next i%
+top% = top% + 1
+while top% > lin2%
+    top% = top% - 1
+    new% = top% + lin3% 
+    data.no(new%) = data.no(top%)
+wend
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    data.no(new%) = temp.data(i%)
+next i%
+return :rem ** End of copy lines **
+
+147 rem ***** Place line *****
+if lin2% < 1 or lin2% > tot.inst% then \
+    print "Line number beyond range." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+i% = lin2%
+while data.no(i%) <> end.data and data.no(i%) <> delete.data \
+                                and  i% < tot.inst%
+    i% = i% + 1
+wend
+if i% = tot.inst% then \
+    print "Too many items of data to insert more." : \
+    print "Type any key to continue." : \
+    dummy% = conchar% : \
+    return
+if data.no(i%) = delete.data then \
+    i% = i% - 1
+while i% >= lin2%
+    data.no(i% + 1) = data.no(i%)
+    i% = i% - 1
+wend
+return :rem ** End of place line **
+
+150 rem ***** Move lines *****
+if lin2% = 0 then \
+    return
+if lin3% >= (tot.inst% - 1) then \
+    return
+p% = lin2% - lin1%
+if p% > 0 and lin3% >= p% then \
+    print :print : \
+    print "Error move is within move block." : \
+    print "Type any character to continue : " : \
+    dummy% = conchar% : \
+    return
+for i% = 1 to lin3%
+    old% = lin1% + i% - 1
+    temp.data(i%) = data.no(old%)
+next i%
+if lin1% < lin2% \
+    then gosub 152 \ rem move lines forward
+    else gosub 154 : rem move lines backward
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    data.no(new%) = temp.data(i%)
+next i%
+return :rem ** End of move lines **
+
+152 rem ***** Move lines foreward *****
+p% = lin2% - lin1%
+for i% = 1 to p%
+    old% = lin1% + i% + lin3% - 1
+    new% = lin1% + i% - 1
+    data.no(new%) = data.no(old%)
+next i%
+return :rem ** End of move lines foreward **
+
+154 rem ***** Move lines backward *****
+p% = lin1% - lin2%
+for i% = 1 to p%
+    old% = lin1% - i%
+    new% = lin1% - i% + lin3%
+    data.no(new%) = data.no(old%)
+next i%
+return :rem ** End of move lines backward **
+
+155 rem ***** Replace lines *****
+if lin3% >= (tot.inst% - 1) then \
+    return
+if lin3% = 0 then \
+    return
+if lin3% = 1 then \
+    print :print :print : \
+    print "Line ";lin1%; : \
+    input " : ";data.no(lin1%) : \
+    return
+print :print :print
+for i% = 1 to lin3%
+    new% = lin1% + i% - 1
+    print " Line ";new%;
+    input " : ";data.no(new%)
+next i%
+return :rem ** End of replace lines **
+
+160 rem ***** Delete lines *****
+if lin3% >= tot.inst% then \
+    return
+if lin3% = 0 then \
+    return
+if lin3% = 1 then \
+    data.no(lin1%) = delete.data : \
+    return
+for i% = 1 to lin3%
+    new% = lin1% + i% - 1
+    data.no(new%) = delete.data
+next i%
+count% = 0
+i% = 0
+while data.no(i%) <> end.data
+    i% = i% + 1
+    if data.no(i%) = delete.data \
+        then count% = count% + 1 \
+        else new% = i% - count% : \
+             data.no(new%) = data.no(i%)
+wend
+return :rem ** End of delete lines **
+
+165 rem ***** Insert lines *****
+lin2% = lin1%
+if lin3% = 1 or lin3% = 0 then \
+    gosub 147 : \ rem place line
+    print :print :print : \
+    print "Line ";lin1%; : \
+    input " : ";data.no(lin1%) : \
+    return
+top% = 0
+while data.no(top%) <> end.data
+    top% = top% + 1
+wend
+room% = tot.inst% - top%
+if lin3% > room% then \
+    print "There are too many items of data to insert a block" : \
+    print "of ";lin3%;".There are only ";room%;" lines left." : \
+    print "Type any character to continiue : " : \
+    dummy% = conchar% : \
+    return
+top% = top% + 1
+while top% > lin2%
+    top% = top% - 1
+    new% = top% + lin3% 
+    data.no(new%) = data.no(top%)
+wend
+for i% = 1 to lin3%
+    new% = lin2% + i% - 1
+    print "Line ";new%;
+    input " : ";data.no(new%)
+next i%
+return :rem ** End of insert lines **
+
+190 rem ***** Print buffer *****
+top% = 0
+while data.no(top%) <> end.data
+    top% = top% + 1
+wend
+print "There are ";top%;" lines in the buffer."
+print
+opt% = 0
+while opt% < 1 or opt% > 4
+    print "    OPTIONS."
+    print
+    print "  1 : Print the whole buffer with page ejects."
+    print 
+    print "  2 : Print the whole buffer without page ejects."
+    print
+    print "  3 : Print part of buffer with page ejects."
+    print
+    print "  4 : Print part of buffer without page ejects."
+    print
+    input "     Type in option number : ";opt%
+wend
+option% = opt%
+while option% > 2
+    option% = 1
+    print "Specify the first and last line numbers to be printed :-"
+    print
+    input "First : ";lin1%
+    input "Last  : ";lin2%
+    if lin1% > = lin2% then \
+        option% = 3
+    if lin2% > top% then \
+        option% = 3
+    if lin1% < 1 then \
+        option% = 3
+wend
+if opt% = 1 or opt% = 3 \
+    then option% = 1 \
+    else option% = 2
+lprinter
+print :print :print
+j% = 1
+for i% = lin1% to lin2%
+    if option% = 1 and (j% * 60) = i% then \
+        j% = j% + 1 : \
+        print :print :print : \
+        print :print :print
+    d$ = str$(i%)
+    l% = len(d$)
+    if l% = 1 then \
+        print "    ";
+    if l% = 2 then \
+        print "   ";
+    if l% = 3 then \
+        print "  ";
+    print d$;" : ";data.no(i%)
+next i%
+while option% = 1 and (j% * 60) <> i%
+    print
+    i% = i% + 1
+wend
+if option% = 1 then \
+    print :print :print : \
+    print
+console
+return :rem ** End of print buffer **
+
+200 rem ***** Clear buffer *****
+for i% = 1 to tot.inst%
+    data.no(i%) = blank.data
+next i%
+data.no(1) = end.data
+return :rem ** End of clear buffer **
+ 
+9000 rem ***** Form display picture *****
+if display = delete.data then \
+    print using "###/../" ;disp%," : " : \
+    return
+if display = 0 then \ rem integer
+    print using pic2$;disp%," : ",display : \
+    return
+if abs(display) > 9999999999999  or abs(display) < 1.0E-2 \
+    then print using pic0$; disp%," : ",display :  \
+    return
+dd$ = str$(display)
+p% = match(".",dd$,1)
+if p% = 0 then \ rem integer
+    print using pic2$;disp%," : ",display : \
+    return
+print using pic1$;disp%," : ",display
+return :rem ** End of form display picture **
+

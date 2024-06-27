@@ -1,0 +1,172 @@
+;Copyright (C) MAP 80 SYSTEMS LTD. 02/01/85
+	.Z80
+
+VERS	EQU 4			;Version 4 module
+
+;External interfaces
+	PUBLIC ?TIME
+	EXTRN @DATE,@HOUR,@MIN,@SEC
+
+	.XLIST			;Don't want to see these again
+VER	DEFL 0			;Clear VER
+	INCLUDE DATA		;Data equates
+	IF VER NE VERS
+	.PRINTX "DATA.MAC is incorrect version"
+	ENDIF
+
+VER	DEFL 0			;Clear VER
+	INCLUDE SYSTEM		;PIO location
+	IF VER NE VERS
+	.PRINTX "SYSTEM.MAC is incorrect version"
+	ENDIF
+
+	.LIST
+
+	DSEG			;Can be banked
+
+	TITLE RTC Real Time Clock Routines using MAP CLK in CP/M PLUS
+
+;Convert Y/M/D to number of days since 1/1/78 and store at @DATE
+;Convert H/M/S to BCD at @HOUR,@MIN,@SEC
+?TIME:	INC C
+	RET Z			;Time setting not done here
+
+	PUSH HL
+	PUSH DE
+;Set PIO for clock read
+	LD C,PDATA		;Point C at PIO
+	XOR A
+	OUT (PDATB),A		;Write inactive
+	LD A,11111011B		;HOLD active, RD and STROBE inactive
+	OUT (C),A
+	LD A,150/4		;HOLD setup delay 150us
+DEL2:	DEC A			;Loop time 4us
+	JR NZ,DEL2
+	LD A,11110011B		;READ active too
+	OUT (C),A
+
+;Read clock registers
+	LD HL,YEAR		;Time/date buffer
+	LD B,13			;13 registers to read
+RDLP:	LD A,B
+	DEC A
+	OUT (PDATB),A		;Post address
+	NEG			;Access delay 6us
+	NEG			;INI takes 2us to load, +2us per NEG
+	INI
+	JR NZ,RDLP
+
+;Finished with PIO, so restore it
+	LD A,11111111B		;STROBE,HOLD,RD inactive
+	OUT (C),A
+
+;Convert date to days since 1/1/78
+	PUSH IX
+	LD IX,0			;IX is days accumulator
+	LD HL,YEAR		;Point at buffer
+	CALL BCDBIN		;Get year in binary
+	LD B,A
+	LD A,78			;Day count starts here
+	LD DE,365		;Days in a year
+NXTYR:	CP B			;Up to date ?
+	JR Z,GOTYR
+	ADD IX,DE
+	PUSH AF
+	AND 03H			;Test leap year bits
+	JR NZ,NOLPYR
+	INC IX			;Add FEB 29
+NOLPYR:	POP AF
+	INC A			;Next year
+	JR NXTYR
+;Past years are now in IX
+GOTYR:	AND 03H			;Test current year for leap
+	LD A,28			;Normal February
+	JR NZ,GOTFEB
+	INC A			;29
+GOTFEB:	PUSH HL
+	LD HL,FEB
+	LD (HL),A		;Set up FEB
+	DEC HL			;Back to JAN
+	EX (SP),HL		;Recover buffer pointer
+	CALL BCDBIN		;Convert month
+	EX (SP),HL
+	DEC A
+	LD D,0
+	JR Z,SKPMTH		;It's January
+	LD B,A			;Months counter to B
+MTHLP:	LD E,(HL)		;Days per month
+	INC HL
+	ADD IX,DE
+	DJNZ MTHLP		;Add in months
+SKPMTH:	POP HL			;Recover buffer pointer
+	LD A,(HL)
+	AND 30H			;Clear leap year bits
+	LD (HL),A
+	CALL BCDBIN		;Convert days
+	LD E,A
+	ADD IX,DE		;And add them in
+	LD (@DATE),IX
+	POP IX
+
+;Now get the time of day
+	INC HL			;Skip passed DOW
+	LD A,(HL)
+	AND 30H			;Clear AM/PM
+	LD (HL),A
+	CALL GETBCD		;Merge BCDs
+	LD (@HOUR),A
+	CALL GETBCD
+	LD (@MIN),A
+	CALL GETBCD
+	LD (@SEC),A
+	POP DE
+	POP HL
+	RET
+
+;Merge next two 4bit BCDs at <HL>
+GETBCD:	LD A,(HL)
+	INC HL
+	RLD
+	INC HL
+	RET
+
+;Convert next two 4bit BCDs at <HL> to binary
+BCDBIN:	XOR A
+	RLD
+	INC HL
+	LD B,A
+	ADD A,A		;*2
+	ADD A,A		;*4
+	ADD A,B		;*5
+	ADD A,A		;*10
+	LD B,A
+	XOR A
+	RLD
+	INC HL
+	ADD A,B
+	RET
+
+;Time date buffer, data stored as BCD in upper nibble
+YEAR:	DEFS 2,0
+MONTH:	DEFS 2,0
+DAY:	DEFS 2,0
+DOW:	DEFS 1,0
+HOUR:	DEFS 2,0
+MIN:	DEFS 2,0
+SEC:	DEFS 2,0
+
+;Days per month table
+	DEFB 31
+FEB:	DEFB 28
+	DEFB 31
+	DEFB 30
+	DEFB 31
+	DEFB 30
+	DEFB 31
+	DEFB 31
+	DEFB 30
+	DEFB 31
+	DEFB 30
+	DEFB 31
+
+	END

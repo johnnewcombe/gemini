@@ -1,0 +1,110 @@
+MICROPLAN                                        MML Ltd.
+=========                                        11 Sun Street
+                                                 London E.C.2.
+                                                 Tel: 01-247 0691
+COPYRIGHT JULY 1980
+
+------------------------------------------------------------------
+
+			DIS
+			===
+
+Program DIS disassembles a .COM file into a .DIS file which may be
+subsequently assembled.
+The DIS file has the following features:
+1.	All branch points are provided with a label
+2.	Where permitted data blocks are split into DB, DW & DS
+3.	All references before 0100H and after program are
+	EQUATE statements
+4.	Any unresolved block commences with a U type label
+
+INSTRUCTIONS
+------------
+
+The program is run by entering
+A>DIS filename
+
+The program forces type .COM for the source filename
+and writes dissasembled mnemonics to file type .DIS.
+The program checks for non-existance of .DIS file type.
+
+The program then requests for additional program entry points
+DIS assumes that the first entry is at 0100H.
+
+FIRST PASS
+----------
+
+In the first PASS enter 0000 and DIS will disassemble the file
+
+In most files DIS is unable to resolve all of the .COM code and
+in particular it cannot resolve the PCHL instruction.
+All unresolved code will be given a label starting with a U,
+and the code will be listed as a block of data.  Armed with a
+list of mnemonics you should be able to establish if this unresolved
+data is actually program code.
+
+Examine the listing and see if you can decode the unresolved
+areas, then destroy the .DIS file and run DIS again.
+
+SECOND & SUBSEQUENT PASSES
+--------------------------
+
+On the second and subsequent passes, you may assist the disassembly
+by entering the additional program entry points when
+requested.  You may also notify DIS of other types of
+code by preceeding the address with one of the folloing:
+
+1.	P	Progam entry point (default)
+2.	N	Data numeric entry point
+3.	W	Data word address
+4.	T	Data table of program jump address
+
+The last type (T) is normally used by a PCHL instruction in
+using a lookup table. It assumes the table is contiguous words
+of program entry points.
+
+Example
+ADD ENTRY POINT (0000 TO QUIT): 02DA
+ADD ENTRY POINT (0000 TO QUIT): T2F8C
+ADD ENTRY POINT (0000 TO QUIT): 0000
+
+ERRORS
+------
+
+A) FATAL ERRORS
+   A fatal error occurs with an ERROR message on the terminal and
+   the program terminates.
+   This is normally caused by an eroneous instruction in the
+   ADD ENTRY POINT address
+   The solution is to recheck your entry points and re-run after
+   erasing the .DIS file
+
+B) SYNTAX ERRORS
+   Other errors occur when there is a conflict between address
+   references.  The .DIS file is marked with an ERROR message.
+   Minor conflicts result in a WARN message.
+
+
+ASSEMBLY SOURCE CODE
+--------------------
+
+Finally when you have resolved all blocks of the code,
+PIP an .ASM file.
+
+Using the editor check for the following:
+
+1.	Any ERROR or WARN message produced by DIS
+2.	Check if LXI instruction is referencing
+	a) address (default)
+	b) constant
+	In the latter case change the address to a constant
+
+The .ASM file is now suitable for modification
+
+For use in MPM, the DIS produces the BASE bias for relocation
+at a different address, and so long as all the constants in 2b
+above have been resolved, the .ASM file can be used to produce
+a reliable page relocatable file.
+
+==============================================================
+

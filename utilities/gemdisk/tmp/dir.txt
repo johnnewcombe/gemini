@@ -1,0 +1,45 @@
+
+
+USER      NAME EXT    SIZE
+   0       ASM.COM    8192 bytes 
+   0     BIOSF.SYS    4480 bytes 
+   0     CBIOS.ASM    8832 bytes 
+   0    CONFIG.COM   11776 bytes 
+   0       CPM.SYS    6656 bytes 
+   0       DDT.COM    4864 bytes 
+   0   DEBLOCK.ASM   10240 bytes 
+   0   DEMFILE.SVC   65536 bytes 
+   0   DIRSTAT.COM    3584 bytes 
+   0   DISKDEF.LIB    6272 bytes 
+   0      DUMP.ASM    4224 bytes 
+   0      DUMP.COM     512 bytes 
+   0        ED.COM    6656 bytes 
+   0       ERQ.COM     512 bytes 
+   0    FORMAT.COM   12160 bytes 
+   0    GENSYS.COM   15488 bytes 
+   0  KEYCHAIN.COM    1152 bytes 
+   0  KEYCHAIN.MAC    6912 bytes 
+   0      LOAD.COM    1792 bytes 
+   0       PIP.COM    7424 bytes 
+   0   READCAS.COM    1152 bytes 
+   0  SAVEKEYS.COM     896 bytes 
+   0  SAVEKEYS.MAC    4352 bytes 
+   0      STAT.COM    5248 bytes 
+   0    SUBMIT.COM    1280 bytes 
+   0   SUBMITM.COM    1280 bytes 
+   0   SVCDEMO.COM   31872 bytes 
+   0    SYSTEM.CFG    1920 bytes 
+   0  VIDRESET.COM     256 bytes 
+   0      WARM.COM       0 bytes 
+   0      WHIG.COM    5760 bytes 
+   0   WRITCAS.COM     896 bytes 
+   0      XSUB.COM     768 bytes 
+   0     XSUBM.COM     768 bytes 
+   0      TNET.$$$       0 bytes 
+   0     T-NET.COM    2688 bytes 
+   0     BIOSW.SYS    4992 bytes 
+   0     BIOSN.SYS    4992 bytes 
+   1    BACKUP.COM    8832 bytes 
+
+39 files
+

@@ -1,0 +1,62 @@
+Procedure AddPhrase;
+var
+  Item : Integer;
+  Error : integer;
+  NextLine : Integer;
+  k,j : integer;
+Begin
+  gotoxy(1,1);lowvideo;write(' ADD ');normvideo;
+  clrframe(3,25);
+  gotoxy(1,3);writeln(Conststr('*',79));
+  gotoxy(1,5);writeln(Conststr('*',79));
+  write(lst,chr(12));
+  writeln(lst,'                 ADDITIONS TO DATABASE ON ',date);
+  writeln(lst,conststr('*',79));
+  Nextline:=7;
+  FillChar(Rec.Key,SizeOf(Rec.Key),0);
+  gotoxy(1,4);write('Please wait...');
+  FillChar(KList,SizeOf(KList),0);
+  MakeIndex;
+  Repeat
+   repeat
+    gotoxy(1,4);write('Enter Phrase Key: '); clreol;
+    rec.key:='';
+    getinput(10,19,4, Rec.Key,'c',fin,1);
+    k:=pos(' ',rec.key)-1;
+    if k<1 then k:=length(rec.key);
+    rec.key:=copy(rec.key,1,k);
+    Item:=FindKey(Rec.Key);
+    If Item>0 then
+    begin
+      gotoxy(30,4);write('Key Already Exists.');
+      for i:=1 to 3 do
+       for j:=1 to maxint do;
+    end;
+   until (Item<=0) or (Rec.Key='');
+   If (Item<=0) and (Rec.Key<>'') then
+   begin
+     FillChar(Rec.Phrase,SizeOf(Rec.Phrase),0);
+     getinput(125,1,Nextline,Rec.Phrase,'b',fin,1);
+     MaxRec:=MaxRec+1;
+     PutNewRecord;
+     writeln(lst,rec.key,' =');
+     writeln(lst,rec.phrase);
+     writeln(lst,conststr('-',79));
+     FillChar(Rec.Key,SizeOf(Rec.Key),0);
+     Nextline:=Nextline+3;
+     If Nextline>=18 then
+     begin
+       clrframe(6,19);
+       gotoxy(1,10);write(Rec.Phrase);
+       Nextline:=10;
+     end;
+   end;
+   repeat
+    gotoxy(1,4);write('Another Entry ? Y/N ');clreol;
+    read(kbd,ans);
+   until ans in ['Y','y','N','n'];
+  Until ans in ['N','n'];
+  CloseFile;
+  writeln(lst,conststr('*',79));
+End;  {of AddPhrase}
+

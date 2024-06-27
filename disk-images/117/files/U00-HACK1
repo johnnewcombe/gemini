@@ -1,0 +1,138 @@
+             Materialselectioninaheavywearsituation.
+
+
+
+    Althougè  therå  arå  manù factoró iî materiaì  selectioî  iî  thió 
+
+    application¬  sucè aó strength¬  weldability¬  cost¬  etc¬ thå maiî 
+
+    consideratioî  herå  ió  clearlù  thå  abilitù  oæ  á  materiaì  tï 
+
+    withstanä severå wear®   Thió ió duå tï thå inproportionatå cosô oæ 
+
+    downtimå  compareä  witè materiaì cost®    Howeveò unlikå  alì  thå 
+
+    otheò materiaì propertieó weaò resistancå ió noô aî easilù measureä 
+
+    parameter®   Thió ió duå tï thå facô thaô weaò ió noô á singlå welì 
+
+    defineä process¬  buô á combinatioî oæ processeó abouô whicè littlå 
+
+    ió certain®
+
+
+
+    Iî  ordeò  tï creatå aî indeø oæ weaò resistancå oæ  materialó  foò 
+
+    thió  applicatioî  iô ió necessarù tï bå ablå tï comparå  thå  weaò 
+
+    ratå  oæ  differenô materialó iî similaò situations®     Thuó  somå 
+
+    meanó oæ ahceivinç thió ió necessary®    Twï methodó arå possible:- 
+
+    firsô thå weaò ratå coulä bå establisheä foò differenô materialó iî 
+
+    á giveî minå undeò á giveî seô oæ conditions¬  thió howeveò createó 
+
+    á  largå  numbeò oæ practicaì problems¬  anä woulä requirå  á  verù 
+
+    largå  expenditure®    Secondlù á modeì oæ thå tribologicaì  systeí 
+
+    coulä bå madå abovå grounä iî whicè thå testó coulä bå carrieä out®   
+
+    Thió modeì coulä bå madå tï á smalì scalå anä thå testó ruî undeò á 
+
+    giveî seô oæ conditions®  Howeveò becauså thå numbeò oæ influencinç 
+
+    factoró  iî  tribologicaì systemó ió generallù large¬  tï  seô  thå 
+
+    conditionó  iî  thå  scalå modeì tï thoså indicateä  bù  similaritù 
+
+    woulä  yielä  onlù  triviaì datá whicè  woulä  noô  necessarilù  bå 
+
+    representativå  oæ thå origionaì system®    Iî thå quesô foò á weaò 
+Š    resistancå indeø iô ió noô necessarù tï havå quantitativå data¬ buô 
+
+    qualitativå data¬  anä thió ofteî requireó onlù parô fulfilmenô  oæ 
+
+    conditionó oæ similarity®   Theså conditionó havå tï bå establisheä 
+
+    by a system analysis.
+.paŠ    TheTribologicalsytem.
+
+
+
+    Krauså  anä  Senumá (2© suggesô thaô á possiblå lisô oæ  parameteró 
+
+    foò á generaì tribologicaì systeí arå :-
+
+
+
+    ___________________________________________________________________
+          Tribological                            Essential influencing
+          Factor                                  factors
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1©    Macrogeometry,
+
+    2©    Microgeometry,                          13
+
+    3©    Loads,
+
+    4©    Motions,
+
+    5©    Environmentaì atmosphere,
+
+    6©    Interfacå media,                        9,10
+
+    7©    Materials,                              8,10
+
+    8©    Stresó state,                           1-3,7,11,12
+
+    9©    Lubricatioî condition,                  1-4,6,7,11
+
+    10)   Formatioî oæ oxidå layers,              4-8,11,12
+
+    11©   Surfacå temperature,                    2-8,12
+
+    12©   Coefficienô oæ friction,                2,4,7,9-11
+
+    13©   Wear.                                   2,4,7,8,10-12
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.paŠ    They suggest that these parameters interact in the following way.
+
+
+
+    ___________________________________________________________________
+          Tribological                  Effect on other factors
+          Factor                        strong       medium       weak
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1©    Macrogeometry,                8,9          11-13        10
+
+    2©    Microgeometry,                8,9,11-13    10           
+
+    3©    Loads,                        8,9,11       6,7,10,12,13
+
+    4©    Motions,                      9-13         8
+
+    5©    Environmentaì atmosphere,     10,11        12,13        8
+
+    6©    Interfacå media,              9-11         12,13        8
+
+    7©    Materials,                    8-13
+
+    8©    Stresó state¬                 10,11,1³     6,·       2,3,12
+
+    9©    Lubricatioî condition,        10-12                  7,13
+
+    10)   Formatioî oæ oxidå layers,    12,13        8,11
+
+    11©   Surfacå temperature,          6-10,12,13
+
+    12©   Coefficienô oæ friction,      8,10,11,13   2,6,7         9
+
+    13©   Wear.                         2            7,8,10    9,11,12
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+

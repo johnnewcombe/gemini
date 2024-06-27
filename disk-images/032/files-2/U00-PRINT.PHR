@@ -1,0 +1,61 @@
+Procedure PrintPhrases;
+Begin
+  clrscr;
+  for i:=25 downto 3 do
+   begin gotoxy(1,i);clreol;end;
+  writeln(Conststr('*',79));
+  gotoxy(1,5);writeln(Conststr('*',79));
+  FillChar(Rec.Key,SizeOf(Rec.Key),0);
+  gotoxy(1,4);write('Please wait...');
+  FillChar(KList,SizeOf(KList),0);
+  MakeIndex;
+  for i:=25 downto 6 do
+  begin
+    gotoxy(1,i);
+    clreol;
+  end;
+  repeat
+    Gotoxy(1,4);write('Printout of Phrase File. P)rinter or S)creen? ');
+    read(kbd,ans);
+  until ans in ['P','p','S','s'];
+  Case ans of
+  'P','p' : begin
+             assign(Dfile,labeldrive+FileName);
+             {$I-} reset(DFile); {$I+}
+             if Ioresult <> 0 then exit;
+    writeln(lst,'PRINTOUT OF CONTENTS OF FILE OF RISK AND SAFETY PHRASES.':68);
+             for i:=1 to MaxRec do
+             begin
+               seek(Dfile,KList[i].Num);
+               read(DFile,Rec);
+               writeln(lst,Rec.Key);
+               writeln(lst,Rec.Phrase);
+               writeln(lst,Conststr('-',79));
+             end;
+            end;
+  'S','s' : begin
+             assign(Dfile,labeldrive+FileName);
+             {$I-} reset(DFile); {$I+}
+             if Ioresult <> 0 then exit;
+             clrscr;
+     writeln('PRINTOUT OF CONTENTS OF FILE OF RISK AND SAFETY PHRASES.':68);
+             for i:=1 to MaxRec do
+              begin
+               seek(Dfile,KList[i].Num);
+               read(Dfile,Rec);
+               writeln(Rec.Key);
+               writeln(Rec.Phrase);
+               writeln(Conststr('-',79));
+               if i mod 5 = 0 then
+               begin
+                write('Press any key to continue.');
+                read(kbd,ans);writeln;
+               end;
+              end;
+              write('Press any key to continue.');
+              read(kbd,ans);writeln;
+            end;
+  end; {of case}
+  close(Dfile);
+End;  {of PrintPhrases}
+

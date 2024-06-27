@@ -1,0 +1,57 @@
+;How To Install Spooler On A North Star Horizon
+;SJ Withers 16/3/81
+;
+;Find the end of the jump table. Between the lines
+;	DB	0,0,0
+;and
+;	DW	HORLEN
+;insert these two lines:
+	DB	0FFH	;ALLOWS SPOOLER TO LOCATE END OF TABLE
+	DW	LSTBSY	;ADDRESS OF PRINTER STATUS ROUTINE
+;The next part is the List Device Busy routine.  I suggest you
+;place it before any other routines, then (for a given system
+;size) it will always be in the same place, regardless of other mods
+;you make to the CBIOS.  If your printer uses XON/XOFF or
+;similar protocols, you will need a more sophisticated test,
+;but one of these should make a start.
+;So, between:
+;PROMLOC:DB	0E800/256 AND 0FFH	;ADDR OF PROM
+;and
+;HORST:	IN	3
+;insert one of these three routines:
+;
+;SERIAL PRINTER WITH HANDSHAKE
+LSTBSY:	IN	5
+	MOV	B,A
+	ANI	1
+	JNZ	CTOS
+NOTRDY:	MVI	A,0		;RETURN NOT READY
+	RET
+CTOS:	MOV	A,B
+	ANI	80H
+	JNZ	NOTRDY
+	MVI	A,0FFH		;RETURN READY
+	RET
+;
+;SERIAL PRINTER WITHOUT HANDSHAKING
+LSTBSY:	IN	5
+	ANI	1
+	MVI	A,0	;SET A=0, FLAGS UNCHANGED
+	RZ		;RET IF NOT READY WITH 0 IN ACC
+	CMA		;A NOW EQUALS 0
+	RET
+;
+;PARALLEL PRINTER
+LSTBSY:	IN	6		;MOTHERBOARD STATUS
+	ANI	1		;MASK TO GET PO-FLAG
+	JZ	NOTRDY
+	CMA			;A NOW CONTAINS FF =>READY
+	RET
+NOTRDY:	MVI	A,0		;0 =>READY
+	RET
+;
+;From here on, follow the instructions given on pages 32-33 of the 1980
+;CPMUGUK Yearbook (also known as Volume 1, Number 1 of the Newsletter!).
+;My excuse for not repeating them is that I prepared the manuscript on a
+;different system, and so can't simply merge the two files.
+`

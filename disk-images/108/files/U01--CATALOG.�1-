@@ -1,0 +1,43 @@
+UK User Group Volume 1
+
+DESCRIPTION: Miscellaneous Utilities.
+
+NUMBER	SIZE	NAME		COMMENTS
+
+		-CATALOG.01-	CONTENTS OF CP/M UK VOL. 1
+1.1	6K	BANNER.ASM	Source of updated BANNER program from US vol.8.
+1.2	1K	BANNER.COM	.COM of the above program.
+1.3	6K	CARMAINT.BAS	Source of vehicle maintenance record program.
+1.4	8K	DEDUMP.ASM	Dr.Lee's cunning file transfer program.
+1.5	13K	DIRDUMP.ASM	Directory dump utility.
+1.6	5K	DIS.COM		Uncle David's Dynamic Disassembler. (No source.)
+1.7	4K	DIS.DOC		Documentation for the above.
+1.8	5K	DUMBCOPY.ASM	Good sector-by-sector copier for 1 drive system.
+1.9	1K	DUMBCOPY.COM	.COM of above program
+1.10	12K	ERUN.COM	Included to run PRINT.INT
+1.11	4K	HELP.MAC	Provides instructions to user on appeal!
+1.12	9K	HEXDUMP.ASM	Converts .COM file to .HEX.
+1.13	6K	HITECH.Z80	Driver routines for Hitech card + LUN table.
+1.14	2K	INST.FMI	Instructions for updated PRINT.BAS.
+1.15	6K	LETTER.BAS	Source of simple text formatting program.
+1.16	1K	LETTER.DAT	Part of simple text formatting program.
+1.17	3K	LETTER.INT	.INT file of above.
+1.18	11K	LIB.BAS		Library of CBASIC I/O routines.
+1.19	12K	MFT.ASM		Source of single drive copy routine.
+1.20	2K	MFT.COM		.COM of above.
+1.21	1K	MFT.DOC		Documentation of above.
+1.22	12K	MPRINT.ASM	Multiple file print utility.
+1.23	1K	MPRINT.COM	.COM of above.
+1.24	1K	PRINT.BAS	Simple print utility for text formatter.
+1.25	1K	PRINT.INT	.INT file of above
+1.26	1K	REMOV".COM	Removes (") from a file (from US Lib.)
+1.27	4K	SPIES.BAS	CBASIC version of the old DIGICO game.
+1.28	3K	SPIES.INT	.INT of the above.
+1.29	2K	SPOOLNSH.INS	Instructions for using SPOOLER with N.Star.
+1.30	17K	STOIC.COM	STOIC compiled from US Lib.Vol.23.
+1.31	22K	STOICCPM.STC	Source of CP/M file handling program for STOIC.
+1.32	10K	STOICEDT.STC	Modified source of screen editor using above.
+1.33	12K	STOICFLE.STC	Modified source of block STOIC file system.
+1.34	2K	U-G-FORM.LIB	Nice form to send in with your software.
+1.35	4K	UK1.DOC		Comments on some programs.
+

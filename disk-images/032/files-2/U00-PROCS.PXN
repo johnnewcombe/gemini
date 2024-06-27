@@ -1,0 +1,54 @@
+Procedure Repack_batchfile;
+
+var
+  zf : FILE of labelprint;
+
+begin
+  if Batchexists then
+  begin
+    reset(batchfile);
+    assign(zf,'B:COPY.$$$');
+    rewrite(zf);
+    while not eof(batchfile) do
+    begin
+      read(batchfile,batchitem);
+      if batchitem.QtyToPrint>0 then
+      write(zf,batchitem);
+    end;
+    close(batchfile);
+    close(zf);
+    erase(batchfile);
+    rename(zf,'MASTER.Q'+labext);
+    assign(batchfile,'B:MASTER.Q'+labext);
+    reset(batchfile);
+    maxnum:=filesize(batchfile);
+  end; {if batchexists}
+end;  {repack_file}
+
+Procedure display_queue;
+var
+  posn : integer;
+begin
+  posn:=1;
+  gotoxy(1,10);
+  reset(batchfile);
+  while not eof(batchfile) do
+  begin
+    read(batchfile,batchitem);
+    with batchitem do
+    begin
+      gotoxy(1,posn+9);
+      write(posn:3,'   Label= ',labelname:10);
+      gotoxy(27,posn+9);
+      write('Qty to Print= ',QtyToPrint,' ');
+      clreol;
+      posn:=posn+1;
+    end;  {of with}
+  end; {of while}
+  if posn<16 then
+  begin
+    gotoxy(1,posn+9);
+    write(posn:3);
+  end;
+end;  {of display_queue}
+

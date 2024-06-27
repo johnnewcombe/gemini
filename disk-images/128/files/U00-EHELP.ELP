@@ -1,0 +1,24 @@
+                    ANEW, DISPLAY AND EDIT FORMAT DATAN
+
+     These  commands allow the operator to add,  ammend and change  the FORMAT 
+data within the system.  He simply types "D" or "E" followed by the number  of 
+the FORMAT that he wishes to view or change. If he does not know the number of 
+the   FORMAT   that  he is going to edit or view he simply types  "D"  or  "E" 
+RETURN.  The   system   will then prompt him with a list of  the  FORMATS   in 
+alphabetical   order.   He   then only has to type the number of   the  FORMAT 
+followed  by  RETURN.  To enter a new format the operator need only  type  "N" 
+RETURN and the system will select the next available FORMAT number. 
+     During  entering  or  editing  the operator may leave  a  field  of  data 
+unchanged by simply typing RETURN. If he wishes to exit from  editing the data 
+without  saving the changes he simply  types ESC.  The operator can enter  any 
+number of names for one particular FORMAT.   To  do this he should type CURSOR 
+UP in the  format  name field.  If the operator is only making a small  number 
+of  changes  to  a  FORMAT he may wish to press the CURSOR DOWN  key  and  the 
+system  will   pass  through  all  the remaining data   without   making   any 
+further changes.                
+                               SYNTAX :-
+                                 N
+                                 D{nn}
+                                 E{nn}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN

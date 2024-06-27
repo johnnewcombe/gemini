@@ -1,0 +1,345 @@
+	page 45
+	title KEYCHAIN program for the IVC/SVC & ROTEC keyboard
+	.z80
+
+;	KEYCHAIN   Version 2.0	22 April 1985
+
+;	Written by DWP, modified by RB
+
+;	Modified to Version 2.0. It now loads the file to be executed and
+;	passes all the parameters correctly.  It also allows the generated
+;	program to not chain by entering the parameter "!!" when
+;	it is executed.	 22/4/85
+
+;	This program enables a user to set up a custom set
+;	of strings for the programmable function keys on the
+;	ROTEC keyboard, and optionally to chain another program.
+
+;	Invoked by "KEYCHAIN <name> <chain>" where <name>.com will be a
+;	an executable program that will automatically set up
+;	the Key definitions. <chain> is an optional name of a program that
+;	will be executed following the completion of key programming
+;	sequence.  If NAME !! is entered then the program is not chained to.
+
+clear	equ	1ah
+escape	equ	1bh
+cr	equ	0dh
+lf	equ	0ah
+
+bdos	equ	0005h
+deffcb	equ	005ch
+
+;	BDOS function calls
+condir	equ	6	; Direct console I/O
+prts	equ	9	; Print string
+openf	equ	15
+close	equ	16
+delfil	equ	19
+read	equ	20
+write	equ	21
+create	equ	22
+setdma	equ	26
+
+signon: defb	"KEYCHAIN Version 2.0",cr,lf,lf
+	defb	" Function Key File Set-up Program",cr,lf,lf
+	defb	"$"
+go:	defb	" Use Shift and the EDIT key on the keyboard to set up",cr,lf
+	defb	" the key definitions. When you have every key defined",cr,lf
+	defb	" in the way you want press the RETURN key"
+crlfs:	defb	cr,lf,lf,'$'
+done:	defb	'Key file written$'
+noname: defb	'You have forgotten to include the name of the file that you'
+	defb	cr,lf,'wish to save the function key settings in$'
+ambig:	defb	'Ambiguous file names are not allowed$'
+exists: defb	'The file already exists - shall I delete it?$'
+cantd:	defb	'I cannot delete the file$'
+cantcr: defb	'I cannot create the file$'
+cantcl: defb	'I cannot close the file$'
+werr:	defb	'Disc is full or a Write error occurred$'
+
+savesp: defs	2
+	defs	32
+stack:
+
+;	CR LF
+
+crlf:	ld	de,crlfs
+
+;	Print a string
+
+print:	ld	c,prts
+	jp	bdos
+
+;	Getvid & Putvid
+
+getvid: in	a,(0b2h)
+	rlca
+	jr	c,getvid
+	in	a,(0b1h)
+	ret
+
+putvid: push	af
+pv0:	in	a,(0b2h)
+	rrca
+	jr	c,pv0
+	pop	af
+	out	(0b1h),a
+	ret
+
+;	Start point - Sign on
+
+start:	ld	(savesp),sp	;Save the stack pointer
+	ld	sp,stack
+	ld	de,signon	;Sign on
+	call	print
+
+;	Copy name of file to be chained to
+
+	ld	hl,deffcb+17	; First char of second filename
+	ld	de,keyprog+fname-0100h
+	ld	bc,8
+	ldir
+
+;	Now check that a file has been specified & make .COM type
+
+noex:	ld	hl,deffcb+1
+	ld	a,(hl)		;Look for a name
+	cp	' '
+	ld	de,noname	;(In case none)
+	jp	z,abort		;Abort if so
+	ld	hl,deffcb+9	;Force extension to..
+	ld	(hl),'C'	;..COM
+	inc	hl
+	ld	(hl),'O'
+	inc	hl
+	ld	(hl),'M'
+	inc	hl
+	ld	(hl),0
+
+;	Check the name is not ambiguous
+
+	ld	hl,deffcb
+	ld	bc,8
+	ld	a,'?'
+	cpir
+	ld	de,ambig
+	jp	z,abort		;Abort if ambiguous
+
+;	See if the file already exists
+
+	ld	de,deffcb
+	ld	c,openf		;Try to open it
+	call	bdos
+	inc	a		;There?
+	jr	z,nofile	;No,skip
+	ld	de,exists
+	call	print		;Delete it?
+wkey:	ld	c,condir
+	ld	e,0ffh
+	call	bdos		;Get reply
+	and	5fh
+	jr	z,wkey		;Wait if none
+	cp	'Y'		;Yes?
+	jp	nz,exit		;No, stop
+	call	crlf
+	ld	de,deffcb
+	ld	c,delfil
+	call	bdos		;Delete it
+	inc	a		;succesful?
+	ld	de,cantd	;(In case not)
+	jp	z,abort
+
+;	No file - try to Create it
+
+nofile: ld	de,deffcb
+	ld	c,create
+	call	bdos
+	inc	a		;Ok?
+	ld	de,cantcr
+	jp	z,abort
+
+;	Get the keyboard bit done
+
+	ld	de,go
+	call	print
+wait:	ld	e,0ffh
+	ld	c,condir
+	call	bdos
+	cp	03h		;Abort?
+	jp	z,exit
+	cp	cr
+	jr	nz,wait
+
+;	Now read the full table out into memory
+
+	ld	a,escape
+	call	putvid
+	ld	a,'f'		;Function
+	call	putvid
+	ld	a,'?'		;Send table
+	call	putvid
+	ld	hl,ktable	;Store here
+rloop:	call	getvid		;Get the byte
+	ld	(hl),a		;Put in the table
+	inc	hl
+	cp	0ffh		;was it the end?
+	jr	nz,rloop	;no, carry on
+	ld	de,keyprog-1	;Compute length to save
+	or	a
+	sbc	hl,de
+	add	hl,hl		;H now holds no. of sectors
+	ld	b,h		;Move to B
+	inc	b		;Adjust
+
+;	Now try to Write the file out
+
+	xor	a		;Clear NR
+	ld	(deffcb+32),a
+	ld	de,keyprog	;start here
+wloop:	push	bc
+	push	de
+	ld	c,setdma
+	call	bdos
+	ld	de,deffcb
+	ld	c,write
+	call	bdos
+	pop	hl		;Get address back
+	pop	bc
+	or	a		;Successful write?
+	ld	de,werr
+	jp	nz,abort
+	ld	de,128		;Update address
+	add	hl,de
+	ex	de,hl
+	djnz	wloop		;Loop if more
+
+;	File written - now close it
+
+	ld	de,deffcb
+	ld	c,close
+	call	bdos
+	inc	a		;Any error?
+	ld	de,cantcl
+	jr	nz,exit		;No,done
+			
+	ld	de,done
+abort:	call	print		;Print the error message
+exit:	call	crlf
+	ld	sp,(savesp)
+	ret			; End of main program
+
+keyprog:
+; Program to be written to the file
+	.phase	0100h		; Loads to the TPA
+	ld	(oldsp),sp
+	ld	hl,(0006h)	; Get stack out of the way
+	ld	sp,hl
+	ld	a,escape	; Load the new table
+	call	chrout
+	ld	a,'f'
+	call	chrout
+	ld	hl,table
+wrloop: ld	a,(hl)
+	call	chrout
+	inc	hl
+	cp	0ffh
+	jr	nz,wrloop
+
+; Test to see if a program is to be chained to
+	ld	a,(fname)	; Test for no program name
+	cp	" "
+	jr	nz,ch2
+ch1:	ld	sp,(oldsp)	; Exit from the program without chaining
+	ret
+ch2:	ld	hl,(deffcb+1)	; Test for "!!" as parameter
+	ld	de,'!!'
+	or	a
+	sbc	hl,de
+	jr	z,ch1
+
+; Open the program to be chained to
+	ld	de,nfcb
+	ld	c,openf
+	call	bdos
+	inc	a
+	jr	nz,ch4
+	ld	a,'?'		; Output '?' if file not found
+	call	chrout
+	jr	ch1		; Then exit
+
+; Move code to near top of memory
+ch4:	ld	hl,(0006h)	; Move FCB to 128 bytes below
+	dec	h
+	ex	de,hl
+	ld	hl,nfcb
+	ld	bc,36
+	ldir
+	ld	hl,(0006h)	; Move code to 512 bytes below
+	dec	h
+	dec	h
+	dec	h
+	dec	h
+	push	hl
+	ex	de,hl
+	ld	hl,tops
+	ld	bc,tope-tops
+	ldir
+	pop	hl
+	jp	(hl)		; Jump to rest of program
+
+; Routine to output a character
+chrout: push	af
+	push	hl
+	cp	0ffh		; Cannot output 0ffh
+	jr	nz,ch
+	ld	a,0fdh
+ch:	ld	e,a
+	ld	c,condir
+	call	bdos
+	pop	hl
+	pop	af
+	ret
+
+; Portion of code to execute at top of memory
+tops:	ld	de,0100h	; Set DMA to start of TPA
+	ld	c,setdma
+	call	bdos
+	ld	hl,0100h
+top1:	push	hl		; Save DMA address
+	ld	hl,(0006h)	; Get address of FCB
+	dec	h
+	ex	de,hl		; Read next record
+	ld	c,read
+	call	bdos
+	pop	hl
+	or	a		; Test for EOF
+	jr	nz,top2
+	ld	bc,128		; Set next DMA address
+	add	hl,bc
+	push	hl
+	ex	de,hl		; Set next DMA address
+	ld	c,setdma
+	call	bdos
+	pop	hl
+	jr	top1
+top2:	ld	de,0080h	; Set default DMA
+	ld	c,setdma
+	call	bdos
+	ld	sp,0080h	; Set default stack
+	ld	hl,0000h	; Set return to warm boot
+	push	hl
+	jp	0100h		; Jump to execute program
+tope:
+
+; Work areas
+oldsp:	defs	2
+nfcb:	defb	0		; Default drive
+fname:	defb	"        COM"	; File name
+	defb	0,0,0,0
+	defb	0,0,0,0,0,0,0,0,0,0,0,0,0
+	defb	0,0,0,0,0,0,0
+table:
+	.dephase
+ktable:				; Table with key definitions
+
+	end	start

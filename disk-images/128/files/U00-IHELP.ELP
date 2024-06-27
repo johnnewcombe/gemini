@@ -1,0 +1,23 @@
+
+
+
+
+                       AINTERROGATE A DISKETTEN
+  
+               This   command  will  interrogate   an   unknown 
+          diskette.  If  the I command is entered,  the  system 
+          will  prompt the operator to enter the FLOPPY  number 
+          in  which  the diskette is to  be  interrogated.  The 
+          operator must select a 96TPI FLOPPY. If the I command 
+          is  followed  by an "L" the program's output  to  the 
+          screen  will  also go to the printer (if  connected). 
+
+
+                              SYNTAX :-
+
+                              I{L}{fl}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+
+
+

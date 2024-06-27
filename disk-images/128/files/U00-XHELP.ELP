@@ -1,0 +1,24 @@
+                         AEXAMINE A DISKETTEN
+
+               This  command  allows  the operator  to  examine 
+          portions  of a diskette.  He can either look at  just 
+          simple  tracks  and  sectors  or  move  through   the 
+          diskette  to the next allocation block.  This command 
+          is  very useful for checking and analysing a  FORMAT. 
+          This  command  has  its own sub  menu  which  can  be 
+          recovered  by pressing "?" at any time during the use 
+          of  the  command.   The  operator  simply  types  the 
+          tracks/sectors or allocation groups that he wants  to 
+          display  and  the system automatically  displays  the 
+          information  on  the screen.  Simply pressing  RETURN 
+          increments the system to the next sector. The extreme 
+          right  portion  of  the  screen  shows  the   printed 
+          equivalent  of  the information in ASCII whereas  the 
+          left side of the screen shows the actual  hexadecimal 
+          values.
+                              SYNTAX :-
+
+                              X{fl,fm}
+
+                 APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+

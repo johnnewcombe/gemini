@@ -1,0 +1,79 @@
+Procedure DeletePhrase;
+var
+  Last, Max, Mval,k,j : Integer;
+Begin
+  write(lst,chr(12));
+  writeln(lst,'                DELETIONS FROM DATABASE ON ',date);
+  writeln(lst,Conststr('*',79));
+  gotoxy(1,1);lowvideo;write(' DELETE ');normvideo;
+  clrframe(3,25);
+  gotoxy(1,3);writeln(Conststr('*',79));
+  gotoxy(1,5);writeln(Conststr('*',79));
+  FillChar(Rec.Key,SizeOf(Rec.Key),0);
+  gotoxy(1,4);write('Please wait...');
+  FillChar(KList,SizeOf(KList),0);
+  MakeIndex;
+  seek(udfile,filesize(udfile));
+  Repeat
+    clrframe(6,25);
+    gotoxy(1,4);write('Enter Key of Phrase to Delete: '); clreol;
+    rec.key:='';
+    getinput(10,31,4, Rec.Key,'c',fin,1);
+    k:=pos(' ',rec.key)-1;
+    if k<1 then k:=length(rec.key);
+    rec.key:=copy(rec.key,1,k);
+    Item:=FindKey(Rec.Key);
+    If Item = -1 then
+    begin
+      gotoxy(35,4);write('Key Does Not Exist.');
+      for i:=1 to 3 do
+       for j:=1 to maxint do;
+    end
+    else
+    begin
+      seek(Dfile,KList[Item].Num);
+      Read(Dfile,Rec);
+      gotoxy(1,6      );
+      write(Rec.Phrase);
+      repeat
+       gotoxy(1,4);
+       write('Is this the one to Delete? Y/N  ');clreol;
+       read(kbd,ans);
+      until ans in ['Y','y','N','n'];
+      if ans in ['Y','y'] then
+      begin
+        writeln(lst,'Deleted: ',rec.key:10,' = ',rec.phrase);
+        writeln(lst,Conststr('-',79));
+        write(udfile,rec.key);
+        file_to_check:=TRUE;
+        Max:=1; Mval:=KList[Max].Num;
+        for Last:=2 to MaxRec do
+          if Klist[Last].Num>Mval then
+          begin
+            Max:=Last;
+            Mval:=KList[Last].Num;
+          end;
+        If Max <> Item then
+        begin
+           Seek(Dfile,Mval); Read(Dfile,Rec);
+           Seek(Dfile,KList[Item].Num); write(Dfile,Rec);
+           KList[Max].Num:=KList[Item].Num;
+        end;
+        For Last:=Item to MaxRec-1 do
+          KList[Last]:=KList[Last+1];
+        MaxRec:=MaxRec-1;
+        Seek(Dfile,0);
+        FillChar(Rec,Sizeof(Rec),0);
+        Rec.NumRecs:=MaxRec;
+        write(Dfile,Rec);
+      end;
+    end;
+    repeat
+      gotoxy(1,4);write('Do you wish to delete another? Y/N '); clreol;
+      read(kbd,ans);
+    until ans in ['Y','y','N','n'];
+  Until ans in ['N','n'];
+  CloseFile;
+  writeln(lst,conststr('*',79));
+End;  {of DeletePhrase}
+

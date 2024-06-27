@@ -1,0 +1,42 @@
+                   TurboDOS - some more notes
+
+Logicallù  TurboDOÓ  ió fullù mediá compatiblå witè CP/Í  versioî 
+2.2® Iô automaticallù determineó whetheò á diskettå ió writteî iî 
+standard CP/M format or in TurboDOS format.
+
+Unlikå CP/Í Versioî 2.² TurboDOÓ maintainó á volumå labeì anä  aî 
+allocatioî  mağ aô thå  beginninç oæ thå directorù area®  Wheî  á 
+CP/Í  disã ió firsô accesseä bù TurboDOÓ thå firsô fe÷  directorù 
+entrieó  arå automaticallù relocateä tï thå enä oæ thå directory¬ 
+iî  ordeò tï makå rooí foò thå labeì anä map®  (Iæ therå arå  noô 
+enougè entrieó free¬  TurboDOÓ makeó thå disë read-onlù tï  avoiä 
+damaginç  datá oî thå disk.© Wheî á TurboDOÓ disë ió accesseä  bù 
+CP/M¬  thå labeì anä mağ appeaò tï bå ordinarù deleteä entrieó iî 
+the directory.
+
+
+The TurboDOS "DRIVE" command.
+
+Thå  DRIVÅ commanä allo÷ thå physicaì disã characteristicó tï  bå 
+displayed. E.g:-
+
+               0A>DRIVE B:
+
+
+Directory Formats.
+
+TurboDOÓ supportó twï directorù formatsº  lineaò anä hashed®  Thå 
+standarä  lineaò formaô ió compatiblå witè CP/M¬  anä ió searcheä 
+sequentially®  Consequently¬  thå  timå tï finä á directorù  wilì 
+increaså aó thå directorù getó larger¬ anä searchinç caî geô slo÷ 
+oî  á fixeä disã witè á largå numbeò oæ  directorù  entries®  Thå 
+lineaò  formaô musô bå useä oî discó whicè arå transporteä tï  oò 
+froí noî TurboDOÓ systems®  Hasheä directorieó arå noô compatiblå 
+with CP/M or with versions of TurboDOS prior to 1.21.
+
+
+User Areas.
+
+The disc copier DIRSTAT command will tell you which used areas are
+Discó  witè fileó iî alì 3² useò areaó caî bå reaä anä writteî tï 
+with the MFB 2. Type UHELP for details.

@@ -1,0 +1,6 @@
+Disc Full
+Start file again on new disc
+Continue on new disc
+Abandon run
+Directory Full
+

@@ -1,0 +1,82 @@
+name r1 BENCHMARK NUMBER
+name r2 START
+name r3 END
+fix 0
+r1 = 1
+while r1 neq 0
+input r1
+select r1 max 8
+call benchmark 1
+call benchmark 2
+call benchmark 3
+call benchmark 4
+call benchmark 5
+call benchmark 6
+call benchmark 7
+call benchmark 8
+wend
+stop
+sub benchmark 1
+print r2
+do 1000
+loop
+print r3
+return
+sub benchmark 2
+print r2
+r4 = 0
+while r4 lt 1000
+inc r4
+wend
+print r3
+return
+sub benchmark 3
+print r2
+r4 = 0
+while r4 lt 1000
+inc r4
+r5 = r4 / r4 * r4 + r4 - r4
+wend
+print r3
+return
+sub benchmark 4
+print r2
+r4 = 0
+while r4 lt 1000
+inc r4
+r5 = r4 / 2 * 3 + 4 - 5
+wend
+print r3
+return
+sub benchmark 5
+print r2
+r4 = 0
+while r4 lt 1000
+inc r4
+r5 = r4 / 2 * 3 + 4 - 5
+call dummy subroutine
+wend
+print r3
+return
+sub dummy subroutine
+return
+sub benchmark 6
+return
+sub benchmark 7
+return
+sub benchmark 8
+print r2
+r4 = 0
+while r4 lt 100
+inc r4
+r5 = r4 ^ 2
+r6 = ln r4
+r7 = sin r4
+wend
+print r3
+return
+END
+sub benchmark 8
+print r2
+r4 = 0
+while r4 lt

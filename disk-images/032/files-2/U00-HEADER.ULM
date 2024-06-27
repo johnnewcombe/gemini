@@ -1,0 +1,139 @@
+const
+  data = $A1;    status = $A0;    alloc_ = $a3;    copy_ = $85;
+  iccol_ = $8d;    icp_ = $96;    icwp_ = $93;    init_ = $a6;
+  lrel_ = $9d;    lrels_ = $9e;    lto_ = $80;    lsym_ = $a0;
+  mrel_ = $98;    mrels_ = $99;    mto_ = $97;    ffill_ = $82;
+  bfill_ = $B0;  rfill_ = $81;  sbcol_ = $87;  sccol_ = $89;  sfcol_ = $88;
+  spcol_ = $BA; scsp_ = $a4;   scwp_ = $a5;  scdp_ = $83;  sstle_ = $8a;
+  prs_ = $9c;    pat_ = $9a;     red = 4;    blue = 2;
+  green = 1;    yellow = 5;    cyan = 3;    magent = 6;    black = 0;
+  white = 7;    paint = 8;
+
+  esc = #27;  cul = #28;  cur = #29;  cup = #30;  cud = #31;
+  ins = #23;  del = #127; cr = #13;  bs = #8;  ch = #25;
+  symbol_sizex = 540;
+  symbol_sizey = 283;
+
+  version = 'Version 2.04  17/02/88 ';
+
+   IndexMax              =  300;
+   NoError               =    0;
+   RecordNotFound        =    1;
+   OutOfRange            =    4;
+type
+     vecrec = Record
+       status : integer;
+       startx : integer;
+       starty : integer;
+       endx   : integer;
+       endy   : integer;
+     end; {of record}
+
+
+  str80 = string[80];
+  str14 = string[14];
+  str10 = string[10];
+  str5  = string[5];
+  str3  = string[3];
+  str2  = string[2];
+  str8  = string[8];
+  str125 = string[125];
+  str255 = string[255];
+  sixbyte = array[1..128] of byte;
+  vecline = array[0..30] of integer;
+  charset = set of char;
+
+  labelcont = record
+         stat : boolean;
+         area : integer;
+         across : integer;
+         down : integer;
+         scale : real;
+         font : string[14];
+         pen : byte;
+         mode : char;
+         key : str10;
+         modif : byte;
+         text : str125;
+   end; {of record}
+
+   Keytype        = string[10];
+
+   Use_name = (Main,Blank,Print,Edit,Select,OK,Masp);
+
+   Labelprint  = Record
+     LabelName : str8;
+     QtytoPrint : integer;
+   end; {of record}
+
+   Dimension = (Line, Box);
+   picture   = (Symbolarea, Textarea, Null);
+
+   paramrec = record
+     case first : boolean of
+      TRUE : (label_name : str8;
+              label_extension : str2;
+              label_drop : real);
+     FALSE :
+      (Partition : integer;     {At present, 1 or 2}
+        AreaType : dimension;    {Line or Box}
+              tx : integer;      {If Line: tx,ty = FROM}
+              ty : integer;      {If Box: tx,ty = top left corner}
+              bx : integer;      {If Line: bx,by = TO}
+              by : integer;      {If Box:  bx,by = bottom right corner}
+         Noprint : boolean;      {TRUE = Don't print on label}
+        Contents : picture);     {Symbolarea, Textarea or Null for line}
+   end;  {of record}
+
+var
+  symname : str10; {symbol name}
+  sf : File of vecrec;
+  symvec : vecrec;
+  ir : byte;
+  c1, col, dx, dy, sx, sy, tx, ty, width, height, psrc, pdst,
+  tim1, tim2, count, inc, coll, x1, y1 : integer;
+  by : byte;
+  k,j,i,l,w : integer;
+  x,y,x2,y2 : integer;
+  a,d : real;
+  fname : FILE ;
+  f : FILE;
+  tl : str125;
+  num, inp : integer;
+  ac, dn : integer;
+  let : integer;
+  cf : file of vecline;
+  scl : real;
+  vecary : array [1..95] of vecline;
+  ans,command : char;
+  scalbase,base,cx,cy,cx1,cy1 : integer;
+  tcx,tcy,fcx,fcy : integer;
+  lab : labelcont;
+  newname, labname : string[10];
+  tempf,lf,nf : file of labelcont;
+  fontname : string[8];
+  curpen : integer;
+  curmode : char;
+  areanum, top, bottom, left, right : integer;
+  charsize : integer;
+  inst, fin : boolean;
+  error : integer;
+  query, noup, nodown, up, down : boolean;
+  xoffs, yoffs : integer;
+  vector : vecline;
+  penwidth : byte;
+  txtmode : char;
+  Breaknum : integer;
+  VarsExist : boolean;
+  WorkDrive, LabelDrive : str2;
+  numberfile : FILE of integer;
+  nextnum : integer;
+  entrynum, movetonum : integer;
+  curwp, curdp : integer;
+  szx : str3;
+  twoscreens, bdr : boolean;
+  paramf : FILE of paramrec;
+  param : paramrec;
+  labeldrop : real;
+  printertype : char;
+

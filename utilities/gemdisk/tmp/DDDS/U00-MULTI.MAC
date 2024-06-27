@@ -1,0 +1,1729 @@
+	.Z80
+	TITLE G809 Bios for Multiboard    Version 1.4
+;	CP/M BIOS for the Gemini 809 Disk controller card
+;	running with a Gemini Multiboard system
+
+;	Written by David Parkinson
+;	(C) Copyright David Parkinsom 1982
+
+;	Version 1.4
+
+	SUBTTL	Global Equates
+	PAGE	62
+
+;	1797 Ports & Auxillary ports
+
+.1797	EQU	0E0H		;Base address
+
+CMDREG	EQU	.1797		;Command register
+STATRG	EQU	.1797		;Status register
+TRKREG	EQU	.1797+1		;Track register
+SECREG	EQU	.1797+2		;Sector register
+DATARG	EQU	.1797+3		;Data register
+DRIVEP	EQU	.1797+4		;Drive select port
+STPORT	EQU	.1797+4		;DRQ/IRQ
+
+;	Drive characteristics
+
+HLDEL	EQU	35		;Head Load delay (ms)
+RATE	EQU	3		;30ms Step rate
+MAXSEC	EQU	20		;20 sectors/track
+
+;	1797 Commands
+
+RESTOR	EQU	08H+RATE	;Restore command
+SEEKCM	EQU	18H+RATE	;Seek comand
+STEPCM	EQU	38H+RATE	;Step command
+STEPIN	EQU	58H+RATE	;Step in command
+RDCMD	EQU	88H		;Read Sector
+WRCMD	EQU	0A8H		;Write sector
+RDADDR	EQU	0C0H		;Read address
+CLEARC	EQU	0D0H		;Clear command
+
+;	System Parameters
+
+BLKSIZ	EQU	2048		;CP/M Block allocation size
+SECSIZ	EQU	512		;Physical sector size
+DIRENT	EQU	128		;Max directory entries
+MAXSEC	EQU	20		;Physical sectors/track
+MAXTRK	EQU	35		;Tracks/Disc
+
+; Disc size in Blocks
+
+DSM	EQU	(MAXSEC*SECSIZ/BLKSIZ)*(MAXTRK-1)-1
+
+;	IVC ports
+
+IVCD	EQU	0B1H		;Data port
+IVCS	EQU	0B2H		;IVC status port
+IVCCUR	EQU	848H		;IVC cursor type
+
+;	Odd control characters
+
+BS	EQU	08H
+LF	EQU	0AH
+CR	EQU	0DH
+ESCAPE	EQU	1BH
+
+	SUBTTL
+
+;********************************
+;	Macro definitions	*
+;********************************
+
+;	Delay <n> milli-seconds
+
+MSDEL	MACRO	X
+	LD	A,X
+	CALL	DELAY
+	ENDM
+
+;	Do a Type I command on 1797
+
+DOFDC	MACRO	X
+	LD	A,X
+	CALL	DOTYPI
+	ENDM
+
+IOBYTE	EQU	3
+CCP	EQU	$-1600H
+
+;********************************
+;  CP/M Jump Vector table	*
+;********************************
+
+BIOS:
+	JP	COLD		;Cold start entry
+WBOOTE:	JP	WBOOT		;Warm start entry
+	JP	CONST		;Console status
+	JP	CONIN		;Console input
+	JP	CONOUT		;Console output
+	JP	LIST		;List routine
+	JP	PUNCH
+	JP	READER
+	JP	HOME		;Seek to track 00
+	JP	SELDRV		;Set drive number
+	JP	SETTRK		;Set Track
+	JP	SETSEC		;Set Sector
+	JP	SETDMA		;Set memory R/W address
+	JP	READ		;Read sector
+	JP	WRITE		;Write sector
+	JP	LISTST		;List status
+	JP	SECTRN		;Sector translate
+
+	SUBTTL	Patch area
+
+; Initial Value of IObyte
+
+IIOBYT:	DEFB	15H
+
+MS:	DEFB	75	;Millisecond delay count
+
+; Keyboard/Cursor parameters
+
+BLINKR:	DEFW	828H	;Cursor Type
+EMCHAR:	DEFB	0H	;Edit mode request.
+USET:	DEFB	3	;8-bits, 1 stop, no parity
+UMODE:	DEFB	0FH	;RS232/Cassette
+UBAUD:	DEFW	52	;2400 baud
+
+; System I/O
+
+USRIOI:	RET		;Default - none
+	DEFW	0	;Filler to allow Jump
+
+; Serial & Parallel ports
+
+TTYP:	DEFB	0B8H	;TTY serial port
+RDRP:	DEFB	0B8H	;Reader serial port
+PUNP:	DEFB	0B8H	;Punch serial port
+LISTP:	DEFB	0B8H	;List serial port
+PPORT:	DEFB	0B4H	;List parallel port
+
+;	LIST control
+
+FFCNTL:	DEFB	0	;Form Feed response
+		  ;0    = Pass unaltered
+		  ;0FFH = Translate to multiple line Feeds
+		  ; nn  = Translate to exactly nn line feeds
+LPAGE:	DEFB	0	;Lines per page.
+		  ; 0	= No paging
+		  ; nn  = nn printed lines per page
+LGAP:	DEFB	0	;Gap between pages
+		  ; 0	= No gap
+		  ; nn  = Gap of nn lines
+
+	PAGE
+;************************************************
+;	IOBYTE	fields:-			*
+;						*
+;		Console Field			*
+; TTY: XXXXXX00	 Serial port	Serial port	*
+; CRT: XXXXXX01  Keyboard	Screen		*
+; BAT: XXXXXX10	 Serial port	Screen		*
+; UC1: XXXXXX11	 (Keyboard)	(Screen)	*
+;						*
+;		Reader Field			*
+; TTY: XXXX00XX  Keyboard			*
+; PTR: XXXX01XX  Serial				*
+; UR1: XXXX10XX  (Keyboard)			*
+; UR2: XXXX11XX  (Keyboard)			*
+;						*
+;		Punch field			*
+; TTY: XX00XXXX  Screen				*
+; PTP: XX01XXXX  Serial				*
+; UP1: XX10XXXX	 (Screen)			*
+; UP2: XX11XXXX  (Screen)			*
+;						*
+;		List field			*
+; TTY: 00XXXXXX  Serial				*
+; CRT: 01XXXXXX  Screen				*
+; LPT: 10XXXXXX  Serial+Handshake		*
+; UL1: 11XXXXXX  Centronics parallel		*
+;************************************************
+
+;	Routine address tables
+
+CSTTAB:			;Console Status
+	DEFW	SERST	;0=Serial port
+	DEFW	SCAN	;1=Keyboard
+	DEFW	SERST	;2=Serial port
+	DEFW	SCAN	;3=Keyboard (User)
+
+CINTAB:			;Console input
+	DEFW	SERIN	;0=Serial port
+	DEFW	BLINK	;1=Keyboard
+	DEFW	SERIN	;2=Serial port
+	DEFW	BLINK	;3=Keyboard (User)
+
+COUTAB:			;Console output
+	DEFW	SEROUT	;0=Serial port
+	DEFW	CRT	;1=Screen
+	DEFW	CRT	;2=Screen
+	DEFW	CRT	;3=Screen (User)
+
+RDRTAB:			;Reader input
+	DEFW	BLINK	;0=Keyboard
+	DEFW	SERIN	;1=Serial port
+	DEFW	BLINK	;2=....	(User)
+	DEFW	BLINK	;3=....	(User)
+
+PUNTAB:			;Punch output
+	DEFW	CRT	;0=Screen
+	DEFW	SEROUT	;1=Serial port
+	DEFW	CRT	;2=....	(User)
+	DEFW	CRT	;3=....	(User)
+
+LSTSTB:			;List status
+	DEFW	SERST	;0=Serial port
+	DEFW	READY	;1=CRT (Always ready)
+	DEFW	HSST	;2=Handshake serial
+	DEFW	CENTST	;3=Centronics Parallel
+
+LSTTAB:			;List output
+	DEFW	SEROUT	;0=Serial port
+	DEFW	CRT	;1=Screen
+	DEFW	HSHAKE	;2=Handshake serial
+	DEFW	CENTRO	;3=Centronics
+
+;  User Area for Small routine(s)
+
+	REPT	4
+	DEFW	0,0,0,0
+	ENDM
+
+; Immediate Ready
+
+READY:	LD	A,0FFH	;Immediate ready
+	RET
+
+	SUBTTL	Cold and Warm Boot
+
+;*******************************
+;	Cold Boot		*
+;	 entry from boot loader	*
+;********************************
+
+; COLD	- Initialise the workspace
+;	- Select Drive A
+;	- Print signon message
+;	- Initialise any Parallel printer
+;	- Initialise the basepage
+
+COLD:	LD	SP,80H		;Set stack
+	LD	A,(IIOBYT)	;Set iobyte
+	LD	(IOBYTE),A
+	LD	HL,SIGNON	;Print message
+	CALL	PRINT
+	XOR	A		;Select Drive A
+	LD	(4),A
+	LD	A,1
+	LD	(DRIVEA),A
+	CALL	IOINIT		;IO initialisation
+	CALL	USRIOI		;User IO initialisation
+	CALL	INITB		;Initialise basepage
+	JP	CCP		;Start up CCP
+
+; WARM START - Read in CCP +BDOS
+;	Complicated by 512 byte blocks....
+
+WBOOT:	LD	SP,80H		;Set stack
+	LD	A,CLEARC	;Clear 1797
+	CALL	DOTYPI
+	LD	A,1		;Select drive A
+	LD	(DRIVE),A
+	LD	(DRIVEA),A
+	OUT	(DRIVEP),A
+	LD	A,RESTOR
+	CALL	DOTYPI
+; First read the boot sector and use this to
+; check for correct System size.
+	LD	HL,CCP		;CCP start
+	LD	DE,0		;Track 0, sector 0
+	LD	C,0		;C=0 = Read
+	CALL	RDWR		;Read Boot sector
+	OR	A		;Any error?
+	JR	NZ,WBOOT	;Yes,try again
+; Check if a System of the correct size is there
+	LD	DE,CCP		;CCP start
+	LD	HL,(CCP+3)
+	SBC	HL,DE		;The same?
+	JR	Z,OKSIZE	;Yes,skip
+	LD	HL,WRGSIZ	;Else error
+	CALL	PRINT
+	CALL	CONIN
+	JR	WBOOT		;Repeat
+; Everything checked out, Read the system
+OKSIZE:	LD	HL,CCP		;CCP start
+	LD	DE,1		;Track 0/sector 1
+	LD	B,1600H/SECSIZ	;B=no of sectors
+	LD	C,0		;C=0 = Read
+WBL:	PUSH	BC		;Save BC
+	CALL	RDWR		;Read sector
+	OR	A		;Check for error
+WBERR:	JR	NZ,WBOOT	;Restart (????)
+	LD	BC,SECSIZ	;Advance address
+	ADD	HL,BC
+	POP	BC		;Reset BC
+	INC	E		;Advance sector
+	DJNZ	WBL		;Loop if more
+	CALL	INITB		;Initialise the basepage
+	JP	CCP+3		;Off to CCP (no auto run)
+
+; Initialise the basepage
+
+INITB:	LD	A,0C3H		;Set 'JP'
+	LD	(0),A
+	LD	(5),A
+	LD	HL,WBOOTE	;Warm Boot address
+	LD	(1),HL
+	LD	HL,BIOS-0E00H+6	;Start of BDOS
+	LD	(6),HL
+	LD	A,(IIOBYT)	;Initial value of IOBYTE
+	LD	(IOBYTE),A
+	XOR	A
+	LD	H,A
+	LD	L,A		;Clear UNACNT
+	LD	(UNACNT),HL
+	LD	(DRVLOG),HL	;And Drive Log
+	LD	(FLAG),A
+	LD	HL,80H		;Default DMA
+	LD	(DMAADR),HL
+	LD	A,(4)		;Get default drive
+	LD	C,A		;..to C
+	CP	4		;<4?
+	RET	C		;Yes,accept it
+	LD	C,0		;No,select A
+	RET
+
+; Error message
+
+WRGSIZ:	DEFB	'Wrong system size/No system on this disc',cr,lf,0
+
+	SUBTTL	System Parameters
+
+;********************************
+;    Disc Parameter tables	*
+;********************************
+DPBASE:	DEFW	0,0		;No translation
+	DEFW	0,0
+	DEFW	DIRBUF,DPBLK
+	DEFW	CHK00,ALL00
+
+	DEFW	0,0
+	DEFW	0,0
+	DEFW	DIRBUF,DPBLK
+	DEFW	CHK01,ALL01
+
+	DEFW	0,0
+	DEFW	0,0
+	DEFW	DIRBUF,DPBLK
+	DEFW	CHK02,ALL02
+
+	DEFW	0,0
+	DEFW	0,0
+	DEFW	DIRBUF,DPBLK
+	DEFW	CHK03,ALL03
+
+; Single density drive	- Sector translation
+
+TRANS5:	DEFB	01,05,09,13
+	DEFB	17,03,07,11
+	DEFB	15,02,06,10
+	DEFB	14,18,04,08
+	DEFB	12,16
+
+; Disc parameter block - Single density
+
+DPBSD:	DEFW	18	;Sectors/track
+	DEFB	3,7,0
+	DEFW	149
+	DEFW	63
+	DEFB	0C0H
+	DEFB	0
+	DEFW	16,3
+
+;	Disc Parameter Block
+
+DPBLK:	DEFW	MAXSEC*SECSIZ/128 ;CP/M sectors/track
+	DEFB	4		;Block shift factor
+	DEFB	15		;Block mask
+	DEFB	1		;Extent mask
+	DEFW	DSM		;Disc size in blocks
+	DEFW	DIRENT-1	;Max directory entries
+	DEFB	0C0H		;Reserved directory..
+	DEFB	00		;...blocks
+	DEFW	DIRENT/4	;Check size
+	DEFW	1		;System tracks
+
+	SUBTTL Set DRIVE/TRACK/SECTOR/DMAADR
+
+;********************************
+;	DISC ROUTINES		*
+;********************************
+
+HOME:	LD	HL,FLAG
+	BIT	WRITEF,(HL)
+	JR	NZ,HOME1
+	RES	INUSE,(HL)
+HOME1:	LD	C,0
+
+SETTRK:	LD	A,C
+	LD	(CPMTRK),A
+	RET
+
+SETSEC:	LD	A,C
+	LD	(CPMSEC),A
+	RET
+
+SETDMA:	LD	(DMAADR),BC
+	RET
+
+;	Sector Translate
+;	If DE=0 then no translation takes place
+;	(Skewing is done physically on the disc)
+
+SECTRN:	LD	H,B		;Sector to HL
+	LD	L,C
+	LD	A,D		;Check DE
+	OR	E
+	RET	Z		;Return if no translation
+	ADD	HL,DE		;Else Index in
+	LD	L,(HL)		;Get value
+	LD	H,0
+	RET			;Done
+
+; Select Drive - The first time a drive is selected a
+;	Restore with is done followed by a "Read Address"
+;	to determine the Density/format of the disc.
+;	Drive numbers are translated to an address
+;	for the interface card.
+
+SELDRV:	LD	HL,0		;Error return code
+	INC	C		;Range now 1-4
+	LD	A,C		;Check it
+	CP	5		;Is it 1-5?
+	RET	NC		;No,error return
+	LD	B,A		;Put in B
+	LD	DE,16		;16 bytes/entry
+	LD	HL,DPBASE-16	;Table base
+	LD	A,80H		;Preset A
+DRVLP:	RLCA			;Construct address
+	ADD	HL,DE		;(and DPB address)
+	DJNZ	DRVLP
+	LD	B,A		;Save in B
+	LD	DE,(DRVLOG)	;Get Drive log
+	AND	D		;Logged in?
+	JR	Z,NLGIN		;No,skip
+	AND	E		;Isolate Density
+	ADD	A,0FH		;Shift up
+	AND	10H		;Isolate
+	OR	B		;Include Drive
+	LD	(DRIVE),A	;Set in Drive
+	RET			;Done
+; Drive not logged in, try to find Density
+NLGIN:	CALL	NEWSP		;New stack (in case error)
+RPTTRY:	LD	C,5		;Set retry
+TRYDEN:	LD	A,B		;Set drive address
+	LD	(DRIVEA),A
+	CALL	MOTON		;Start Drive
+	LD	A,RESTOR
+	CALL	DOTYPI		;Home Drive
+	CALL	CHKDSK		;Try for a Disc
+	LD	A,B		;(Reload Drive)
+	JR	NZ,OKDEN	;Yes,found density
+	XOR	10H		;Toggle density
+	LD	B,A
+	DEC	C		;More?
+	JR	NZ,TRYDEN	;Loop if so
+	LD	A,2		;Use special one
+	CALL	DERR		;Report error
+	JR	NZ,RPTTRY	;Loop if required
+	LD	HL,0		;Else flag error
+	RET
+; Density found, log Drive in
+OKDEN:	LD	(DRIVE),A	;Set DRIVE
+	LD	DE,(DRVLOG)	;Reload DE
+	OR	D		;Include this Drive in Log
+	LD	D,A
+	LD	A,B		;Reload
+	ADD	A,0F0H		;Density to carry
+	SBC	A,A		;Density through out
+	AND	B		;Density in Drive pos.
+	OR	E		;Move to log
+	LD	E,A
+	LD	(DRVLOG),DE	;Reset log
+; Ensure tables are correct
+	BIT	4,B		;Test density
+	LD	BC,0		;No trans - DD
+	LD	DE,DPBLK	;DD parameters
+	JR	Z,ISDD		;Skip if DD
+	LD	BC,TRANS5	;Trans - SD
+	LD	DE,DPBSD	;SD parameters
+ISDD:	PUSH	HL		;Save HL
+	LD	(HL),C		;Set Sec-Trans
+	INC	HL
+	LD	(HL),B
+	LD	BC,9		;Offset
+	ADD	HL,BC		;..to DPBLK pointer
+	LD	(HL),E
+	INC	HL
+	LD	(HL),D
+	POP	HL		;Reset HL
+	RET			;Done
+
+	SUBTTL	Blocking/Deblocking
+
+;********************************
+;  Sector Read/Write routines	*
+;	includes all		*
+;  blocking/deblocking		*
+;********************************
+WRUAL	EQU	2		;Write to unallocated
+WRDIR	EQU	1		;Write to directory
+;
+; Read the selected CP/M sector
+;
+READ:
+	CALL	NEWSP		;New stack
+	LD	A,(DRIVE)	;Check drive
+	CP	10H		;SD?
+	JP	NC,SDREAD	;Yes,do it
+	LD	HL,FLAG		;Point to FLAG
+	SET	OPTYPE,(HL)	;Say "Read"
+	LD	A,WRUAL
+	LD	(WRTYPE),A	;Treat as unallocated
+	JR	ALLOC		;go to do read
+;
+; Write the selected CP/M sector
+;
+WRITE:
+	CALL	NEWSP		;Local stack
+	LD	A,(DRIVE)	;Check drive
+	CP	10H		;SD one?
+	JP	NC,SDWRIT	;Yes,do it
+	LD	HL,FLAG		;Point to flag
+	RES	OPTYPE,(HL)	;Set "Write"
+	LD	A,C		;Get Write type
+	LD	(WRTYPE),A	;Set it
+	CP	WRUAL		;Write unallocated?
+	JR	NZ,CHKUNA	;No,see if in the middle
+;
+; Write to the first sector of an unallocated block...
+;  .. so initialise all the variables.
+;
+	LD	A,BLKSIZ/128	;CP/M sectors/block
+	LD	(UNACNT),A
+	LD	DE,UNADRV	;Set the rest
+	LD	HL,DRIVE
+	LD	BC,3
+	LDIR
+;
+; See if we are currently writing to an unallocated block
+;
+CHKUNA:	LD	HL,UNACNT	;Point to count
+	LD	A,(HL)		;Load it
+	OR	A		;Test A
+	JR	Z,ALLOC		;Skip if none
+;
+; Ok,more remain. Is the current request part of it?
+;
+	DEC	(HL)		;Update count
+	INC	HL		;On to UNADRV
+	LD	B,3		;Set length
+	CALL	CKBKEQ		;Does it match request?
+	JR	NZ,ALLOC	;No,skip
+; Yes, move to next sector for next time
+	DEC	HL		;Back to Sector
+	INC	(HL)		;Increment it
+	LD	A,(HL)		;Get it
+	CP	MAXSEC*(SECSIZ/128) ;Overflow?
+	JR	NZ,NOOVF	;Skip if not
+; Overflow - reset sector to 0, increment track
+	LD	(HL),0		;Sector=0
+	DEC	HL		;Point to track
+	INC	(HL)		;Increment it
+; Match found, mark as unnecessary Read
+NOOVF:	LD	HL,FLAG
+	RES	READF,(HL)	;No read neccessary
+	JR	RWOPER		;Do read/write
+;
+; Not an unallocated record, requires pre-read
+;
+ALLOC:	XOR	A
+	LD	(UNACNT),A	;Clear UNACNT
+	LD	HL,FLAG
+	SET	READF,(HL)	;Say "Must Read"
+;****************************************
+;  Now actually perform the READ/WRITE	*
+;****************************************
+RWOPER:	XOR	A		;No errors (Yet!)
+	LD	(ERRF),A
+	LD	A,(CPMSEC)	;Compute disc sector
+	SRL	A
+	SRL	A
+	LD	(SYSSEC),A	;Set physical sector
+; Is the buffer in use?
+	BIT	INUSE,(HL)	;Is the Buffer in use
+	SET	INUSE,(HL)	;(It is now)
+	JR	Z,FILBUF	;No,so fill it
+; Something already in the buffer....
+;...see if it is what we are after.
+	LD	HL,BUFDRV	;Point to Buffer contents
+	LD	B,2		;Check Drive & Track
+	CALL	CKBKEQ
+	JR	NZ,NOMATCH	;Skip if unequal
+	LD	A,(SYSSEC)	;Ok, try Sector
+	CP	(HL)
+	JR	Z,MATCH		;Skip if same
+;
+; Not the same physical sector so flush the buffer
+; if required
+;
+NOMATCH:LD	HL,FLAG
+	BIT	WRITEF,(HL)	;Anything to write?
+	CALL	NZ,WRITSC	;Yes,write sector
+; Now set up the buffer
+FILBUF:	LD	HL,(DRIVE)	;Move Drive & Track
+	LD	(BUFDRV),HL
+	LD	A,(SYSSEC)	;Add Sector
+	LD	(BUFSEC),A
+	LD	A,(FLAG)
+	BIT	READF,A		;Do we need to read?
+	CALL	NZ,READSC	;Read if required
+	LD	HL,FLAG
+	RES	WRITEF,(HL)	;No pending Write
+;
+; CP/M sector now lines up with the current disc buffer
+;
+;   Copy data to or from the buffer.
+MATCH:	LD	HL,BUFFER	;Point to buffer
+	LD	BC,128		;Length to move
+	LD	DE,(DMAADR)	;CP/M buffer address
+	LD	A,(CPMSEC)	;Which bit?
+	AND	(SECSIZ/128)-1
+	JR	Z,ATST		;Skip if there
+INCUP:	ADD	HL,BC		;Else advance..
+	DEC	A
+	JR	NZ,INCUP
+ATST:	LD	A,(FLAG)
+	BIT	OPTYPE,A	;Which way?
+	JR	NZ,RWMOVE	;Skip if read
+; Write, so mark and switch direction
+	SET	WRITEF,A	;Must be written sometime
+	LD	(FLAG),A
+	EX	DE,HL		;Reverse source/dest.
+;
+RWMOVE:	LDIR			;Move the data
+;
+; Data has been moved to/from buffer
+;
+	LD	A,(ERRF)	;Any errors?
+	OR	A
+	RET	NZ		;Yes,return
+	LD	A,(WRTYPE)	;Check type
+	CP	WRDIR		;Directory write?
+	LD	A,0		;(Set no error)
+	RET	NZ		;Return if not directory
+; Was directory so we must write it
+	LD	HL,FLAG
+	RES	WRITEF,(HL)	;Clear "Must write flag"
+	CALL	WRITSC		;Write the sector
+	LD	A,(ERRF)	;Get flag
+	RET			;Done
+
+; Check Block at <HL> against <DRIVE> for length B
+
+CKBKEQ:	LD	DE,DRIVE	;Point to DRIVE
+CK1:	LD	A,(DE)		;Get byte
+	CP	(HL)		;Match?
+	RET	NZ		;No,return
+	INC	HL		;On to next
+	INC	DE
+	DJNZ	CK1		;Loop if more
+	RET			;Done
+
+	SUBTTL Read/Write with retry and error reporting
+
+; Routines which actually perform the physical Read/Write
+
+;********************************
+;	Single Density		*
+;********************************
+
+SDREAD:	LD	C,0		;C=0 = Read
+	JR	SDRW
+SDWRIT:	LD	C,1		;C=1 = Write
+SDRW:	PUSH	BC		;Save BC
+	CALL	CHKDRV		;Check selected
+	POP	BC		;Reset BC
+	OR	A		;Any error?
+	RET	NZ		;Yes,return
+; Set up addresses for Disc transfer
+	LD	HL,(DMAADR)
+	LD	A,(CPMTRK)
+	LD	D,A
+	LD	A,(CPMSEC)
+	LD	E,A
+	CALL	RDWR		;Do Read/Write
+	RET			;Done
+
+;********************************
+;	Double Density		*
+;********************************
+
+READSC:	LD	C,0		;C=0 = Read
+	JR	RW
+WRITSC:	LD	C,1		;C=1 = Write
+RW:	PUSH	BC		;Save C
+	LD	A,(BUFDRV)	;Check drive selected
+	CALL	CHKDRV		;Check drive/start motor
+	POP	BC		;Reset C
+	OR	A		;Any error?
+	JR	NZ,SETERR	;Yes,set error
+;	Set up addresses for Disc Transfer
+	LD	HL,BUFFER	;HL=Buffer address
+	LD	A,(BUFTRK)	;Track->D
+	LD	D,A
+	LD	A,(BUFSEC)	;Sector->E
+	LD	E,A
+	CALL	RDWR		;Do read/write
+	OR	A		;Any error?
+	RET	Z		;No,return
+SETERR:	LD	(ERRF),A	;Yes,set flag
+	RET			;Done
+
+;****************************************
+;	Perform Read/Write operation	*
+;	with Retries:			*
+;	C=0  =  Read			*
+;	 =1  =  Write			*
+;	 =2  =  Read Address		*
+;	D   -   Track			*
+;	E   -   Sector			*
+;	HL  -   Buffer Address		*
+;****************************************
+
+RDWR:	LD	B,8		;Set retry count
+RDWRL:	PUSH	BC		;Save BC
+	PUSH	HL		;And HL
+
+	CALL	READWR		;Do Read/Write
+
+	POP	HL		;Reset HL
+	POP	BC		;Reset BC
+	OR	A		;Any Errors?
+	RET	Z		;No,return
+	BIT	0,A		;Motor timeout?
+	JR	NZ,MOTOFF	;Yes,skip
+	DJNZ	RTRY		;More retries? (skip if so)
+MOTOFF:	CALL	DERR		;Report & check for abort?
+	RET	Z		;Return if so
+	LD	B,8		;No,reset count
+;	Retries
+RTRY:	CALL	MOTON		;Keep Drives going
+	BIT	0,B		;Odd?
+	JR	NZ,RDWRL	;Yes,loop
+	LD	A,STEPCM
+	BIT	1,B
+	JR	NZ,TRYIT	;STEP
+	LD	A,RESTOR	;Else Restore
+TRYIT:	CALL	DOTYPI		;Do command
+	JR	RDWRL		;Try again
+
+;************************************************
+;	Error Handling				*
+;		Print Message and read reply	*
+;		Return	 Z = Return error	*
+;			NZ = Try again		*
+;		or ^C Reboots			*
+;************************************************
+
+DERR:	PUSH	HL		;Save registers
+	PUSH	BC
+	PUSH	DE
+	PUSH	AF
+; Prepare 'Drive N '
+	LD	HL,ADRV		;Point to Drive name
+	LD	A,(DRIVEA)	;Get cuurent one
+	LD	(HL),'A'-1	;Initialise
+SETDRV:	INC	(HL)		;Set it
+	RRCA
+	JR	NC,SETDRV
+; Print it
+	LD	HL,EDRV
+	CALL	PRINT
+; Prepare 'T=00 S=00'
+	POP	BC		;Get track/sector
+	POP	DE
+	PUSH	DE		;Reset
+	PUSH	BC
+	LD	HL,TRK		;Point to track
+	LD	A,D		;Load it
+	CALL	CNVDEC		;Convert
+	LD	HL,SEC		;Repeat for SEC
+	LD	A,E
+	CALL	CNVDEC
+ ; See if should print
+	LD	A,B
+	AND	82H
+	LD	HL,TRKSEC	;(In case)
+	CALL	Z,PRINT0	;Yes,do it
+; Now add specific message
+	POP	AF		;Recover A
+	LD	HL,NREADY	;Find approp. message
+	RLCA
+	JR	C,DERR0
+	LD	HL,DWP
+	RLCA
+	JR	C,DERR0
+	LD	HL,WF
+	RLCA
+	JR	C,DERR0
+	LD	HL,RNF
+	RLCA
+	JR	C,DERR0
+	LD	HL,CRC
+	RLCA
+	JR	C,DERR0
+	LD	HL,LDATA
+	RLCA
+	JR	C,DERR0
+	LD	HL,NDWF
+DERR0:	CALL	PRINT0		;Print message
+	LD	HL,RETRY	;Request reply
+	CALL	PRINT
+	CALL	CLEAR		;(Clear FDC)
+DERR1:	CALL	CONIN		;Read it
+	AND	5FH		;Ensure u/c
+	CP	'Y'
+	JR	Z,YES
+	CP	'N'
+	JR	Z,NO
+	SUB	03		;^C?
+	JR	NZ,DERR1	;No,loop
+	LD	(4),A		;Yes,reset default drive to A
+	JP	WBOOT
+YES:	INC	A		;Set NZ
+	JR	NO2		;Skip
+NO:	LD	A,1		;Leave Z, set A=1 
+NO2:	POP	DE		;Reset registers
+	POP	BC
+	POP	HL
+	RET			;Done
+
+;	Print HL until a Null
+
+PRINT:	PUSH	HL		;Save HL
+	LD	C,CR		;Cr,lf to start
+	CALL	CONOUT
+	LD	C,LF
+	CALL	CONOUT
+	POP	HL		;Reset HL
+PRINT0:	LD	A,(HL)
+	OR	A
+	RET	Z
+	INC	HL
+	PUSH	HL
+	LD	C,A		;Move to C
+	CALL	CONOUT
+	POP	HL
+	JR	PRINT0
+
+; Convert A to decimal in (HL)
+
+CNVDEC:	LD	(HL),'0'-1	;Initialise
+CNV0:	INC	(HL)		;Bump count
+	SUB	10
+	JR	NC,CNV0
+	ADD	A,'0'+10	;Restore
+	INC	HL		;to units
+	LD	(HL),A		;Set them
+	RET
+
+;	Error Messages
+
+EDRV:	DEFB	'Drive '
+ADRV:	DEFB	'0 ',0
+TRKSEC:	DEFB	'T='
+TRK:	DEFB	'00 S='
+SEC:	DEFB	'00 ',0
+NREADY:	DEFB	'Not ready',0
+DWP:	DEFB	'Disc Write Protected',0
+WF:	DEFB	'Write Fault',0
+RNF:	DEFB	'Record not found',0
+CRC:	DEFB	'CRC Error',0
+LDATA:	DEFB	'Lost Data',0
+NDWF:	DEFB	'No disk/Wrong format',0
+RETRY:	DEFB	'Retry? (y/n/^C)?',CR,LF,0
+
+; Use a local stack to avoid overflow
+
+NEWSP:	LD	(TSTACK-6),HL	;Save HL
+	LD	HL,OLDSP	;Set final exit
+	LD	(TSTACK-2),HL
+	POP	HL		;Get return address
+	LD	(TSTACK-4),HL	;Put at top of TSTACK
+	LD	(SPSAVE),SP	;Save SP
+	LD	SP,TSTACK-6	;Set new one
+	POP	HL		;Reset HL
+	RET			;Return
+
+OLDSP:	LD	SP,(SPSAVE)	;Reset stack
+	RET			;Done
+
+	SUBTTL	Hardware Drivers
+
+;********************************
+;	Utilities		*
+;********************************
+
+;	Delay for <A> ms
+
+DELAY:	PUSH	BC
+	LD	B,A
+MSDEL0:	LD	A,(MS)		;Set count
+MSDEL1:	EX	(SP),HL
+	EX	(SP),HL
+	DEC	A		;Delay
+	JR	NZ,MSDEL1
+	DJNZ	MSDEL0
+	POP	BC
+	RET
+
+; MOTON	Ensures the drive motors are running
+;	- waits for them to start up if previously
+;	stopped.
+
+MOTON:	LD	A,(DRIVEA)	;Get drive address
+	OUT	(DRIVEP),A	;Address them
+MOT0:	IN	A,(STATRG)	;Check status
+	RLCA
+	JR	C,MOT0		;Wait if not ready
+	RET			;Done
+
+;********************************
+;	Disc Drivers		*
+;********************************
+
+;	Clear the 1797
+
+CLEAR:	LD	A,CLEARC	;Load the command
+
+;	Do a Type I command
+
+DOTYPI:	OUT	(CMDREG),A	;Issue command
+	LD	A,10		;Short delay
+DOID:	DEC	A
+	JR	NZ,DOID
+DOIW:	IN	A,(STATRG)	;Read status
+	BIT	0,A		;Busy?
+	JR	NZ,DOIW		;Yes,loop
+	RET			;Else done
+
+;	Check Drive is selected, else change
+
+CHKDRV:	LD	B,A		;Wanted drive to B
+	OUT	(DRIVEP),A	;Ensure running
+CDRV:	IN	A,(STPORT)	;Wait for start up..
+	BIT	1,A		;...if nec.
+	JR	NZ,CDRV
+	LD	A,(DRIVEA)	;Check current one
+	XOR	B		;Compare
+	AND	0FH		;Mask extraneous bits
+	RET	Z		;Ok,return
+
+; Different drive, so select it
+
+ 	LD	A,B		;Put requested...
+	LD	(DRIVEA),A	;..in DRIVEA
+	CALL	CHKDSK		;See if one there
+	JR	NZ,THERE	;Skip if so
+	LD	A,80H		;Error code
+	CALL	DERR		;report it
+	RET	Z		;Return if no retry required
+	LD	HL,DRIVEA	;Point to DRIVEA
+	LD	A,(HL)		;Get contents
+	LD	(HL),0		;Ensure no match
+	JR	CHKDRV		;Repeat
+;	The drive is there and ready. Do a "Read Address"
+;	to find the current position of the head
+THERE:	IN	A,(TRKREG)	;Read current Track
+	LD	D,A		;Move to D
+	LD	E,1		;Any sector
+	LD	HL,IDHEAD	;HL->Buffer
+	LD	C,2		;Read Address request
+	CALL	RDWR		;Do the command
+	OR	A		;Test for error
+	RET	NZ		;Return if so
+	LD	A,(IDHEAD)	;Pick up track number
+	OUT	(TRKREG),A	;Put in 1797
+	XOR	A		;No errors
+	RET			;Done
+
+;  Check a Disc is present in the selected Drive.
+;	Done by performing a "Read Address" and
+;	expecting completion within a specified time
+;	Returns  Z=none
+;		NZ=Ok
+
+CHKDSK:	PUSH	HL		;save HL
+	CALL	MOTON		;Start Drive
+	MSDEL	HLDEL		;In case Head loading
+	LD	A,RDADDR	;"Read Address" command
+	OUT	(CMDREG),A	;Issue it
+; Await Completion or timeout
+	LD	H,HLDEL*3	;Time limit
+CDW:	MSDEL	1		;Delay
+	IN	A,(STATRG)	;Read Status
+	BIT	0,A		;Complete?
+	JR	Z,CHD0		;Yes,exit
+	DEC	H		;More?
+	JR	NZ,CDW		;No,loop
+; exit
+CHD0:	CALL	CLEAR		;Tidy up 1797
+	LD	A,H		;Set return
+	OR	A		;NZ=Ok
+	POP	HL		;Reset HL
+	RET
+
+DRIVEA:	DEFB	0
+
+;****************************************
+; Read/Write a Sector to/from memory	*
+;  Assumes drive selected and destroys	*
+;  BC & HL				*
+;****************************************
+READWR:
+	PUSH	DE		;Save Track/sector
+
+;	Check Density and modify track/sector appropriately
+
+	LD	A,(DRIVEA)	;Get Drive
+	BIT	4,A		;Check density
+	JR	Z,DOUBLE	;Skip if DD
+; Single Density, track goes 0-69 = 0-34 + side
+	LD	A,D		;Check range
+	SUB	35		;35-69?
+	JR	C,SDDD		;Skip if 0-34
+	LD	D,A		;Modify Track
+	JR	SDDD		;Skip
+; Double Density, sector goes 0-19 = 0-9 + side
+DOUBLE:	LD	A,E		;Check it
+	SUB	MAXSEC/2	;10-19?
+	JR	C,SDDD		;Skip if 0-9
+	LD	E,A		;Modify sector
+
+;	D=Wanted Track
+;	E=Wanted Sector
+;	Flag  C=Side 0
+;	     NC=Side 1
+
+;	Check at selected track
+SDDD:	PUSH	AF		;Save side
+	IN	A,(TRKREG)	;Read 1797 track
+	CP	D		;Is it the one we want?
+	JR	Z,ATTRK		;Skip if there
+	LD	A,D		;Seek track
+	OUT	(DATARG),A
+	DOFDC	SEEKCM
+	MSDEL	5		;Additional settling time
+
+;	Set sector - Check Side
+
+ATTRK:	LD	A,E		;Get sector
+	OUT	(SECREG),A	;Set it
+	POP	AF		;reset Carry
+	POP	DE		;Reset track/sector
+	LD	B,0		;Side 0
+	JR	C,SIDE0		;Skip if 0
+	LD	B,2		;Side 1
+SIDE0:	CALL	MOTON		;Ensure motor going
+	LD	A,C		;Save request
+	RRCA			;Request to carry
+	LD	C,STPORT	;Point to Status port
+	JR	NC,RSEC		;Skip if Read Sector
+
+;*****	Write Section	*****
+
+	LD	A,WRCMD		;Get command
+	OR	B		;Include 'side'
+	OUT	(CMDREG),A	;Issue it
+WRITE1:	LD	A,(HL)		;Get next byte ready
+	INC	HL
+WWAIT:	IN	B,(C)		;Read status
+	JR	Z,WWAIT		;Loop if nothing
+	OUT	(DATARG),A	;Transfer next (?)
+	JP	M,WRITE1	;Loop on DRQ
+
+;	IRQ exit
+
+	JR	RWDONE		;Exit
+
+;*****	Read Section	*****
+
+RSEC:	RRCA			;Bit to carry
+	LD	A,RDCMD		;Load Read command
+	JR	NC,INCSID	;Skip if Read sector
+	LD	A,RDADDR	;Else change command
+INCSID:	OR	B		;Include side bit
+	OUT	(CMDREG),A	;Issue it
+	JR	RDWAIT		;Wait
+
+READ1:	IN	A,(DATARG)	;Read data
+	LD	(HL),A		;Put in memory
+	INC	HL		;Bump address
+RDWAIT:	IN	B,(C)		;Read Status
+	JR	Z,RDWAIT	;Loop on no request
+	JP	M,READ1		;Jump on DRQ
+; ...else IRQ assumed
+
+;*****	Read/Write Completion	*****
+
+RWDONE:	IN	A,(STATRG)	;Read status
+	RET			;Done
+
+	SUBTTL IO routines - IOBYTE control
+
+;********************************
+;   Main routines for 		*
+;		Console		*
+;		Reader		*
+;		Punch		*
+;		List		*
+;********************************
+; Extras:Full implementation of *
+;	 Intel IO byte		*
+;********************************
+
+; Console Status - Selects appropriate routine
+;			from IO byte info.
+
+CONST:	LD	HL,TTYP		;In case TTY option
+	LD	B,1		;1 shift
+
+	LD	DE,CSTTAB
+	JR	GOTOIT
+
+; Console Input
+
+CONIN:	LD	HL,TTYP		;In case TTY option
+	LD	B,1
+	LD	DE,CINTAB	;Point to table
+	JR	GOTOIT
+
+;
+; Console Output
+
+CONOUT:	LD	HL,TTYP		;In case TTY option
+	LD	B,1
+	LD	DE,COUTAB
+	JR	GOTOIT
+
+; Reader Routine
+
+READER:	LD	HL,RDRP		;Point to reader port
+	LD	B,7
+	LD	DE,RDRTAB
+	JR	GOTOIT
+
+; Punch routine
+
+PUNCH:	LD	HL,PUNP		;Point to punch port
+	LD	B,5
+	LD	DE,PUNTAB
+	JR	GOTOIT
+
+; List routine (entered via LIST)
+
+LISTIT:	LD	HL,LISTP	;Point to list port#
+	LD	B,3
+	LD	DE,LSTTAB
+	JR	GOTOIT
+
+;
+; List status
+
+LISTST:	LD	HL,LISTP	;Point to list port
+	LD	B,3
+	LD	DE,LSTSTB
+
+;  Go to appropriate IO routine
+
+GOTOIT:	LD	A,(IOBYTE)	;Get IOBYTE
+GOTO:	RLCA			;Select correct field
+	DJNZ	GOTO
+	AND	6		;Isolate field
+	LD	B,(HL)		;Pick up serial port
+	LD	L,A		;Offset to HL
+	LD	H,0
+	ADD	HL,DE		;Index in
+	LD	A,(HL)		;Get address
+	INC	HL
+	LD	H,(HL)
+	LD	L,A
+	JP	(HL)		;Go to it
+
+	SUBTTL IO routines - Enhanced List support
+
+;********************************
+;   LIST routine will handle	*
+;	paging if required	*
+;	and Form Feeds		*
+;********************************
+LIST:	LD	A,C		;Get character
+	CP	' '		;Printing?
+	JR	NC,LISTIT	;Yes,print it.
+	LD	HL,LCOUNT	;Point to line count
+	CP	0CH		;Form feed?
+	JR	NZ,NOTFF	;No,skip
+
+; Handle a Form Feed
+
+	LD	A,(FFCNTL)	;Load control byte
+	OR	A		;Zero?
+	JR	Z,LISTIT	;Yes,accept it
+	LD	B,A		;No,move to B
+	INC	A		;Was it 0FFH?
+	LD	E,(HL)		;(Get current count)
+	LD	A,(LPAGE)	;(..and Reset it)
+	LD	(HL),A
+	JR	NZ,DOLFS	;No,do requested LFs
+	LD	A,(LGAP)	;Yes,get Gap
+	ADD	A,E		;Include lines left
+	LD	B,A		;Put in B
+	JR	DOLFS		;Do multiple LFs
+
+; Not a Form Feed
+
+NOTFF:	CP	LF		;Line feed?
+	JR	NZ,LISTIT	;No,ignore
+
+; Line Feed - update line count
+
+	DEC	(HL)		;Another done
+	JR	NZ,LISTIT	;Jp if not EOP
+	LD	A,(LPAGE)	;Reset line count
+	LD	(HL),A
+	OR	A		;Paging?
+	JR	Z,LISTIT	;No,ignore
+	LD	A,(LGAP)	;Yes,add gap
+	INC	A		;(allow for current)
+	LD	B,A		;Put in B
+
+; Do <B> Line feeds
+
+DOLFS:	LD	C,LF		;Set LF
+	PUSH	BC		;Save BC
+	CALL	LISTIT		;List it
+	POP	BC		;Reset BC
+	DJNZ	DOLFS		;Loop if more
+	RET			;Done
+
+LCOUNT:	DEFB	1
+
+	SUBTTL Serial/Parallel routines
+
+;********************************
+;	Serial port routines	*
+; - Assume a standard Nascom	*
+;   6402 type UART setup if	*
+;   port<80H, else 8250 UART	*
+;				*
+; <B> holds Low port number	*
+;********************************
+;
+;  Handshake routine - Status check
+;	Assumes 8250 UART on CPU card
+;
+HSST:	LD	A,6		;Offset
+	ADD	A,B		;Index in
+	LD	C,A		;Set port
+	IN	A,(C)		;Check ready bit
+	AND	10H		;Isolate it
+	RET	Z		;Return if busy
+				;Drop through to Serial status
+;
+;  Serial status poll - returns -
+;	A=0	Not ready
+;	A=FFH	Ready
+;
+SERST:	BIT	7,B		;Check port range
+	JR	NZ,ST8250	;Skip if 8250
+	LD	C,B		;Pick up port number
+	INC	C		;Address status port
+	IN	A,(C)		;Read it
+	AND	80H		;Check ready bit
+	RET	Z		;Return not ready
+	LD	A,0FFH		;Ready - so FF
+	RET
+
+; Status check for 8250
+
+ST8250:	LD	A,5		;Offset
+	ADD	A,B		;Status port address
+	LD	C,A		;Save
+ST82LP:	IN	A,(C)		;Check status
+	AND	20H		;Test it
+	RET	Z		;0 if busy
+	LD	A,0FFH		;FF = ready
+	RET
+
+; Serial input
+
+SERIN:	BIT	7,B		;Check range
+	JR	NZ,IN8250	;Skip if 8250
+	LD	C,B		;Pick up port number
+	INC	C		;Address status port
+SERIN0:	IN	A,(C)		;Read status
+	RLA			;Bit to carry
+	JR	NC,SERIN0	;Wait if nothing
+	DEC	C		;Back to Data port
+	IN	A,(C)		;Read it
+	RET			;Done
+
+; Serial input for 8250
+
+IN8250:	LD	A,5		;Offset
+	ADD	A,B
+	LD	C,A
+IN82LP:	IN	A,(C)		;Check status
+	RRA
+	JR	NC,IN82LP	;Wait if nothing
+	LD	C,B
+	IN	A,(C)		;Read data
+	RET
+
+; Serial Output routine
+
+SEROUT:	LD	L,C		;Character to L
+	BIT	7,B		;Check port range
+	JR	NZ,OT8250	;Skip if 8250
+	LD	C,B		;Get port no.
+	INC	C		;On to status port
+SERO0:	IN	A,(C)		;Check busy
+	BIT	6,A
+	JR	Z,SERO0		;Loop on busy
+	DEC	C		;Back to Data port
+	OUT	(C),L		;Output data
+	RET			;Done
+
+; List Output for handshaking printer
+
+HSHAKE:	LD	L,C		;Move character to L
+HS00:	CALL	HSST		;Check status
+	OR	A		;Test result
+	JR	Z,HS00		;wait if busy
+	LD	C,B		;Port to C
+	OUT	(C),L		;Output byte
+	RET			;Done
+
+; Serial output for 8250
+
+OT8250:	LD	A,5		;Offset
+	ADD	A,B
+	LD	C,A
+OT82LP:	IN	A,(C)		;Wait
+	AND	20H
+	JR	Z,OT82LP
+	LD	C,B		;To data port
+	OUT	(C),L		;Output data
+	RET
+
+; Centronics-type parallel printer
+;	Assumes standard PIO set-up
+
+CENTST:	LD	A,(PPORT)	;Get port number
+	LD	C,A		;..to C
+	IN	A,(C)		;Read Status port
+	RRCA			;Busy to Carry
+	CCF			;1=ready
+	SBC	A,A		;Propagate through A
+	RET			;Return 0 or 0FFH
+
+;	Centronics Output driver
+
+CENTRO:	LD	B,C		;Move character to B
+	LD	A,(PPORT)	;Get port number..
+	LD	C,A		;..to C
+	INC	C		;Point to Data port
+	OUT	(C),B		;Write character
+	DEC	C		;Back to Control
+	LD	B,0FDH		;Set Strobe byte
+CENTLP:	IN	A,(C)		;Read status lines
+	RRCA			;Busy?
+	JR	C,CENTLP	;Yes,wait
+	OUT	(C),B		;No,strobe on
+	LD	A,0FFH		;Then...
+	OUT	(C),A		;..strobe off.
+	RET			;Done.
+
+;
+;  Initialisation for PIO and IVC cursor type
+;   also 8250
+;
+IOINIT:	IN	A,(0B1H)	;Clear any character
+	LD	HL,(BLINKR)	;Get cursor type
+	CALL	DEFCUR		;Set it
+; cursor done, now intialise 8250
+	LD	A,(UMODE)	;Get mode word
+	OUT	(0BCH),A	;Set it
+	LD	A,83H		;Enter divisors
+	OUT	(0BBH),A
+	LD	HL,(UBAUD)	;Get Baud rate
+	LD	A,H		;Divisor high
+	OUT	(0B9H),A	;Set it
+	LD	A,L		;Divisor low
+	OUT	(0B8H),A
+	LD	A,(USET)	;Normal line
+	AND	7FH		;In case he's got it wrong
+	OUT	(0BBH),A
+; now the PIO
+	LD	A,(PPORT)	;Is there one?
+	OR	A
+	RET	Z		;No, done
+	LD	C,A		;Port to C
+	LD	B,0FFH		;Set B=0FFH
+	OUT	(C),B		;Set A-side out =FF
+	INC	C		;..and..
+	OUT	(C),B		;... B-side out =FF
+	INC	C
+	OUT	(C),B		;A-side = Control mode
+	LD	D,0FDH		;(Use bit 1 for strobe)
+	OUT	(C),D		;All in except bit 1
+	INC	C		;..and now B-side control port
+	OUT	(C),B		;B-side = Control mode
+	XOR	A
+	OUT	(C),A		;All out
+	DEC	C
+	DEC	C		;One strobe of..
+	OUT	(C),D		;..FF..
+	NOP
+	OUT	(C),B		;..to wake up printer
+	RET			;Done
+
+;  Define Cursor type to HL
+
+DEFCUR:	PUSH	HL		;Save type
+	LD	C,ESCAPE	;Define cursor
+	CALL	PUTVID
+	LD	C,'Y'
+	CALL	PUTVID
+	POP	BC
+	PUSH	BC
+	CALL	PUTVID
+	POP	BC
+	LD	C,B
+	JP	PUTVID
+
+SUBTTL	Keyboard routines for the Gemini Keyboard
+;************************************************
+;  SCAN	- Scans the keyboard			*
+;	  It also supports a keyboard on the IVC*
+;	  Returns: A=00  ...No character	*
+;		   A=FF  ...Character ready	*
+;************************************************
+SCAN:	LD	HL,(EDITP)	;Check edit buffer
+	LD	A,(HL)
+	OR	A		;Test it
+	LD	A,0FFH		;(In case so)
+	RET	NZ		;Return if something there
+; Check IVC keyboard
+	LD	C,ESCAPE	;Interrogate it
+	CALL	PUTVID
+	LD	C,'k'
+	CALL	PUTVID
+	CALL	GETVID		;Read status
+	RET			;return it
+
+EDMODE:	DEFB	0	;Edit mode flag
+EDITP:	DEFW	EDMODE	;Edit buffer pointer
+
+	PAGE
+;************************************************
+; CONIN - Obtains an input character from the	*
+;	  keyboard.  It also provides a blinking*
+;	  cursor on the screen and an auto	*
+;	  repeat function.			*
+;************************************************
+BLINK:	LD	HL,(EDITP)	;Check buffer
+	LD	A,(HL)		;Anything to return?
+	OR	A
+	JR	Z,BL1		;No,skip
+	INC	HL
+	LD	(EDITP),HL	;Update pointer
+BL1:	CALL	Z,GETCHR	;Get character if nec.
+
+; Check for Edit mode request
+
+	LD	B,A
+	LD	A,(EMCHAR)	;Get request character
+	CP	B		;Is this it?
+	LD	A,B		;Reset A
+	RES	7,A		;Ensure msb clear
+	RET	NZ		;Return it if not request
+
+	; Else fall thru into "Screen Edit"
+
+	SUBTTL  Screen Edit mode
+
+;****************************************
+;	On-Screen Editing		*
+;****************************************
+
+	LD	HL,900H		;IVC cursor type
+	LD	(GETCHR+1),HL	;!!!!!
+EDMD0:	CALL	GETCHR		;Read a character
+	LD	C,A		;Echo it
+	PUSH	AF		;(save)
+	CALL	PUTVID
+	POP	AF
+	CP	03		;Control C?
+	JR	Z,EDMD99	;Yes,abort
+	CP	CR		;Return?
+	JR	NZ,EDMD0	;No,get next
+
+; Line on screen, now move to line buffer
+
+	LD	C,ESCAPE	;Read line in
+	CALL	PUTVID
+	LD	C,'Z'
+	CALL	PUTVID
+ 	LD	DE,LBUFF	;Point to start
+RDIVC:	CALL	GETVID		;Read byte
+	LD	(DE),A		;Store
+	INC	DE		;& address
+	SUB	CR		;EOL?
+	JR	NZ,RDIVC	;No,loop
+	LD	(DE),A		;Set null at end
+
+;  Line now in buffer. Skip any prompt
+	LD	HL,LBUFF	;Set up
+	LD	A,(HL)		;Get first
+	CP	'A'		;Alpha?
+	JR	C,EDMD4		;No,skip
+	CP	'P'+1		;Possible drive?
+	JR	NC,EDMD4	;No,skip
+	INC	HL		;Look at next
+	LD	A,(HL)		;Get it
+	DEC	HL		;(Reset address)
+	CP	'>'		;CP/M prompt?
+	JR	NZ,EDMD6	;No,skip
+	INC	HL		;Yes,skip it
+	JR	EDMD5
+
+EDMD4:	CP	'*'		;PIP prompt
+	JR	Z,EDMD5		;Yes,skip
+	CP	'-'		;DDT?
+	JR	Z,EDMD5
+	CP	'#'
+	JR	NZ,EDMD6	;No,accept all
+EDMD5:	INC	HL		;Step on
+; Move line to buffer (packing any control characters)
+EDMD6:	LD	DE,LBUFF	;Set DE
+	LD	(EDITP),DE	;Set buffer start
+EDMD7:	LD	A,(HL)		;Get byte
+	CP	'^'		;Control?
+	JR	NZ,EDMD8	;No,skip
+	INC	HL		;Step on
+	LD	A,(HL)		;Yes,load it
+	CP	'^'		;Up arrow wanted?
+	JR	Z,EDMD8		;Yes,skip
+	AND	1FH		;No, make control
+EDMD8:	LD	(DE),A		;Store it
+	INC	HL		;Move on
+	INC	DE
+	OR	A		;Done?
+	JR	NZ,EDMD7	;Loop if more
+	LD	A,'X' AND 1FH	;Load ^X
+
+EDMD99:			;Reset Cursor and return ^X
+	LD	HL,IVCCUR	;Reset cursor
+	LD	(GETCHR+1),HL	;!!!!!!
+	LD	(EDMODE),A	;Set flag non-zero
+	RET			;Done
+	
+	SUBTTL	Keyboard Input routine
+;************************************************
+;    Changes the cursor appearance and calls	*
+;    for a character from the IVC		*
+;************************************************
+
+GETCHR:	LD	HL,IVCCUR	;Set cursor going
+	CALL	DEFCUR
+	LD	C,ESCAPE	;Get a character
+	CALL	PUTVID
+	LD	C,'K'
+	CALL	PUTVID
+	CALL	GETVID
+	PUSH	AF		;Save it
+	LD	HL,(BLINKR)	;Get new type
+	CALL	DEFCUR		;Set it
+	POP	AF		;Pick up last character
+	RET			;Return it
+
+	SUBTTL	CRT routine
+;************************************************
+;		CRT Routine			*
+;  Outputs the character in C to the screen	*
+;************************************************
+
+;	No output if "Sink" flag is set
+
+CRT:	LD	HL,(EDITP)	;Check the flag
+	LD	A,(HL)		;Anything in the buffer?
+	OR	A
+	RET	NZ		;Yes, ignore
+	LD	A,(EDMODE)	;Check flag
+	OR	A		;Done?
+	JR	Z,PUTVID	;Yes,skip
+	LD	A,CR		;No,is it a CR?
+	SUB	C
+	LD	(EDMODE),A	;(Reset flag)
+	RET	NZ		;Return if it isn't
+
+;************************************************
+;  Outputs the character in C to the IVC	*
+;************************************************
+
+PUTVID:	IN	A,(IVCS)	;Read flags
+	RRCA			;Flag to carry
+	JR	C,PUTVID	;Loop if full
+	LD	A,C		;Else output byte
+	OUT	(IVCD),A
+	RET
+
+;************************************************
+;	Read a byte back from the IVC		*
+;************************************************
+
+GETVID:	IN	A,(IVCS)	;Read flags
+	RLCA			;Flag to carry
+	JR	C,GETVID	;Loop if nothing
+	IN	A,(IVCD)	;Read byte
+	RET			;Return it
+
+	SUBTTL	Read/Write Workspace
+	PAGE
+; Status bits in FLAG
+
+OPTYPE	EQU	0	;Read or Write Request
+READF	EQU	1	;"Must Read" flag
+WRITEF	EQU	2	;"Must Write" flag
+INUSE	EQU	3	;Buffer in use flag
+
+; Workspace
+
+; ****** Auto Density *****
+
+DRVLOG:	DEFW	0
+
+;****** CP/M Requests ******
+
+DRIVE:	DEFB	0
+CPMTRK:	DEFB	0
+CPMSEC:	DEFB	0
+DMAADR:	DEFW	80H
+
+;****** Unallocated Block ******
+
+UNACNT:	DEFB	0
+UNADRV:	DEFB	0
+UNATRK:	DEFB	0
+UNASEC:	DEFB	0
+
+;****** Current Buffer contents ******
+
+BUFDRV:	DEFB	0
+BUFTRK:	DEFB	0
+BUFSEC:	DEFB	0
+
+;*****
+
+WRTYPE:	DEFB	0	;Write type
+SYSSEC:	DEFB	0	;Wanted physical sector
+
+;****** Flags ******
+
+ERRF:	DEFB	0	;Error flag
+FLAG:	DEFB	0	;Flag byte
+
+SPSAVE:	DEFW	0	;Saved SP
+
+	SUBTTL	Workspace
+
+;****** Buffers ******
+
+ALL00:			;Disc Allocation Maps
+ALL01	EQU	ALL00+DSM/8+1
+ALL02	EQU	ALL01+DSM/8+1
+ALL03	EQU	ALL02+DSM/8+1
+
+CHK00	EQU	ALL03+DSM/8+1 ;Check vectors
+CHK01	EQU	CHK00+DIRENT/4
+CHK02	EQU	CHK01+DIRENT/4
+CHK03	EQU	CHK02+DIRENT/4
+
+BUFFER	EQU	CHK03+DIRENT/4  ;Sector buffer
+DIRBUF	EQU	BUFFER+SECSIZ	;Directory Buffer
+
+LBUFF	EQU	DIRBUF+128	;Edit mode buffer
+IDHEAD	EQU	LBUFF		;Disc header
+
+TSTACK	EQU	LBUFF+81	;Temp stack
+
+; Put the signon message in this area
+
+SIGNON:
+	DEFB	1AH,1Bh,'E',LF,LF,LF
+	DEFB	'Gemini Multiboard'
+	DEFB	' Auto Density System '
+	DEFB	'(1.4)',CR,LF,LF
+	DEFB	'      '
+	DEFB	'46k CP/M vers 2.2'
+	DEFB	CR,LF,LF,0
+
+	SUBTTL Symbol Table
+	END
+y System '
+	DEFB	'(1.

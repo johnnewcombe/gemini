@@ -1,0 +1,1098 @@
+.PO4
+
+
+
+
+
+
+
+
+
+
+                     ****************************
+                     *                          *        
+                     *     MAP 80 SYSTEMS LTD   *
+                     *         BIOS NOTES       *
+                     *        VERSION 4.00      *
+                     *         CP/M PLUS        *
+                     *                          *
+                     ****************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MAP 80 SYSTEMS LTD
+Unit 2
+Stoneylands Road
+EGHAM
+Surrey.  TW20 9QR
+Tel 0784 37674
+Issue 4  February 1985
+
+
+.PAŠ                CP/Í PLUÓ - THÅ MAĞ 8° IMPLEMENTATION
+                =====================================
+     CP/Í  PLUÓ haó beeî supplieä tï yoõ iî twï parts¬  á SYSTEÍ  disë 
+whicè  yoõ  uså  tï booô CP/Í PLUÓ anä á MASTEÒ  disë  containinç  thå 
+utilitù fileó supplieä bù DRI.
+     Detailó  oæ  thå fileó provideä bù DRÉ caî bå founä iî  thå  CP/Í 
+PLUÓ  manuals¬  which¬  oî thå whole¬  wilì bå founä instructivå anä á 
+greaô improvemenô oveò thå CP/Í 2.² manuals®  Wå wilì adä á fe÷  extrá 
+explanationó  wheî  explaininç  ouò  implementatioî iî  thå  hopeó  oæ 
+clarifyinç whaô ió á necessarilù compleø situation.
+
+                        HARDWARÅ REQUIREMENTS
+                        =====================
+     Foò systemó otheò thaî MAĞ CPÕ thå followinç modó arå required
+G81± witè VFC
+-------------
+Linë thå G81± tï poweò oî reseô aô 0000È (seå G81± manual)
+Linë thå VFÃ tï autï booô (seå VFÃ manual)
+
+G81³ witè VFC
+-------------
+Removå RP/Í ² froí thå G81³ anä replacå iô witè BOOÔ 81³ supplied.
+Linë thå VFÃ tï non-autï booô (seå VFÃ manual)
+
+NASCOÍ ² witè VFC
+-----------------
+Removå headeò pluç LKS1.
+Seô thå DIÌ switcheó 123´ oî LSW± sï thaô youò NASCOÍ poweò oî  resetó 
+aô 0000H
+Linë thå VFÃ tï autï boot
+Remove the header from LKS1
+
+                         MEMORÙ REQUIREMENTS
+                         ===================
+     CP/Í  PLUÓ ió supplieä bù DRÉ iî twï forms¬  onå foò aî  unbankeä 
+systeí (maximuí 64ë oæ memory)¬  anä onå whicè operateó undeò á systeí 
+wherå morå thaî 64ë caî bå madå available®  Thå sophisticateä featureó 
+thaô  CP/Í PLUÓ ió capablå oæ requireó á loô oæ memory¬  anä  wå  havå 
+thereforå  onlù implementeä thå bankeä system®  Howeveò witè jusô  onå 
+additionaì  banë oæ 64ë thå fulì facilitieó oæ á bankeä CP/Í PLUÓ  caî 
+bå  takeî  advantagå  of®  Á Z8° caî addresó 64ë oæ  memorù  usinç  1¶ 
+addresó lines¬  á systeí ió thuó requireä tï accesó morå thaî 64k®  Aô 
+presenô ³ systemó exisô oî thå NAS/8° BUS¬  onå ió á 64ë paginç systeí 
+utiliseä bù Gemini¬  thió ió quitå unusablå becauså CP/Í PLUÓ requireó 
+portionó oæ memorù tï bå commoî (accessiblå aô alì times)®  Thå seconä 
+ió  á  32ë paginç systeí availablå oî thå MAĞ RAÍ carä wheî useä  witè 
+thå G81± oò Nascoí CPÕ cards¬  thió ió verù suitablå foò CP/Í PLUÓ buô 
+eveî  betteò  ió thå 4ë memorù mappinç systeí whicè thå MAĞ  RAÍ  carä 
+alsï  supportó anä ió availablå wheî usinç á MAĞ CPÕ oò  á  G813®  Yoõ 
+wilì  thereforå  requirå  aô leasô onå MAĞ RAÍ carä anä  totaì  systeí 
+memorù oæ aô leasô 128k¬  thå RAÍ oî boarä thå MAĞ CPÕ oò G81³  countó 
+towardó this.
+
+
+Š                               BOOTING
+                               =======
+     Tï  booô  CP/Í  PLUÓ poweò uğ youò systeí anä  theî  inserô  youò 
+SYSTEÍ  CP/Í PLUÓ diskettå iî youò firsô floppù drive®  Á BOOÔ routinå 
+oæ  somå  sorô  loadó tracë ° sectoò ° froí  youò  masteò  disk®  Thió 
+routinå maù bå thå BOOÔ EPROÍ oî thå MAĞ CPU¬  oò VSOFÔ oî thå MAĞ VFÃ 
+oò  varieä EPROMó oî otheò systems®  Thå sourcå  filå  3LDR.MAC¬  wheî 
+assembleä  (3LDR.COM)¬  provideó thió sector®  Wheî 3LDR.COÍ haó  beeî 
+loaded¬  iô  ió  executeä  anä proceedó tï loaä sectoró froí  tracë  ° 
+sectoò ± intï memorù startinç aô addresó 100H®  Thå systeí loadeä ió á 
+miné CP/Í systeí (CPMLDR.COM© madå uğ oæ á miné BDOS¬  provideä bù DRÉ 
+(CPMLDR.REL)¬  anä á miné loadeò BIOS¬  (assembleä froí  LDRBIOS.MAC)® 
+CPMLDR.COÍ  theî  proceedó tï loaä thå maiî CP/Í PLUÓ systeí froí  thå 
+firsô floppù disk¬ thió filå resideó oî thå bootinç disë anä ió calleä 
+CPM3.SYS®  Afteò CPM3.SYÓ haó beeî loaded¬ iô ió executed¬ anä finallù 
+yoõ  arå intï CP/Í PLUS®  Bootinç ió completå wheî thå CP/Í PLUÓ  BIOÓ 
+loadó thå consolå commanä processoò filå (CCP.COM© froí thå lasô 4ë oæ 
+thå systeí trackó oæ thå SYSTEÍ disk® CCP.COÍ ió storeä iî memory¬ anä 
+theî loadeä anä executeä tï enablå commanä entry®  Yoõ wilì bå greeteä 
+witè thå CP/Í prompô A>
+                            BOOTINÇ ERRORS
+                            ==============
+     Iæ  yoõ  inserô á diskettå whicè haó noô haä  thå  systeí  trackó        
+initialiseä  witè  á  valiä systeí thå messagå  SYSTEM¿  wilì  appear® 
+Inserô  á  properlù initialiseä diskettå anä bootinç  wilì  theî  takå 
+placå (Iô maù bå necessarù tï RESEÔ youò machine).
+     Iæ  thå  booô routinå ió unablå tï reaä á sectoò froí thå  systeí 
+tracë  (mosô likelù duå tï physicaì damagå tï thå diskette©  theî  thå 
+messagå ERROÒ wilì bå displayed®  Replacå thå offendeò witè á properlù 
+initialiseä diskettå anä presó RESET.
+                           OÎ SCREEÎ EDITING
+                           =================
+     Thå normaì cursoò wheî thå BIOÓ ió callinç foò consolå inpuô ió á 
+blinkinç  underlinå character¬  wheî consolå inpuô ió noô beinç calleä 
+foò  thå  cursoò remainó visiblå buô ió  non-blinking®  Thå  MAĞ  BIOÓ 
+provideó aî additionaì featurå i.å oî screeî editing.
+     Tï  enteò  thå  ediô  modå  presó  EDIÔ  ^À  oò  (^SHIFTÀ  Nascoí 
+keyboards©  tï obtaiî aî entrù oæ 00H®  Thió informó thå BIOÓ tï enteò 
+ediô  modå 1®  Iî thió modå thå cursoò wilì changå tï  á  non-blinkinç 
+blocë  keù  entrieó  wilì  bå echoeä tï thå screeî  buô  wilì  noô  bå 
+returneä  tï CP/M®            Thå cursoò controì anä screeî ediô  keyó 
+maù  bå  useä aô will®  Wheî CÒ ió presseä thå entirå  currenô  cursoò 
+line¬ witè somå exceptions¬  ió returneä tï CP/M® Exceptionó are:
+1© Trailinç blanë spaces.
+2©  CP/Í utilitù  promptó *,#,-,º  anä ®  wheî theù occuò iî thå firsô 
+column
+3©  Thå CP/Í prompô A¾  wheî ¾ occuró iî thå second¬  thirä oò  fourtè 
+columns.
+     Afteò  returninç  thå  linå thå BIOÓ returnó  tï  non-ediô  mode¬ 
+unlesó  whilsô  iî  ediô  modå ± thå ediô  keù  ió  presseä  á  seconä 
+time.Theî thå cursoò wilì changå tï á blinkinç blocë anä thå BIOÓ wilì 
+keeğ  returninç tï thå ediô modå untiì thå ediô keù ió presseä  again® 
+Notå  thaô thå entirå linå ió returneä whicè meanó thaô thå ediô  modå 
+maù  bå unsuitablå withiî somå programs®  Iô shoulä alsï bå noteä thaô 
+somå editinç featureó arå noô availablå oî NASCOÍ ± keyboards.Š
+                         DISË ERROÒ MESSAGES
+                         ===================
+     Thå  BIOÓ trapó anä displayó disë erroró whicè maù  occuò  whilsô 
+attemptinç  tï  reaä oò writå á sector®  Thió erroò coulä  occur¬  foò 
+instance¬  bù insertinç á disë thå wronç way¬  attemptinç tï writå  tï 
+disë  witè á writå protecô taâ fitted¬  forgettinç tï closå thå  drivå 
+door¬  forgettinç  tï inserô á disë oò becauså oæ disë damage®  Havinç 
+displayeä thå erroò yoõ wilì bå prompteä foò retry¬  iæ thå probleí ió 
+á writå protecô taâ fitteä oò non-inserteä disë etc®  yoõ maù curå thå 
+probleí anä continue¬  bù pressinç Y¬ withouô thå BDOÓ oò useò prograí 
+knowinç anythinç untowarä haó happened¬ iæ thå probleí ió morå seriouó 
+e.ç á damageä disë presó Î anä yoõ wilì bå returneä tï thå BDOÓ  whicè 
+wilì procesó thå erroò anä pasó iô tï thå useò prograí aó necessary.
+
+                        POSSIBLÅ ERROÒ MESSAGES
+                        =======================
+Noô Ready
+---------
+Occuró iæ á drivå dooò ió opeî oò therå ió nï disk¬  oò aî unformatteä 
+disk.
+
+Disë Writå Protected
+--------------------
+Occuró  wheî  aî  attempô ió madå tï writå tï á diskettå whicè  haó  á 
+writå protecô taâ fitted.
+
+Writå Fault
+-----------
+Thió ió á faulô signaì provideä bù á drive®  Driveó supplieä bù MAĞ 8° 
+dï noô providå thió signaì sï thió faulô shoulä neveò occur.
+
+Recorä noô found
+----------------
+Thió  faulô  occuró  iæ thå FDÃ haó beeî unablå  tï  finä  á  sector'ó 
+addresó  headeò oò unablå tï finä á sector'ó datá marker®  Retrieó arå 
+unlikelù  tï  curå  thió  error®  Iæ iô  shoulä  occuò  copù  aó  mucè 
+informatioî aó possiblå ofæ thå offendinç diskettå anä reformaô it® Iæ 
+thå  erroò persistó thå diskettå wilì mosô likelù havå beeî subjecô tï 
+physicaì damagå anä ió besô discardeä (oò returneä tï youò supplieò iæ 
+new).
+
+CRÃ Error
+---------
+Thió  erroò  occuró  wheî á sectoò haó beeî founä  anä  loadeä  buô  á 
+checksuí  showó  thaô  iô ió corrupt®  Agaiî retrieó arå  unlikelù  tï 
+resolvå thió but¬  aó iô ió aô leasô possiblå tï loaä thå  sector¬  iô 
+maù bå possiblå tï ediô iô witè foò examplå DDÔ tï recoveò thå data.
+
+                         DEVICÅ INPUT/OUTPUT
+                         ===================
+     CP/Í  PLUÓ exerciseó IÏ viá CONSOLÅ (iî anä out)¬  AUXILLARÙ  (iî 
+anä out)¬  anä LISÔ (out)®  Theså IÏ systemó caî bå assigneä none¬ onå 
+oò morå oæ uğ tï 1¶ devices.
+ŠCONSOLE
+-------
+     Thió  ió  thå maiî interfacå witè you¬  anä aó supplieä thå  BIOÓ 
+obtainó  inpuô froí youò keyboarä anä outputó tï  youò  CRT®  Normallù 
+theså  wilì  bå thå onlù deviceó assigneä foò consolå anä thå BIOÓ  ió 
+optimiseä   foò   thió   aó  thå  CP/Í  PLUÓ   consolå   handlinç   ió 
+disappointinglù slow.
+AUXILLARY
+---------
+     Thå  seriaì  devicå ió assigneä tï auxillarù IÏ iî  thå  supplieä 
+BIOS® (SIÏ channeì Á oî MAĞ CPU).
+LIST
+----
+     Thå  Centronicó  outpuô viá thå PIÏ ió assigneä tï  LISÔ  iî  thå 
+supplieä BIOS.
+
+     Thå  initiaì assignmentó caî bå altereä bù BIOÓ re-assemblù oò bù 
+usinç thå DEVICÅ command¬  iæ necessarù thió caî bå donå aô colä  booô 
+timå usinç thå PROFILE.SUÂ colä starô auto-ruî facility¬ seå CP/Í PLUÓ 
+Useò Guide.
+
+CENTRONICS
+----------
+     Á paralleì printeò routinå ió provideä viá thå PIÏ devicå option® 
+Connecô  thå Centronicó datá inputó oæ youò printeò tï thå B° thru§ B· 
+outputó  oæ youò PIO¬  connecô thå Centronicó "BUSY¢ signaì tï  A°  oæ 
+youò PIÏ anä thå Centronicó "STROBE¢ tï A± oæ thå PIO.
+
+SERIAÌ (MAĞ CPU)
+----------------
+     Seriaì  outpuô ió handleä viá thå Z8° SIÏ clockeä bù thå Z8° CTC® 
+SIÏ  channeì Á ió clockeä bù CTÃ channeì ° whicè ió clockeä  aô  2MHz® 
+SIÏ channeì Â ió clockeä bù CTÃ channeì ± whicè ió clockeä aô 1Mhz¬ aó 
+supplieä  channeì Á ió seô tï 120° bauä witè handshakå oî CTÓ anä DCD¬ 
+anä  channeì Â ió seô tï 30° bauä witè nï handshake®  Eacè channeì  ió 
+seô  foò ¸ bits¬  ± stop¬  nï parity®  Bauä ratå anä handshakå caî  bå 
+dynamicallù altereä usinç thå DEVICÅ command¬  notå herå thaô enablinç 
+XON-XOFÆ enableó hanä shakå viá CTÓ anä DCD®  Witè thå combinatioî seô 
+uğ  aó  abovå  SIÏ  channeì Â caî bå useä aô bauä  rateó  7µ  tï  480° 
+inclusivå  anä  SIÏ  channeì  Á  aô rateó  134.µ  tï  960°  inclusive¬ 
+additionallù eacè channeì caî bå useä aô 1920° baud¬ buô thió useó thå 
+the SIO in *1 mode and is only suitable for transmission.
+
+SERIAÌ (NASCOM,G811,G813)
+-------------------------
+     Seriaì outpuô ió handleä viá thå 825° UARÔ oî thå G81± oò G81³ oò 
+viá  thå 640² UARÔ oî thå NASCOM®  Aó supplieä thå G811/G81³ BIOÓ  haó 
+handshakinç enableä witè thå 825° seô foò ¸ bits¬ onå stop¬ nï parity® 
+usinç  thå  CTÓ  linå  tï providå  handshake®  NASCOÍ  UARTÓ  dï  havå 
+handshakå facilities®  Thå CTÓ linå froí thå printeò shoulä  thereforå 
+bå  connecteä tï biô · oæ porô ° iæ handshakå ió  required®  NOTEº  IÆ 
+YOUÒ PRINTEÒ PROVIDEÓ AÎ RS23²  LEVEÌ SIGNAÌ FOÒ HANDSHAKÅ (CTS)¬ THEÎ 
+THIÓ  MUSÔ BÅ CONVERTEÄ TÏ TTÌ LEVELS®  Bauä ratå oæ thå 825° UARÔ anä 
+handshakå  oî eitheò G811¬  G81³ oò Nascoí caî bå dynamicallù  altereä 
+usinç  thå DEVICÅ command¬  notå herå thaô enablinç  XON-XOFÆ  enableó Šhanä shakå viá CTS.
+
+                            BIOÓ WORKSPACE
+                            ==============
+     Therå  arå certaiî partó oæ thå BIOÓ whicè yoõ maù requirå accesó 
+to¬  e.ç thå interrupô vectoò table®  Iî ordeò tï finä ouô wherå theså 
+usefuì  bitó  caî bå founä á tablå oæ addresseó haó beeî lefô  iî  thå 
+BIOS¬  thå  addresó  oæ thå starô oæ thió tablå haó beeî placeä  aô  á 
+knowî  locatioî  i.å  thå enä oæ thå jumğ  tablå  aô  BIOS+0063H¬  Thå 
+addresseó withiî thå addresó tablå arå assigneä aó follows.
+
+;Pointers to useful locations
+POINTR:
+Address of floppy data base, used for assigning formats to drives
+	DEFW DBASE		;Disk data tables
+Number of logical floppies and number of logical Winchesters
+	DEFW NDRVF*256+NDRVW	;Number of Winchesters + Number of floppies
+Initial assignments for IO, could be changed in CPM3.SYS
+	DEFW IASSG		;Initial IO assignment
+Porô  initialisatioî datá settinç seriaì bauä ratå anä mode¬  coulä bå 
+changed in CPM3.SYS
+	DEFW PORTI		;Initialisation data sent to serial
+	DEFW WRKSPC		;Data
+Locatioî  oæ  VFÃ workspace¬  thió workspacå ió alsï useä  bù  IVC/SVÃ 
+keyboards for edit mode and programmable keys
+	IF VFC OR IVC
+	DEFW VFCW		;VFC workspace, used by IVC too
+	ELSE
+	DEFW 0
+	ENDIF
+Interrupô vectors¬  patcheä foò useò requirements¬  remembeò interrupô 
+routines must lie in common memory
+	IF MAP
+	DEFW INTVEC		;Interrupt vectors
+	ELSE
+	DEFW 0
+	ENDIF
+
+	DEFW DISPT		;Dispatch tables
+Thå worä prioò tï PRGTAÂ showó lengtè oæ followinç table¬ tablå formaô 
+is:-
+     Character to be programmed,"Returned String",0FFH
+Table is terminated by a null
+E.G       DEFB 81H,"THIS IS A FUNCTION KEY",0FFH
+          DEFB 82H,"THIS IS ANOTHER FUNCTION KEY",0FFH
+          DEFB 0
+
+	DEFW PRGTAB		;Programmable key table
+Addresó  oæ á 12¸ bytå buffeò iî commoî memorù useä bù VDISË anä  MOVÅ 
+routines, could be used by user for bank transfer
+	DEFW BUFF80		;128 byte buffer in common memory
+Bank info including current bank selected
+	DEFW CURBNK		;Bank info
+BIOÓ versioî numbeò iî formaô N.NNøy wherå N.NÎ defineó versioî  numbeò 
+e.ç 4.00¬  ù defineó CPÕ M=MAP¬ 3=G813¬ 1=G81± anä N=Nascom¬ ù defineó Šmain video/keyboard, V=VFC, I=IVC/SVC, S=Serial (Terminal).
+	DEFW BVERS		;4byte BIOS version + CPU + VIDEO
+Addresó  oæ spacå insidå BIOÓ anä thuó commoî memorù whicè caî bå useä 
+bù  á  useró  prograí sï thaô hå maù calì BIOÓ inteò  banë  moveó  foò 
+instancå  buô insurå thå integritù oæ hió stacë durinç  banë  changes¬ 
+stack space is at least 80 bytes.
+	DEFW USRSTK		;User stack address
+Yet to be defined
+	DEFW 0
+	DEFW 0
+	DEFW 0
+
+     Thå  tablå  wilì  bå  founä iî commoî  memorù  buô  somå  oæ  thå 
+addresseó maù residå iî bankeä memory.
+
+                              INTERRUPTS
+                              ==========
+     Thå  MAĞ CPÕ useó interruptó viá thå CTÃ foò keyboarä  entry¬  aî 
+interrupô  structurå  haó thereforå alreadù beeî seô uğ iî  thå  BIOS® 
+Interrupô  modå ² haó beeî useä sï aî interrupô vectoò tablå haó  beeî 
+seô  up¬  aô  thå  momenô thió ió verù undeò useä sï addinç  morå  Z8° 
+interruptinç  deviceó  ió simple®  Thå interrupô vectoò tablå  caî  bå 
+founä viá thå POINTÒ tablå abovå anä itó formaô ió aó follows:-
+
+;Interrupt vectors, these must all be on the same 100H page
+INTVEC:
+;MPI SIO, This must occur on a 10H boundary
+MPSIOV:	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+;On board SIO
+CPSIOV:	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+;MPI CTC
+MPCTCV:	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+;On board CTC
+CPCTCV:	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW KEYINT		;Read keyboard
+;On board PIOŠCPPIOV:	DEFW 0
+	DEFW 0
+	DEFW 0
+	DEFW 0
+
+                               TABLE 2
+
+     Aó  caî bå seeî onlù thå CPU'ó CTÃ haó beeî allocated¬  thå otheò 
+vectoró arå reserveä foò otheò MPÉ anä CPÕ deviceó buô maù bå useä  bù 
+yourselæ  aó  yoõ  wish¬  simplù placå thå addresó oæ  youò  interrupô 
+servicå routinå intï thå appropriatå placå iî thå tablå anä initialiså 
+thå Z8° device'ó interrupô registeò witè thå lo÷ bytå aô thå starô  oæ 
+thå  appropriatå parô oæ thå table®  Interrupô modå ² haó alreadù beeî 
+seô uğ aó haó thå É register® Don'ô forgeô thaô yoõ arå operatinç iî á 
+bankeä  environmenô  wherå memorù ió beinç mappeä  iî  anä  out¬  youò 
+interrupô  routineó  musô thereforå liå iî commoî memorù anä noô aô  á 
+locatioî  wherå  thå VFÃ ió beinç pageä in®  Oî thå MAĞ CPÕ  thå  besô 
+placå foò sucè routineó ió belo÷ 1000H.
+     Witè thå G813,G81± oò Nascoí interruptó havå noô beeî enableä anä 
+nï interrupô tablå exists¬  useró wilì thereforå havå tï seô uğ  theiò 
+owî interrupô structure¬ witè thå G81³ placå thå interrupô vectoró anä 
+interrupô routineó belo÷ 1000H¬ witè á G81± oò Nascoí placå theí abovå 
+8000H®  Notå  alsï thaô thå IVÃ haó á hardwarå buç anä doeó noô handlå 
+interrupt acknowledges correctly.
+     Iæ  youò interruptó arå noô foò á particulaò prograí theù caî  oæ 
+courså  bå includeä iî thå BIOÓ wherå theù musô residå iî thå residenô 
+portion®  Furthuò  informatioî oî interruptó caî bå founä iî thå  BIOÓ 
+modificatioî section.
+
+                          MEMORÙ ALLOCATION
+                          =================
+     Thå  CP/Í  PLUÓ systeí yoõ havå beeî supplieä witè  assumeó  onlù 
+128ë  oæ  RAÍ  anä haó beeî configureä iî whaô wå  consideò  thå  mosô 
+usefuì  waù  iî  thoså  circumstances®  Iæ yoõ  wisè  tï  changå  thió 
+configuratioî thió ió possiblå withouô havinç tï undertakå re-assemblù 
+oæ thå BIOS¬  bù usinç thå GENCPM.COÍ utility®  Thió utilitù takeó thå 
+ra÷ BDOÓ supplieä bù DRÉ anä ra÷ BIOÓ supplieä bù MAĞ 8° anä  produceó 
+á  systeí  (CPM3.SYS© configureä accordinç datá supplieä bù  thå  useò 
+(anä storeä iî GENCPM.DAT)® Iî ordeò tï uså GENCPÍ yoõ wilì requirå aî 
+understandinç  oæ  ho÷  CP/Í PLUÓ allocateó memory®  Á  Z8°  caî  onlù 
+addresó 64ë aô anù onå time¬ iî ordeò tï extenä memorù addressinç parô 
+oæ thió memorù musô bå switcheä ouô anä replaceä bù anotheò bank¬ onlù 
+parô  oæ thå memorù musô bå switcheä otherwiså yoõ wilì switcè ouô thå 
+verù  prograí thaô yoõ arå running®  CP/Í PLUÓ requireó  thå  switcheä 
+portioî  tï bå iî thå loweò parô oæ thå 64ë mağ anä thå  non-switched¬ 
+commoî parô tï bå iî thå upper® Wå telì GENCPM.DAÔ wherå thå firsô anä 
+lasô pageó (100H© oæ commoî memorù are® Oî G81± anä Nascoí systemó thå 
+lasô  2ë  oæ commoî memorù ió reserveä anä thå MAĞ VFÃ screeî ió  lefô 
+therå sï aó tï bå accessiblå tï thå user®  Thå 32ë paginç systeí  useä 
+oî  G81± anä Nascoí forceó thå banë boundarù tï bå aô 8000H¬  buô witè 
+thå  memorù  mappinç  systeí useä bù thå MAĞ CPÕ  anä  G81³  thå  banë 
+boundarù  caî  bå seô aô anù 4ë boundary®  Followinç discussionó  wilì 
+assumå á banë boundarù aô 8000È aó thió caî bå commoî tï botè systems®  
+Oî  poweò uğ oò reseô banë ° ió selecteä iî thå loweò parô  oæ  memorù 
+anä  commoî  memorù iî thå uppeò part®  Thå loadeò BDOÓ anä  BIOÓ  arå Šloadeä  froí  floppù aô addresó 100È anä ió theî  executed®  Thå  filå 
+CPM3.SYÓ  ió theî loadeä froí floppy¬  thió filå containó thå BDOÓ anä 
+BIOÓ oæ thå maiî CPÍ system®  Parô oæ thå BDOÓ anä BIOÓ arå placeä  bù 
+thå loadeò systeí aô thå toğ oæ thå commoî memorù aô colä boot¬  wherå 
+theù  caî controì thå switchinç oæ memorù iî thå bankeä  portion®  Thå 
+resô  ió  placeä  iî banë ° aô thå toğ oæ thå  switchablå  portioî  oæ 
+memory®  Controì  ió theî passeä tï thå BDOÓ iî commoî memory¬  anä iô 
+switcheó banë ± intï thå loweò parô oæ memory®  Thå booô routineó alsï 
+loaä  thå  CP/Í consolå commanä processoò (CCP.COM©  froí  thå  systeí 
+trackó  oæ thå firsô floppù anä placeó iô iî thå bottoí oæ banë ² froí 
+wherå iô caî bå quicklù loaded¬  afteò anù warí boot¬  intï thå banë ± 
+TPA® Thå systeí lookó likå FIGURÅ 1
+.PAŠ                           COMMON MEMORY
+                       +-------------------+
+                       +   Resident BIOS   +
+                       +-------------------+
+                       +   Resident BDOS   +
+                       +-------------------+
+                       +                   +
+                       +                   +
+                       +     Users TPA     +
+                       +                   +
+                       +                   +
+                       +-------------------+
+---------------------------BANK BOUNDARY---------------------------
++-------------------+  +-------------------+  +-------------------+
++    Banked  BIOS   +  +                   +  +                   +
++-------------------+  +                   +  +                   +
++    Banked  BDOS   +  +                   +  +                   +
++-------------------+  +                   +  +                   +
++                   +  +     Users TPA     +  +                   +
++                   +  +                   +  +-------------------+  
++                   +  +                   +  +                   +
++                   +  +-------------------+  +     CCP.COM       +
++                   +  +  CP/M BASE PAGE   +  +                   +
++-------------------+  +-------------------+  +-------------------+
+       BANK 0                  BANK 1                BANK 2
+    SWITCHED OUT            SWITCHED IN           SWITCHED OUT
+
+                              FIGURE 1
+.PAŠ     Standarä  CP/Í  compatiblå programó caî bå loadeä iî  thå  normaì 
+way¬  theså  starô  aô 100È iî banë ± anä follo÷ uğ  througè  thå  TPÁ 
+acrosó  thå banë boundarù intï commoî memory¬  standarä BDOÓ calló caî 
+bå madå viá thå CP/Í baså page¬ theså arå senô tï thå residenô BDOÓ iî 
+commoî  memory®  Iæ  necessarù thå residenô BDOÓ wilì selecô  banë  0¬ 
+executå  routineó  iî thå bankeä BDOS/BIOÓ anä theî  reselecô  banë  ± 
+beforå returninç tï thå useò program.
+     Thió  takeó carå oæ thå allocatioî oæ prograí partó oæ thå systeí 
+buô  noô  thå  datá  areas®  Therå arå ¶ kindó oæ  datá  areaó  tï  bå 
+allocated:-
+ALLOCATIOÎ VECTORÓ (ALVs)
+CHECKSUM VECTORS (CKSs)
+HASH TABLES
+DIRECTORY BUFFERS
+DEBLOCKING DATA BUFFERS
+BUFFER CONTROL BLOCKS (BCBs)
+     Iô  ió  possiblå  tï allocatå theså datá areaó  iî  thå  BIOÓ  aô 
+assemblù timå or¬  aó wå havå done¬  allocatioî caî bå lefô tï GENCPM® 
+Bù  doinç  thió iô ió possiblå tï alteò systeí  configuratioî  withouô 
+havinç tï resorô tï BIOÓ re-assembly® GENCPÍ placeó thå ALLOCATIOÎ anä 
+CHECKSUÍ VECTORÓ togetheò witè thå BUFFEÒ CONTROÌ BLOCKÓ aô thå toğ oæ 
+thå bankeä BIOÓ buô belo÷ thå banë boundary¬  thå bankeä BDOÓ anä BIOÓ 
+arå  moveä  dowî  accordingly®  Thå directorù  bufferó  arå  allocateä 
+startinç  aô  thå  baså oæ banë ° uğ tï á maximuí aô thå baså  oæ  thå 
+BDOS®  Thå  HASÈ  TABLEÓ  arå allocateä aô thå  firsô  availablå  sloô 
+availablå  iî banë 2,3,´ etc®  (abovå thå storeä CCP)®  Anä  thå  DATÁ 
+BUFFERÓ  allocateä  abovå  this®  Optionallù thå DATÁ BUFFERÓ  caî  bå 
+allocateä  iî commoî memory¬  wheî theù arå placeä abovå thå  residenô 
+BIOS¬  thå  residenô BDOÓ anä BIOÓ arå moveä  dowî  accordingly®  DATÁ 
+BUFFEÒ  allocatioî  ió  howeveò limiteä aó eacè buffeò eató  intï  thå 
+useró TPA® Aô colä booô thå BIOÓ searcheó tï finä ho÷ mucè memorù youò 
+systeí contains¬  iô theî lookó tï seå ho÷ mucè haó beeî allocateä  tï 
+thå datá areaó above¬ anä memorù lefô unallocateä ió seô uğ aó virtuaì 
+disë  oî drivå P®  Wå no÷ adä onå furthuò complication®  Thió  applieó 
+onlù  tï thå memorù mappeä CPÕ boardó thå MAĞ CPÕ anä thå  G813®  CP/Í 
+PLUÓ doesn'ô carå iæ banë ° anä bankó 2« don'ô starô aô 0000H¬ anä itó 
+verù  convenienô foò uó iæ theù don't¬  iæ wå makå thå bottoí 4ë  sloô 
+commoî memorù iô becomeó somewherå wherå wå caî alwayó puô á stacë anä 
+bå surå oæ it'ó integrity¬ somewherå wå caî puô interrupô routineó anä 
+bå  surå thå BDOÓ won'ô takå theí ouô aô aî embarrassinç  moment¬  thå 
+CP/Í  baså pagå alwayó remainó accessiblå aó dï thå RSÔ addresseó  anä 
+NMÉ  vector®  Havinç  madå  thå baså 4ë commoî thå systeí  lookó  likå 
+FIGURÅ 2.
+.PAŠ
+                           COMMON MEMORY
+                       +-------------------+
+                       +   DATA BUFFERS    + (optional)
+                       +-------------------+
+                       +   Resident BIOS   +
+                       +-------------------+
+                       +   Resident BDOS   +
+                       +-------------------+
+                       +                   +
+                       +     Users TPA     +
+                       +                   +
+                       +-------------------+
+---------------------------BANK BOUNDARY---------------------------
++-------------------+  +-------------------+  +-------------------+
++   ALVs,CKSs,BCBs  +  +                   +  +       VDISK       +
++-------------------+  +                   +  +-------------------+
++    Banked  BIOS   +  +                   +  +    DATA BUFFERS   +
++-------------------+  +                   +  +-------------------+
++    Banked  BDOS   +  +     Users TPA     +  +    HASH TABLES    +
++-------------------+  +                   +  +-------------------+  
++                   +  +                   +  +                   +
++     DIRECTORY     +  +                   +  +     CCP.COM       +
++      BUFFERS      +  +                   +  +                   +
++-------------------+  +-------------------+  +-------------------+
+---------------------------1000H BOUNDARY--------------------------
+       BANK 0          +-------------------+          BANK 2   
+    SWITCHED OUT       +     Users TPA     +       SWITCHED OUT
+                       +-------------------+  
+                       +  CP/M BASE PAGE   +  
+                       +-------------------+  
+                           COMMON MEMORY
+                               BANK 1       
+                            SWITCHED IN     
+
+                              FIGURE 2
+.PAŠ     Witè  á  banë boundarù oæ 8000È thå systeí showî abovå  woulä  iî 
+facô  bå madå uğ oæ RAÍ aó follows:- Thå baså 4ë froí 0000È  tï  0FFFÈ 
+wilì  bå  thå baså 4ë froí 0000È tï 0FFFÈ oæ youò firsô 64ë  blocë  oæ 
+memory¬  Banë  ° whicè wheî pageä iî occupieó 1000È tï 7FFFÈ wilì comå 
+froí 1000È tï 7FFFÈ froí youò firsô 64ë block® Banë ± whicè wheî pageä 
+iî  alsï  occupieó 1000È tï 7FFFÈ wilì comå froí 0000È tï  6FFFÈ  froí 
+youò seconä 64ë block®  Banë ² whicè wheî pageä iî alsï occupieó 1000È 
+tï 7FFFÈ wilì comå froí 7000È tï DFFFÈ froí youò seconä 64ë block® Thå 
+commoî  memorù abovå thå banë boundarù occupyinç 8000È tï FFFFÈ  comeó 
+froí 8000È tï FFFFÈ oæ youò firsô 64ë blocë oæ memory®  NOTÅ thió onlù 
+applieó tï thå MAĞ CPÕ anä G813¬ Figurå ± giveó thå representatioî foò 
+G81± anä Nascoí systems.
+
+     No÷ tï usinç thió informatioî whilsô answerinç GENCPMó questions.
+
+Commoî memorù baså pagå (C0© ?
+     Iæ yoõ arå runninç á G81± oò Nascoí systeí yoõ musô answeò 8°  tï 
+thió question® Witè á MAĞ CPÕ oò G81³ thå baså oæ commoî memorù caî bå 
+aô anù 4ë boundary® Selectinç thå besô boundarù dependó oî youò systeí 
+and/oò youò requirements® Lookinç aô figurå ² wå seå thaô banë ° holdó 
+thå  bankeä  BDOÓ anä BIOS¬  allocatioî anä checksuí  vectors¬  buffeò 
+controì  blockó  anä  directorù buffers®  Settinç á  largå  banë  sizå 
+permitó  á  largå  amounô  oæ  bufferinç  oæ  directorù  sectoró   foò 
+Winchesteò  driveó anä openó uğ thå possibilitieó oæ á largå amounô oæ 
+datá buffering® (CP/Í PLUÓ caî handlå bankeä memorù uğ tï 1¶ timeó thå 
+banë  size)®  Howeveò  iæ yoõ arå jusô runninç á  couplå  floppù  disë 
+drives¬  onlù  1¶ bufferó arå requireä anä thå resô oæ banë ° wilì  bå 
+wasted®  Iæ  wå  seô thå banë sizå tï thaô requireä foò thå  directorù 
+bufferó  wå limiô thå totaì sizå oæ memorù availablå tï  datá  bufferó 
+becauså  wå caî onlù havå á totaì oæ 1¶ banks®  Preciså calculatioî oæ 
+memorù requirmentó iî banë ° isn'ô easy®  Eacè directorù buffeò ió thå 
+samå sizå aó á physicaì sectoò oî thå disk¬  thió ió usuallù 200È  buô 
+maù  changå  accordinç  tï  disë format¬  VDISË foò  examplå  haó  80È 
+sectors®  Iî  additioî tï thå buffeò sizå itselæ eacè buffeò haó á  1µ 
+bytå BCÂ allocated¬  anä tï adä tï ouò problemó eacè datá  buffeò alsï 
+haó á BCÂ allocateä iî banë ° anä wå haven'ô specifieä ouò datá buffeò 
+requirementó yet®  Therå ió á furthuò restrictioî iî thaô thå VFÃ musô 
+bå pageä iî oveò á blocë oæ memorù occupyinç itó truå positioî iî  thå 
+memorù  map¬  wå  don'ô  wanô tï uså 0000È tï 0FFFÈ  foò  thå  reasonó 
+describeä  earlieò sï wå musô leavå thå 4ë directlù belo÷ thå baså  oæ 
+thå  residenô  BIOÓ aó commoî memory®  Thió normallù limitó  thå  banë 
+boundarù tï á maximuí oæ E000H.
+
+Numbeò oæ memorù segmentó (#2© ?
+     Enteò  thå  numbeò oæ bankó (aô leasô 2)®  Witè á G81± oò  Nascoí 
+systeí yoõ wilì havå (TOTAÌ MEMORÙ CAPACITÙ - 64)/32®  Witè á MAĞ  CPÕ 
+oò  G81³ systeí yoõ wilì havå (TOTAÌ MEMORÙ CAPACITÙ - 64)/BANË  SIZE® 
+Iæ  thió calculatioî leaveó á remaindeò yoõ maù adä aî extrá banë  anä 
+theî  limiô  it'ó  sizå tï thaô oæ thå remaindeò wheî  specifyinç  thå 
+memorù segmenô sizeó later.
+
+Enteò memorù segmenô tables:
+     Foò  eacè banë enteò baså oæ bankeä memorù (alwayó ° foò  Nascomó 
+oò G811s)¬  banë sizå iî 100È pages¬  anä thå banë number¬ GENCPÍ wilì 
+trií anù oveò allocatioî thaô iô knowó about®  Exceptionó tï thió are¬ Šwheî allocatinç banë ² specifù á baså oæ 10È sï aó tï leavå spacå  foò 
+thå  storeä CCP.COM®  Wheî allocatinç thå finaì banë whicè ió  smalleò 
+thaî thå banë size¬ specifù á sizå accordinç tï memorù available.
+
+Enablå hashinç foò drivå Xº ?
+     Directorù  hashinç allocateó ´ byteó foò eacè possiblå  directorù 
+entry® Witè thå MAĞ formaô 12¸ directorù entrieó arå possiblå thå hasè 
+tablå thereforå ió 200È long.
+
+Numbeò oæ directorù bufferó foò drivå Xº ?
+     Enteò thå numbeò oæ sectoò sizå bufferó required¬  thå MAĞ formaô 
+haó 8*200È directorù sectoró buô yoõ don'ô havå tï specifù theí alì iæ 
+yoõ  don'ô  wanô to¬  iî facô alì driveó caî sharå á singlå buffeò  iæ 
+required.
+
+Numbeò oæ datá bufferó foò drivå X:
+     Enteò numbeò oæ sectoò sizeä bufferó required¬ remembeò thaô á 1µ 
+bytå BCÂ wilì bå generateä iî banë 0.
+
+     Iô ió possiblå tï reservå memorù foò youò owî purposeó iî onå  oæ 
+twï  ways®  Firstlù  bù  limitinç thå sizå oæ á  memorù  segmenô  wheî 
+specifyinç  á  banë  size¬  iô ió suggesteä yoõ starô froí  abovå  thå 
+storeä  CCĞ  iî  banë  2®  Iî ordeò thaô thå  BIOÓ  searcè  oæ  memorù 
+allocatioî  caî picë thió uğ yoõ musô selecô aô leasô onå  drivå  witè 
+directorù  hashinç  enableä oò havå allocateä aô leasô onå  datá  areá 
+outsidå oæ common® Thå otheò waù ió tï reservå á specifiã numbeò oæ 4ë 
+VDISË  trackó bù settinç thå VRTRË equatå iî SYSTEM.MAC¬  VDISË startó 
+aô thå baså oæ banë 1¬  yoõ musô thereforå reservå aô leasô sufficienô 
+trackó  tï coveò banë ± anä thå saveä CCP¬  additionaì trackó musô  bå 
+reserveä  tï  coveò hasè anä datá bufferó anä finallù  sufficienô  foò 
+youò owî requirements® Thió wilì oæ courså requirå fulì re-assemblù oæ 
+thå BIOS.
+
+     Don'ô  bå  surpriseä  iæ yoõ finä thaô yoõ  havå  tï  ruî  GENCPÍ 
+severaì timeó beforå yoõ geô whaô yoõ want¬ alsï keeğ á checë oî wható 
+goinç  oî aó GENCPÍ caî bå á littlå unforgivinç anä generatå á  systeí 
+incapablå  oæ  operation®  Tï ruî GENCPÍ yoõ wilì requirå  GENCPM.COM¬ 
+BNKBDOS3.SPR¬ RESBDOS3.SPR¬ BNKBIOS3.SPÒ anä optionallù GENCPM.DAT.
+.PAŠ                          MODIFYINÇ THÅ BIOS
+                          ==================
+     Thå sourcå fileó oæ thå BIOÓ arå provideä tï enablå customisatioî 
+oæ  youò system®  Alì MAÃ fileó arå foò assemblù usinç  thå  Microsofô 
+8080/Z8°  assembleò M80®  Simplå modificationó caî bå madå bù changinç 
+EQUateó  iî  thå  equatå fileó DATA.MAÃ anä SYSTEM.MAÃ  anä  theî  re-
+assemblinç anä linking¬ theså caî bå madå witè onlù limiteä knowledge® 
+Morå  dynamiã  changeó  tï thå BIOÓ MAÃ fileó  wilì  requirå  intimatå 
+knowledgå oæ thå CPM³ systeí guidå anä proficiencù iî usinç  M80®  Thå 
+time/datå  routineó havå beeî kepô completelù separatå froí thå  otheò 
+MAÃ fileó sï thaô yoõ maù adä youò owî RTÃ routineó eveî iæ yoõ dï noô 
+havå  M80¬  writå youò owî routinå usinç RMAÃ thå entrù poinô labeì ió 
+?TIMÅ  anä  musô declareä aó public¬  uså LINË tï linë  BASE3.REÌ  anä 
+SCBK.REÌ  provideä  togetheò witè youò ne÷ TIME.REÌ anä creatå  á  ne÷ 
+BNKBIOS3.SPR® Iæ youò RTÃ clocë interfacå requireó initialisation¬ uså 
+á  flaç  iî  TIME.MAÃ  tï sho÷ firsô timå entry¬  iæ  thå  flaç  ió  ° 
+initialiså  thå interfacå anä theî seô flaç non-zerï beforå  executinç 
+thå actuaì timå routine.
+     Thå  BIOÓ  supplieä onlù useó interruptó foò keyboarä entrù oî  á 
+MAĞ  CPU¬  thió  ió  á relativelù slo÷ interrupô ratå  anä  causeó  nï 
+problemó  tï disë reaä anä writå operations¬  anä interruptó  arå  noô 
+disabled® Iæ á rapiä interrupô ratå ió envisaged¬ arounä 40ms¬ iô wilì 
+bå necessarù tï disablå interruptó durinç actuaì sectoò read/write® Iæ 
+interrupô  handlinç  routineó arå shorô anä fast¬  aó theù shoulä  be¬ 
+disablå onlù oncå thå FDÃ haó calleä foò datá transfer¬  iî thió  caså 
+interruptó wilì stoğ foò abouô 15ms® Iæ necessarù guaranteeä interrupô 
+freå  disë accesó caî bå obtaineä bù disablinç beforå thå FDÃ  commanä 
+ió  issued®  Interruptó wilì bå disableä foò uğ tï 230mó buô typicallù 
+15-50mó dependinç oî sectoò skew.
+
+;Read/write floppy
+RWFLOP:	LD A,(DMABNK)		;Select DMA bank
+	CALL BANK
+	LD A,(RWFLAG)
+	OR A			;Read or write ?
+        DI                      ;DISABLE HERE FOR GUARANTEED ACCESS
+	JR Z,WRTOP
+	LD A,(COMM)		;Get command
+	OUT (FDCCOM),A		;Send command
+	JR RDTEST
+
+DATIN:	IN A,(FDCDAT)		;Read byte
+	LD (HL),A		;Store buffer byte
+	INC HL
+RDTEST:	IN B,(C)		;Get flags
+	JR Z,RDTEST		;Nothings happening
+        DI                      ;DISABLE HERE FOR MINIMAL DISABLE
+	JP M,DATIN		;DRQ
+	JR RWDONE		;Finished, either IRQ or motor off
+
+WRTOP:	CALL INVERT		;Invert the data if necessary
+	LD A,(COMM)		;Get command
+	OUT (FDCCOM),A		;Send command
+DATOUT:	LD A,(HL)		;Get buffer byte
+	INC HLŠWRTEST:	IN B,(C)		;Get flags
+	JR Z,WRTEST		;Nothings happening
+	OUT (FDCDAT),A		;Send byte
+        DI                      ;DISABLE HERE FOR MINIMAL DISABLE
+	JP M,DATOUT		;DRQ
+	DEC HL			;Back to end of buffer
+	LD A,2
+	CALL DELAY		;Delay 2 ms after write
+;Reselect page 0
+RWDONE: EI                      ;RE-ENABLE INTERRUPTS
+	CALL INVERT		;Invert the data if necessary
+	XOR A
+	CALL BANK
+	RET
+
+     Notå thaô iî thå DÉ instructioî foò minimaì disablå ió insidå thå 
+datá  transfeò looğ thió wilì makå thå timinç verù tighô foò 8¢ doublå 
+density¬  and may not work.
+     Thå SYSTEÍ disë containó thå CP/Í PLUÓ systeí configureä foò youò 
+machinå togetheò witè alì sourcå codå MAĞ 8° fileó arå :-
+
+3LDR.MAC
+     Thå  MAÃ  filå foò assemblù bù M8° oæ thå Tracë ° Sectoò  °  colä 
+booô routine.
+
+LDRBIOS.MAC
+     Thå  MAÃ  filå oæ thå miné BIOÓ useä bù thå CPM³ loadeò  BDOÓ  tï 
+loaä anä executå CPM3.SYS.
+
+CPMLDR.SYS
+     Thå combineä programó produceä bù 3LDR.MAC,CPMLDR.REL,LDRBIOS.MAÃ 
+anä  CCP.COM®  Thió ió useä tï initialiså thå systeí trackó oæ á  disë 
+froí   whicè  yoõ  wisè  tï  colä  boot®   Tï  uså  iô  typå   COPYSYÓ 
+CPMLDR.SYS<CR¾ seå CPM³ manualó foò furthuò details.
+
+BASE3.MAC
+     Thå Baså MAÃ filå oæ thå CPM³ BIOS¬  thió filå INCLUDEó DATA.MAC¬ 
+SYSTEM.MAC¬ LOW.MAC¬ MAP4.MAC¬ HIDEV.MAC¬ HIDISK.MAC¬ DSKSTRUC.MAÃ anä 
+LODISK.MAC.
+
+BASE3.REL
+     Assembleä REÌ filå oæ BASE3.MAC
+
+TIME.MAC
+     Customiså thió filå foò youò specifiã RTC.
+
+TIME.REL
+     Assembleä REÌ filå oæ TIME.MAC
+
+DATA.MAC
+     BIOÓ MAÃ file¬ containinç datá equates
+
+SYSTEM.MAC
+     BIOÓ   MAÃ   filå   containinç  equateó  whicè   specifù   systeí 
+configuration.Š
+CHRIO.MAC
+     Character IO routines.
+
+MAP4.MAC
+     Memorù managemenô routineó foò bank,movå anä virtuaì  disk®  Thió 
+filå  ió foò memorù mappinç oî thå MAĞ CPÕ oò G813¬  uså MAP32.MAÃ foò 
+G81± oò Nascom.
+
+3BOOT.MAC
+     Warm and Cold Boot routines.
+
+HIDISK.MAC
+     Higè leveì disë IO
+
+DSKSTRUC.MAC
+     Disë structurå generatioî (DPBs,DPHó etc)
+
+FLOPPY.MAC
+     Lo÷ leveì floppy disë IO
+
+SCBK.REL
+     Thå assembleä filå SCBK.ASM¬  thió ió useä wheî LINKinç thå 3BIOÓ 
+REÌ file.
+
+BNKBIOS3.SPR
+     Thå assembleä anä linkeä BIOS®  Witè thió filå iô ió possiblå  tï 
+makå systeí generatioî changeó usinç GENCPM.COM
+
+GENCPM.DAT
+     Thå  datá  filå useä bù GENCPM.COÍ wheî generatinç CPM3.SYÓ  froí 
+BNKBDOS3.SPR¬ RESBDOS3.SPÒ anä BNKBIOS3.SPR.
+
+CPM3.SYS
+     Thå  CPM³  systeí filå produceä bù  GENCPM.COM®  Thió  filå  musô 
+residå oî thå disë froí whicè yoõ colä boot.
+
+MU.COM
+     Thå MAĞ 8° multé purposå disë format/copy/verifù utility.
+
+MU.MAC
+     Source of MU.COM
+
+COPYSYS.COM
+     Thå  DRÉ utilitù foò systeí disë generatioî aó modifieä foò  youò 
+system.
+
+COPYSYS.MAC
+     Source of COPYSYS.COM, modified from DRIs COPYSYS.ASM
+
+CONV2.RSX
+     RSØ  tï  bå attacheä tï commanä programó whicè makå  direcô  BIOÓ 
+calló foò disë accesó undeò CP/Í 2.2
+
+In order to assemble a new system proceed as follows:-Š    M8° =BASE3
+Thió  assembleó BASE3.MAÃ tï producå BASE3.REL.
+
+     LINË BNKBIOS3[B]=BASE3,TIME,SCBK
+Thió linkó BASE3.REL¬ TIME.REÌ anä SCBK.REÌ tï producå BNKBIOS3.SPR.
+
+No÷ uså GENCPM.COÍ tï creatå á ne÷ customiseä CPM3.SYS.
+
+               ASSEMBLINÇ FOÒ DIFFERENÔ DRIVES/FORMATS
+               =======================================
+     Thå  disë routineó arå verù flexiblå anä permiô á widå  rangå  oæ 
+Winchesters¬  5"¬  8"¬  anä severaì 3¢ driveó tï bå useä togetheò witè 
+manù  disë  formats®  Firsô leveì oæ systeí configuratioî ió  donå  iî 
+SYSTEM.MAC¬  modificationó  herå caî bå donå withouô havinç tï  inserô 
+any new data.
+First select the CPU you are operating
+
+MAP	EQU T			;Set true for MAP CPU
+;Select CPU board
+G811	EQU F AND NOT MAP
+G813	EQU F AND NOT MAP
+NAS	EQU F AND NOT MAP
+
+Theî youò videï card¬  selecô botè Æ iæ yoõ arå usinç á Terminal¬ notå 
+thaô  iæ yoõ wisè tï uså aî IVÃ oò SVÃ witè á MAĞ CPÕ yoõ wilì havå tï 
+obtain a custom PROM from MAP 80.
+
+VFC	EQU T			;True for VFC
+IVC	EQU F			;True for IVC/SVC
+
+Iæ yoõ arå usinç á MPÉ aó youò floppù controlleò seô ALÔ Ô foò VFÃ  aô 
+it's alternate location.
+ALT	EQU T			;VFC port at alternate location
+
+Iæ  yoõ arå usinç aî MPÉ anä wisè tï bå ablå tï reaä á formaô havinç á 
+baä  sidå ² flaç iî thå IÄ addresó headeró oî sidå ² yoõ  musô  modifù 
+youò MPÉ aó follows:- Removå thå linë L1´ connectinç á tï í anä soldeò 
+á  wirå betweeî L1´ á anä L1³ n®  Notå thaô oncå thió modificatioî  ió 
+done you can only use BIOS version 4.00 or later.
+MPILNK	EQU F AND ALT		;Set only if MPI is linked
+                                ;..for side change
+
+No÷  telì  thå  systeí  abouô youò floppù  drives¬  seå  DATA.MAÃ  foò 
+availablå drives¬  FPPY± ió thå firsô physicaì floppù FPPY² thå seconä 
+etc.
+FPPY1	DEFL STNDRD
+FPPY2	DEFL STNDRD
+FPPY3	DEFL PERTEC
+FPPY4	DEFL DR7200
+
+Nexô assigî CP/Í logicaì driveó (A,B,C,D...© tï á floppù anä á format¬ 
+FASG± anä FORM± refeò tï Aº  FASG² anä FORM² refeò tï Bº etc® FASGø ió 
+assignmenô  tï  á  floppy¬  ± tï FPPY1¬  ²  tï  FPPY²  etc®  FORMø  ió 
+assignmenô oæ á format¬ seå DATA.MAÃ foò availablå formats® Enterinç á 
+° iî eitheò FASGø oò FORMø wilì terminatå drivå assignment¬ iô ió besô Štï  assigî  nï morå driveó thaî yoõ reallù need®  Thå NULLÆ formaô  ió 
+unusablå  aó  itselæ  buô ió á speciaì  formaô  designeä  tï  allocatå 
+maximuí  spacå  tï copå witè anù formaô anä ió useä bù ASSIGN.COÍ  foò 
+dynamiã formaô allocation® FASG± musô bå ± anä FORM± musô bå MAP96Ä oò 
+MAP48.
+
+FASG1	DEFL 1			;Floppy assignment
+FORM1	DEFL MAP96D		;Format
+
+FASG2	DEFL 2
+FORM2	DEFL MAP96D
+FASG3	DEFL 2
+FORM3	DEFL NULLF
+FASG4	DEFL 2
+FORM4	DEFL NULLF
+FASG5	DEFL 2
+FORM5	DEFL NULLF
+FASG6	DEFL 2
+FORM6	DEFL NULLF
+FASG7	DEFL 2
+FORM7	DEFL NULLF
+FASG8	DEFL 0
+FORM8	DEFL 0
+
+Iæ yoõ arå runninç á MAĞ CPU¬ MKBÄ musô bå Ô unlesó yoõ arå runninç aî 
+IVC/SVÃ iî whicè caså iô maù bå seô falså anä thå IVC/SVÃ keyboarä caî 
+bå  used®   Wheî usinç thå MAĞ CPÕ keyboarä iô ió possiblå tï  stoğ  á 
+runninç prograí anä warí booô aô anù time®  Thå keù whicè actionó thió 
+ió seô bù thå BREAË equate¬ A1È ió CTRL/SHIFÔ F± oî á MAĞ keyboard® Iô 
+ió  possiblå tï uså á · biô keyboarä whicè returnó ESÃ xø foò functioî 
+keyó  oî  thå MAĞ CPÕ keyboarä porô bù settinç  ESCKEÙ  T¬  thå  codeó 
+returneä  froí thå functioî keyó arå seô iî thå programmablå keù tablå 
+in CHRIO.MAC
+MKBD	EQU T AND MAP AND (VFC OR IVC)	;Set true for MAP keyboard
+BREAK	EQU 0A1H		;Break key for CPU keyboard
+ESCKEY	EQU F AND MKBD		;T for 7 bit ESC keyboard with MKBD
+;Select keyboard with Nascom
+NKBD	EQU T AND NAS AND (VFC OR IVC)	;T for Nascom with Nascom keyb
+
+Notå  wheî  usinç  aî  IVÃ witè á MAĞ CPÕ keyboarä  thå  IVÃ  musô  bå 
+modifieä  tï  overcomå á buç oî thå IVC®  Inverô M± (buó linå  25©  bù 
+connectinç iô tï IC1µ piî 3¬  lifô ouô piî 1´ oæ thå decodå PROÍ VIÄ ± 
+IC3µ anä connecô thå floatinç piî tï thå inverteä M± IC1µ piî 4.
+
+Settinç  eitheò  DRV× oò NDRV× tï ° wilì canceì  Winchesteò  assembly¬ 
+elså  selecô Winchesteò iî DRV× anä thå numbeò oæ logicaì CP/Í  driveó 
+yoõ  wisè  iô  spliô  intï  iî  NDRVW¬   seå  DATA.MAÃ  foò  availablå 
+Winchesters and SYSTEM.MAC for furthur Winchester options
+;Select Winchester type and logical drives it is split into
+DRVW	DEFL 0  		;Winchester type
+NDRVW	DEFL 0			;Drive allocation to Winchester
+Aó  supplieä á MAĞ CPÕ haó CTC° clockeä aô 2Mhú tï providå  bauä  ratå 
+clockó foò SIÏ channeì Á anä CTC± clockeä aô 1Mhú tï providå bauä ratå 
+clockó  foò  SIÏ  channeì  B¬  iæ yoõ changå theså linkó  iô  musô  bå 
+reflected here.ŠSIOCHA	EQU FAST		;SIO A CTC0 clock, slow=1Mhz fast=2Mhz
+SIOCHB	EQU SLOW		;SIO B CTC1 clock, slow=1Mhz fast=2Mhz
+
+Power up baud rates are assigned below
+IMODEA	EQU MBIO+MBSERL+MBSOFT+MBXNXF	;Initial IO mode
+IMODEB	EQU MBIO+MBSERL+MBSOFT		;Initial IO mode
+IBAUDA	EQU B9600		;Initial baud rate
+IBAUDB	EQU B300		;Initial baud rate
+
+And initial device assignment next
+CONSIN	EQU 8000H		;Console input from keyboard
+CONSOT	EQU 4000H		;Console output to video
+LSTOUT	EQU 1000H		;List to SIO-A
+AXIN	EQU 0800H		;Auxillary in from SIO-B
+AXOUT	EQU 0800H		;Auxillary out to SIO-B
+
+Iæ    DATA.MAÃ   doeó   noô   contaiî   datá   foò   youò   particulaò 
+Winchester/Floppy/Format¬ theså caî bå inserteä usinç existinç datá aó 
+a model. To insert a Winchester:-
+Name the Winchester
+JIMW    EQU x
+Enter Winchester data
+;JIM's Winchester
+CYLx	EQU 320			;Cylinders
+RWCx	EQU 132			;Reduced write cylinder
+HDSx	EQU 2			;Heads
+WPCx	EQU 0			;Write pre-comp cylinder
+
+To insert a Floppy:-
+Name the Floppy
+JIMF    EQU x
+Enter Floppy data
+;JIM's Floppy
+STPx	EQU 3			;Step rate
+HDLx	EQU 10			;Head load timing
+STLx	EQU 20			;Track settling time
+DTYx	EQU TP96		;96tpi drive
+
+To insert a format
+Name the format
+JIMFM   EQU x
+;JIM's Format
+	FN DEFL MAP96D
+;                 _FTY,_DEN,_SEC,__BLK,DAL,TPS,OFF,SPS
+	FDAT1 %FN,TP96,DDEN, 512, 4096,  1, 80,  2, 10
+;                 UAL,EXM,___CGS,CGT, SKW,SOF,INV,BSF,SCY,DDM
+	FDAT2 %FN,  0,  F,TRKCRY,  0,   0,  F,  F,  F,  F,  F
+
+Where     FTY = Format Type (TP96,TP48,TP8)
+          DEN = Density (SDEN,DDEN)
+          SEC = Physical Sector Size (128,256,512,1024)
+          BLK = CP/M Allocation Size (1024,2048,4096,8192,16384)
+          DAL = Directory Allocation Blocks
+          TPS = Physical Tracks per side
+          OFF = Logical System TracksŠ          SPS = Physical Sectors per side
+          UAL = User reserved allocation blocks (usually 0)
+          EXM = T=Zeroed EXM, F=Standard CP/M 2.2 / 3.1 EXM
+          CGS = Side Handling (TRKCRY,TRKREV,SSID,TRKCYL,SECCYL)
+          CGT = Track to change side with TRKCRY (usually set to 0)
+          SKW = Logical sector skew, or SPSK for user defined skew
+          SOF = T=Sectors start at 1, F=Sectors start at 0
+          INV = T=Data is inverted, F=Data is not inverted
+          BSF = T=Side 2 has bad side flag in side 2 ID header
+                F=Good side flag, See note on MPILNK above
+          SCY = T=Physical sector numbers on side 2 continue from 
+                side 1 (i.e side 1 sectors 0 to 9 on side 2 10 to19)
+                F=Physical sector numbers on side 2 start from 0/1
+          DDM = T=Sector data is preceeded by deleted data mark
+                F=Standard data mark (usual)
+
+Notå  thaô  iæ yoõ wisè tï uså thå MAĞ 8° ASSIGÎ  prograí  thå  formaô 
+numbeò ø thaô yoõ assigî tï á formaô shoulä corresponä witè thå numbeò 
+issued in FORMATS.DAT
+
+     Havinç inserteä youò ne÷ requirementó uså M80¬ LINË anä GENCPÍ tï 
+producå  á ne÷ system®  Iæ yoõ havå specifieä á ne÷ drivå foò DRV±  iô 
+maù welì bå necessarù tï producå á ne÷ loadeò system.
+
+                      MODIFYINÇ THÅ LOADEÒ BIOS
+                      =========================
+     M8° =3LDR
+     L8° 3LDR,3LDR/N/E
+Tï producå 3LDR.COM¬ tracë ° sectoò ° colä loader
+
+     M8° =LDRBIOS
+Tï producå LDRBIOS.REL
+
+     LINË CPMLDR[L100]=CPMLDR,LDRBIOS
+Tï producå CPMLDR.COM¬ notå thió caî bå ruî directlù froí CPM2.
+
+Theî tï producå CPMLDR.SYS
+     SIÄ 3LDR.COM
+     RCPMLDR.COM 200
+     RCCP.COM 1800
+     WCPMLDR.SYS 100 2900
+     G0
+
+                   THÅ MAĞ 8° MULTI-UTILITÙ PROGRAM
+                   ================================
+     Oî  youò  SYSTEÍ DISË yoõ wilì finä á filå  calleä  MU.COM®  Thió 
+prograí  enableó yoõ tï FORMAT¬  COPÙ anä VERIFÙ á diskette®  Ruî  thå 
+prograí bù entering:-
+
+MU<CR>
+
+     Yoõ wilì bå greeteä bù thå commanä prompt®  Enteò one¬ twï oò alì 
+thå  commandó  iî  anù ordeò accordinç tï youò  requirements..Æ  Ã  V® 
+Commandó  wilì bå executeä iî thå ordeò FORMAÔ COPÙ VERIFÙ  regardlesó 
+oæ thå ordeò iî whicè theù arå entered®  Havinç selecteä thå  commandó Šyoõ requirå presó CÒ tï continue.
+     Iæ yoõ selecteä Æ yoõ wilì no÷ bå prompteä foò á sectoò skew®  Tï 
+optimiså  disë  accesó  timå sectoró arå laiä dowî oî thå  disë  iî  á 
+staggereä sequence®  Foò á generaì purposå disë uså á ske÷ oæ 2®  Á CÒ 
+ió noô required.
+     Iæ  yoõ selecteä Ã yoõ wilì bå prompteä foò thå drivå whicè  wilì 
+holä thå disë whicè ió tï bå copied® Á CÒ ió noô required.
+Yoõ  wilì  theî  bå prompteä foò thå drivå oò driveó tï  bå  FORMATTEÄ 
+and/oò COPIEÄ TÏ and/oò VERIFIED®  Enteò thå drive/driveó followeä  bù 
+CR.
+     Yoõ  wilì  theî bå prompteä tï inserô thå appropriatå diskó  intï 
+thå appropriatå drives.
+     Wherå á singlå drivå systeí ió beinç useä iô ió possiblå tï  copù 
+á disë iî á drivå tï anotheò disë iî thå samå drivå ® Iî thió caså thå 
+copù  routinå wilì halô anä prompô yoõ wheî iô ió necessarù tï  changå 
+disks® Iô woulä bå advisablå tï puô á writå protecô taâ oî thå disë tï 
+bå copieä froí iî ordeò tï avoiä possiblå miø ups.
+     Wheneveò  yoõ  arå  beinç prompteä foò keyboarä  entrù  (blinkinç 
+cursor) you may exit MU by pressing ^C.
+
+                           BUGS AND PATCHES
+                           ================
+Iô  ió  possiblå  tï havå thå datå  printeä  iî  Englisè  format¬  i.å 
+DD/MM/YÙ bù ammendinç thå followinç files:-
+DATE.COM  change    0951 to 97
+                    0958 to 96
+
+DIR.COM   change    3529 to CB
+                    3530 to CA
+
+SHOW.COM  change    0CEF to FE
+                    0CF6 to FD
+
+PIĞ doesn'ô handlå passworä protecteä fileó correctly¬  iæ yoõ PIĞ  tï 
+replacå  á  passworä  protecteä filå thå transfeò  appearó  tï  happeî 
+normallù  buô iî facô thå protecteä filå ió noô removeä anä thå PIPpeä 
+filå remainó iî it'ó temporarù .$$¤ state®  Aô leasô thió ió á failurå 
+oî thå safå side.
+
+DATÅ  [CONTINUOUSİ  onlù  workó iæ yoõ havå  aî  interruptinç  RTÃ  aó 
+DATÅ simplù readó thå SCBË anä doeó noô calì thå BIOS'ó ?TIMÅ routine® 
+Useró  oæ thå MAĞ RTÃ shoulä uså ouò CLOCK.COÍ instead®  Thå MAĞ  BIOÓ 
+doeó  noô  supporô  DATE.COM'ó clocë settinç routine¬  MAĞ  RTÃ  useró 
+should use CLKSET.COM.
+
+SAVÅ doesn'ô permiô maximuí sizeä filå namå entry¬  i.å B:12345678.12³ 
+wilì havå thå filå typå "3¢ truncated.
+
+DRÉ  insisô  thaô  yoõ shoulä uså BDOÓ functioî 5° tï calì  thå  BIOS¬ 
+howeveò  iæ yoõ writå á customiseä useò functioî viá BIOÓ functioî  3° 
+bå warneä thaô HL,DE,BÃ wilì bå corrupteä oî returî iæ á BDOÓ 5°  calì 
+ió  used¬  betteò tï calì thå BIOÓ directlù usinç addresó 000± anä  dï 
+any necessary banking in the BIOS routine.
+
+Iæ  yoõ starô usinç bankó iî onå oæ youò programs¬  bå warneä anù BDOÓ Šcalì wilì returî witè banë ± selected¬  contacô MAĞ 8° shoulä yoõ  ruî 
+into problems as we an RSX to get round this.
+
+                     INCOMPATIBILITY WITH CPM 2.2
+                     ============================
+CP/Í   PLUS¬   despitå   itó  faò  greateò  sophisticatioî  anä   manù 
+modifications¬  retainó remarkablå compatibilitù witè CP/Í 2.2¬ 99¥ oæ 
+CP/Í  programó worë withouô anù trouble¬  thoså thaô dï arå  thå  oneó 
+thaô  arå  á littlå "naughty¢ iî thaô theù makå direcô BIOÓ calló  foò 
+disë IO¬  thió shouldn'ô reallù bå donå eveî undeò CP/Í 2.² buô  therå 
+arå  manù  finå  programó  oæ  á utilitariaî  naturå  whicè  dï  theså 
+"naughties¢  anä  whicè  wå woulä prefeò  noô  tï  lose®  Usinç  theså 
+programó  undeò CP/Í ³ howeveò causeó disaster¬  thå disë routineó arå 
+iî bankeä memorù anä thereforå noô directlù accessable¬  furthuò  morå 
+thå  CP/Í  ³ BIOÓ returnó physicaì sectoò sizeä chunkó oæ datá  ratheò 
+thaî 12¸ bytå records® Encloseä oî youò systeí disë ió á littlå biô oæ 
+magiã  tï overcomå alì youò problemó (famouó lasô  words!!!)¬  iî  thå 
+forí  oæ CONV2.RSX®  Thió ió aî RSØ whicè caî bå attacheä tï anù  .COÍ 
+file¬  whicè  useó direcô BIOÓ accesó foò disë IO¬  anä makeó iô  looë 
+likå CP/Í 2.2¬  tï attacè it¬ foò instance¬ tï thå olä copù oæ DÕ froí 
+thå  CPÍ useò grouğ enteò GENCOÍ DU CONV²®  Thå ne÷  DU.COÍ  generateä 
+wilì worë á treat.
+

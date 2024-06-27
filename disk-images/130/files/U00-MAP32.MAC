@@ -1,0 +1,111 @@
+VER	DEFL 4			;Version 4 module
+
+	SUBTTL Bank Select and Data Move (32k paging)
+	PAGE
+
+	CSEG			;Must be common
+
+;************************
+;*	32K PAGING      *
+;************************
+
+;Re-load the CCP
+RLCCP:	LD HL,0100H		;Copy to location
+	LD DE,0000		;Copy from location
+	LD BC,0102H		;From bank 2 to bank 1
+
+MOVCCP:	LD (FRMTO),BC		;Save TO/FROM banks
+	LD B,CCPLEN/RECSIZ+1	;Records to move
+SAVLOD:	PUSH BC			;Save record count
+	LD BC,(FRMTO)		;Get banks
+	CALL ?XMOVE		;Tell move
+	LD BC,RECSIZ		;Transfer length
+	CALL ?MOVE		;Move it
+	POP BC			;Recover record count
+	DJNZ SAVLOD
+	RET
+
+FRMTO:	DEFW 0			;TO/FROM banks
+
+;Virtual disk read/write
+RWVIR:	LD HL,0
+	LD (MULCNT),HL		;Cancel countdown and multi count
+	LD A,(LTRAK)
+	LD D,A			;Save track for later
+	AND 0F8H		;Mask bits 3-7
+	RRCA
+	RRCA
+	RRCA
+	INC A			;Convert to bank
+	LD C,A			;Put in FROM (read)
+	LD A,(RWFLAG)
+	OR A			;Read/Write ?
+	PUSH AF
+	LD A,(DMABNK)		;DMA bank
+	LD B,A			;Put in TO
+	JR NZ,SETXM		;It is a read
+	LD B,C
+	LD C,A			;Swop BC for write
+SETXM:	CALL ?XMOVE		;Set banks for move
+	LD HL,(LSECT)
+	REPT 7
+	ADD HL,HL
+	ENDM			;*128
+	LD A,D
+	AND 07
+	RLCA
+	RLCA
+	RLCA
+	RLCA
+	ADD A,H
+	LD H,A			;HL points to sector
+	LD DE,(DMAADR)		;DE points to DMA
+	LD BC,RECSIZ		;Move one record
+	POP AF			;Z = write
+	JR Z,?MOVE
+	EX DE,HL		;Swop for read
+
+;Bank move
+?MOVE:	LD A,(SRCDES)
+	OR A			;Test for internal move
+	JP M,INTRNL
+	CALL BIGSTK		;Local stack
+	CALL BANK		;Select source bank
+	PUSH HL			;Save destination address
+	LD HL,BUFF80		;Buffer
+	PUSH BC			;Save transfer length
+	EX DE,HL
+	LDIR			;Source to buffer
+	LD A,(SRCDES+1)
+	CALL BANK		;Select destination bank
+	POP BC			;Recover transfer length
+	POP DE			;Recover destination address
+	PUSH HL			;Save DE exit address
+	LD HL,BUFF80		;Point to transfer buffer
+	LDIR			;Buffer to destination
+	POP HL			;Recover DE exit address
+	LD A,(CURBNK)
+	CALL BANK		;Restore current bank
+	EX DE,HL
+	DEC BC			;BC = 0FFFFH
+
+;Inter bank move
+?XMOVE:	LD (SRCDES),BC		;Set XMOVE
+	RET
+
+;Intra bank move
+INTRNL:	EX DE,HL		;Switch for LDIR
+	LDIR
+	EX DE,HL		;Need next addresses in same regs
+	RET	
+
+;Bank Select.  Select CPU bank for further execution.
+?BKSEL:	LD (CURBNK),A		;Remember current bank
+
+;Select bank in A
+BANK:	OR A
+	JR Z,SELECT
+	ADD A,PAGE0+1
+SELECT:	OUT (PPAG),A
+	RET	
+

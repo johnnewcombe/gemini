@@ -1,0 +1,582 @@
+	TITLE	COPYSYS - UPDATED SYSGEN PROGRAM 6/82
+	.Z80
+
+;Original version supplied by DRI simply doesn't work
+;    still, this serves as an example of simple file read/write
+;    and direct disk access via BDOS function 50
+
+;	***********************************
+;	*				  *
+;	*	COPYSYS SOURCE CODE       *
+;	*				  *
+;	***********************************
+
+TRUE	EQU	-1
+FALSE	EQU	NOT TRUE
+
+;CPM 3 version in user sector size
+
+FCB	EQU	005CH		;location of FCB
+FCBCR	EQU	FCB+32		;current record location
+TPA	EQU	0100H		;Transient Program Area
+BDOS	EQU	05H		;DOS entry point
+BOOT	EQU	00H		;reboot for system
+;BDOS functions
+CONI	EQU	1H		;console input function
+CONO	EQU	2H		;console output function
+PSTRNG	EQU	9		;Print string
+VERSION	EQU	12		;Version check
+DSKRST	EQU	13		;Disk system reset
+SELDK	EQU	14		;Select disk
+OPENF	EQU	15		;disk open function
+CLOSEF	EQU	16		;open a file
+DWRITF	EQU	21		;Write func
+MAKEF	EQU	22		;make a file
+SETDM	EQU	26		;Set DMA address
+DELTEF	EQU	19		;delete a file
+DREADF	EQU	20		;disk read function
+DRBIOS	EQU	50		;Direct BIOS call function
+;BIOS functions via BDOS call DRBIOS
+SELDSK	EQU	9		;Bios func #9 SELect DiSK
+SETTRK	EQU	10		;BIOS func #10 SET TRacK
+SETSEC	EQU	11		;BIOS func #11 SET SECtor
+SETDMA	EQU	12		;BIOS func #12 SET DMA address
+READF	EQU	13		;BIOS func #13 READ selected sector
+WRITF	EQU	14		;BIOS func #14 WRITe selected sector
+TRANS	EQU	16		;Sector translation
+MULTIO	EQU	23		;Multi io
+
+EIGHTY	EQU	080H		;value of 80
+CTLC	EQU	"C"-"@"		;ConTroL C
+CR	EQU	0DH		;Carriage Return
+LF	EQU	0AH		;Line Feed
+
+	ASEG
+	ORG	TPA		;Transient Program Area
+
+	JP	START
+
+	DEFB	"COPYRIGHT 1982, "
+	DEFB	"DIGITAL RESEARCH"
+	DEFB	"151282"
+
+;Utility subroutines
+;	*********************************
+;	*	DIRECT BIOS CALLS       *
+;	*********************************
+
+;Select a drive, return NZ if valid
+SEL:	LD	(BCREG),A	;CREG = selected register
+	LD	HL,0000H
+	LD	(DEREG),HL	;for first time
+	LD	A,SELDSK
+	LD	(BIOSFC),A	;store it in func space
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	CALL	BDOS
+	LD (DPH),HL		;Save DPH address
+	LD A,H
+	OR L
+	RET
+
+;Set for multi sector read/write
+SETMUL:	LD	(BCREG),A	;CREG = selected register
+	LD	A,MULTIO
+	LD	(BIOSFC),A	;store it in func space
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Set up track
+TRK:	LD	B,00H
+	LD	A,C		;Acc = track #
+	LD	(BCREG),BC	;set up PB
+	LD	A,SETTRK	;settrk func #
+	LD	(BIOSFC),A
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Do sector translation
+SECTRN:	LD (BCREG),BC
+	LD (DEREG),DE
+	LD	A,TRANS		;settrk func #
+	LD	(BIOSFC),A
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Set up sector number
+SEC:	LD	(BCREG),HL	;CREG = sector #
+	LD	A,SETSEC
+	LD	(BIOSFC),A	;set up bios call
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Set DMA address to value of BC
+DMA:	LD	(BCREG),BC	;register pair
+	LD	A,SETDMA
+	LD	(BIOSFC),A	;set up bios #
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Perform read operation
+READ:	LD	A,READF
+	LD	(BIOSFC),A
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;Perform write operation
+WRITE:	LD	A,WRITF
+	LD	(BIOSFC),A	;set up bios #
+	LD	C,DRBIOS
+	LD	DE,BIOSPB
+	JP	BDOS
+
+;	**************************
+;	*	BDOS CALLS       *
+;	**************************
+
+;Read console character to rA
+GETCHR:	LD	C,CONI
+	CALL	BDOS
+	CP CTLC			;Skip if ^C
+	JP Z,REBOOT
+;Convert to upper case
+	CP	"A" OR 20H
+	RET	C
+	CP	("Z" OR 20H)+1
+	RET	NC
+	AND	05FH
+	RET
+
+;Write character from rA to console
+PUTCHR:	LD	E,A
+	LD	C,CONO
+	CALL	BDOS
+	RET
+
+;Send Carriage Return, Line Feed
+CRLF:	LD	A,CR
+	CALL	PUTCHR
+	LD	A,LF
+	CALL	PUTCHR
+	RET
+
+;Print message addressed by the HL until zero with leading CRLF
+CRMSG:	PUSH	DE
+	CALL	CRLF
+	POP	DE		;drop through to OUTMSG
+OUTMSG:	LD	C,PSTRNG
+	JP	BDOS
+
+;Write record
+DWRITE:	LD	C,DWRITF
+	JP	BDOS
+
+;Read record
+DREAD:	LD	C,DREADF
+	JP	BDOS
+
+;File open function
+OPEN:	LD	C,OPENF
+	JP	BDOS
+
+;Make a file
+MAKE:	LD	C,MAKEF
+	JP	BDOS
+
+;Delete a file
+DELETE:	LD	C,DELTEF
+	JP	BDOS
+
+;Set DMA address
+DSTDMA:	LD	C,SETDM
+	JP	BDOS
+
+;	**********************************
+;	*	GET A SOURCE DRIVE       *
+;	**********************************
+
+;Get source disk for system track read
+SOURCE:	LD	DE,SRCPRM	;ask user for source drive
+	CALL	CRMSG
+	CALL	GETCHR		;obtain response
+	SUB	"A"		;normalize drive #
+	JR C,BDDISK		;Too small
+	CP "P"-"A"+1
+	JR NC,BDDISK		;Permit up to drive P
+
+;Select disk given by A
+	ADD	A,"A"
+	LD	(GDISK),A	;store source disk
+	SUB	"A"
+	LD	E,A		;move disk into E for select func
+	CALL	SEL		;select the disk and see if its there
+	RET NZ			;Drive exists
+
+;Invalid drive
+BDDISK:	CALL	NBGDSK		;tell user bad drive
+	JR	SOURCE		;try again
+
+;Getsys set r/w to read and get the system
+GETVER:	CALL	CRLF
+	LD	DE,VERGET	;verify source disk
+	CALL	OUTMSG
+VERCR:	CALL	GETCHR
+	CP	CR
+	JP	NZ,REBOOT	;jmp only if not verified
+	CALL	CRLF
+	RET
+
+;	***************************************
+;	*	GET A DESTINATION DRIVE       *
+;	***************************************
+
+DESTIN:	LD	DE,DESPRM	;address of message
+	CALL	CRMSG		;print it
+	CALL	GETCHR		;get answer
+	CP	CR
+	JP	Z,REBOOT	;all done
+	SUB	"A"
+	JR C,BDDSK
+	CP "P"-"A"+1
+	JR	NC,BDDSK	;Permit up to drive P
+;Set disk fron rA
+	ADD A,"A"
+	LD	(PDISK),A	;message sent
+	SUB	"A"
+	LD	E,A		;disk # in E
+	CALL	SEL		;select destination drive
+	RET NZ			;Drive exists
+;Invalid drive
+BDDSK:	CALL	NBGDSK		;tell user bad drive
+	JR	DESTIN		;to try again
+
+;Put system, set r/w to write
+PUTVER:	LD	DE,VERPUT	;verify dest prmpt
+	CALL	CRMSG		;print it out
+	CALL	GETCHR		;retrieve answer
+	CP	CR
+	JP	NZ,REBOOT	;exit to system if error
+	CALL	CRLF
+	RET
+
+;	****************************************
+;	*	READ/WRITE SYSTEM TRACKS       *
+;	****************************************
+
+;Get or put CP/M (rw = 0 for read, 1 for write)
+;disk is already selected
+;Use DPB and DPH to establish disk format
+GETPUT:	LD IX,(DPH)		;IX to DPH
+	LD L,(IX+12)
+	LD H,(IX+13)
+	PUSH HL
+	POP IY			;IY to DPB
+	LD L,(IX)
+	LD H,(IX+1)		;Save translate table for later
+	LD (TRAN),HL		;     as DPH is a copy and gets rubbished
+	LD L,(IY)
+	LD H,(IY+1)		;Records per track
+	LD A,(IY+15)		;Sector size
+	OR A
+	JR Z,SPTGOT		;Record sized sectors
+	LD B,A
+SECS:	SRL H
+	RR L			;HL/2
+	DJNZ SECS
+SPTGOT:	LD A,(IY+13)		;System tracks
+	LD DE,NOSYS
+	OR A
+	JP Z,FINIS		;No system tracks
+	EX DE,HL
+	LD HL,0
+	LD B,A
+ADDSYS:	ADD HL,DE
+	DJNZ ADDSYS
+	LD A,L			;No. of physical sectors on system track(s)
+	PUSH AF
+	CALL SETMUL
+	LD BC,0			;Track 0
+	CALL TRK
+	LD DE,(TRAN)		;Translate table address
+	LD BC,0
+	CALL SECTRN		;Translate
+	CALL SEC		;Set physical sector
+	LD BC,LOADP
+	CALL DMA
+	LD A,(RW)
+	OR A			;Read or write ?
+	POP BC			;Pick up sector count
+	JR Z,DOREAD
+;Write sectors
+DOWRIT:	PUSH BC
+	CALL WRITE
+	POP BC
+	OR A
+	JR NZ,SYSERR		;Error has occured
+	DJNZ DOWRIT
+	RET
+
+;Read sectors
+DOREAD:	PUSH BC
+	CALL READ
+	POP BC
+	OR A
+	JR NZ,SYSERR		;Error has occured
+	DJNZ DOREAD
+	RET
+
+SYSERR:	LD DE,BADDY		;Show error for system track read/write
+	JP NZ,FINIS
+
+;	****************************
+;	*	MAIN ROUTINE       *
+;	****************************
+
+START:	LD	SP,STACK
+	LD	DE,SIGNON
+	CALL	OUTMSG
+
+;get version number to check compatability
+	LD	C,VERSION	;version check
+	CALL	BDOS
+	LD	A,L		;version in Acc
+	CP	30H		;version 3 or newer?
+	JR	NC,FCBCHK	;CP/M3
+
+	LD DE,NOTPOS		;Not possible under CPM 2
+	LD C,PSTRNG
+	CALL BDOS
+	JP BOOT
+
+;Check for default file liad instead of get
+FCBCHK:	LD	A,(FCB+1)	;blank if no file
+	CP	" "
+	JR	Z,GETSYS	;skip to system message
+	LD	DE,FCB		;try to open it
+	CALL	OPEN
+	INC	A		;255 becomes 00
+	JR	NZ,RDOK
+
+;File not present
+	LD	DE,NOFILE
+	CALL	CRMSG
+	JP	REBOOT
+
+;file present
+RDOK:	XOR	A
+	LD	(FCBCR),A	;current record = 0
+	LD	DE,LOADP
+RDINP:	PUSH	DE
+	CALL DSTDMA		;Set DMA address for read
+	LD	DE,FCB		;ready fr read
+	CALL	DREAD
+	POP	DE		;recall
+	OR	A		;00 if read ok
+	JR	NZ,PUTSYS	;assume eof if not
+;More to read continue
+	LD	HL,EIGHTY
+	ADD	HL,DE		;HL is new load address
+	EX DE,HL
+	JR	RDINP
+
+GETSYS:	CALL	SOURCE		;find out source drive
+RDRET:	LD A,(GDISK)
+	CP "P"			;Can't read system track from VDISK
+	JR NZ,NOTPR
+	CALL BDDISK
+	JR RDRET
+NOTPR:	CALL GETVER		;Verify
+	XOR	A		;zero out a
+	LD	(RW),A		;RW = 0 to signify read
+	CALL	GETPUT		;get system tracks
+	LD	DE,DONE		;end message of get or read func
+	CALL	OUTMSG		;print it out
+
+;Put the system
+PUTSYS:	CALL	DESTIN		;get dest drive
+WRRET:	LD A,(PDISK)
+	CP "P"			;Stop P
+	JR NZ,DOPUT
+	CALL BDDSK
+	JR WRRET
+DOPUT:	CALL PUTVER		;Verify
+	LD A,1
+	LD (RW),A		;Flag write
+	CALL	GETPUT		;Put system tracks
+	LD	DE,DONE
+	CALL	OUTMSG		;print out end prompt
+
+;	**************************************
+;	*	FILE COPY FOR CPM3.SYS       *
+;	**************************************
+
+;Prompt the user for the source of CP/M3.SYS
+
+	LD	DE,CPYMSG	;print copys prompt
+	CALL	CRMSG		;print it
+	CALL	GETCHR		;obtain reply
+	CP	"Y"		;is it yes?
+	JP	NZ,REBOOT	;if not exit
+	LD	C,DSKRST	;func # for reset
+	CALL	BDOS
+	CALL	SOURCE		;get source disk for CPM3.SYS
+	CALL	GETVER		;Verify
+	LD	A,(GDISK)	;Acc = source disk
+	SUB	40H		;correct disk
+	LD	(CP3FCB),A	;CP3FCB has source disk #
+
+;Source fcb"s ready
+
+	LD	DE,CP3FCB
+	CALL	OPEN		;open the file
+	LD	DE,NOFILE	;error messg
+	INC	A		;255 becomes 0
+	JP	Z,FINIS		;done if no file
+
+;Source file is present and open
+	LD	DE,LOADP	;get DMA address
+	EX	DE,HL		;move address to HL regs
+	LD	(BEGIN),HL	;save for begin of write
+
+COPY1:	EX	DE,HL		;DE = address of DMA
+	CALL	DSTDMA
+	LD	DE,CP3FCB
+	CALL	DREAD		;read next record
+	OR	A		;end of file?
+	JR	NZ,EOF		;skip write if so
+
+	LD	A,(CRNREC)
+	INC	A		;bump it
+	LD	(CRNREC),A
+
+	LD	HL,(BEGIN)
+	LD	DE,EIGHTY
+	ADD	HL,DE		;add eighty to begin address
+	LD	(BEGIN),HL
+	JR	COPY1		;loop until EOF
+
+EOF:	LD	DE,DONE
+	CALL	OUTMSG
+
+	CALL	DESTIN		;get destination drive for CPM3.SYS
+	CALL PUTVER		;Verify
+	LD	A,(PDISK)
+	SUB	40H		;normalize disk
+	LD	(CP3FCB),A	;correct disk for dest
+	XOR A
+	LD (EXT),A		;Clear extent mask
+	LD (CCR),A		;Clear current record
+	LD DE,CP3FCB
+	CALL	DELETE		;delete file if there
+
+	LD	DE,CP3FCB
+	CALL	MAKE		;make a new one
+	LD	DE,NODIR
+	INC	A		;check directory space
+	JP	Z,FINIS		;end if none
+
+	LD	DE,LOADP
+	EX	DE,HL
+	LD	(BEGIN),HL
+
+LOOP2:	EX	DE,HL
+	CALL	DSTDMA
+	LD	DE,CP3FCB
+	CALL	DWRITE
+	LD	DE,FSPACE
+	OR	A
+	JP	NZ,FINIS	;No space on disk
+	LD	A,(CRNREC)
+	DEC	A
+	LD	(CRNREC),A
+	OR A
+	JR	Z,FNLMSG	;All records sent
+	LD	HL,(BEGIN)
+	LD	DE,EIGHTY
+	ADD	HL,DE
+	LD	(BEGIN),HL
+	JR	LOOP2
+;Copy operation complete
+FNLMSG:	LD	DE,CP3FCB
+	LD	C,CLOSEF
+	CALL	BDOS
+
+	LD	DE,DONE
+
+;Write message given by DE, reboot
+FINIS:	CALL	OUTMSG
+
+REBOOT:	LD	C,DSKRST
+	CALL	BDOS
+	CALL	CRLF
+	JP	BOOT
+
+NBGDSK:	LD	DE,QDISK
+	CALL	CRMSG
+	RET
+
+;	*******************************
+;	*	DATA STRUCTURES       *
+;	*******************************
+
+BIOSPB:
+;BIOS Parameter Block
+BIOSFC:	DEFB	0		;BIOS function number
+AREG:	DEFB	0		;A register contents
+BCREG:	DEFW	0		;BC register contents
+DEREG:	DEFW	0		;DE register contents
+HLREG:	DEFW	0		;HL register contents
+
+CP3FCB:	DEFS	1
+	DEFB	"CPM3    "
+	DEFB	"SYS"
+EXT:	DEFB	0
+	DEFB	0
+	DEFB	0
+	DEFB	0
+	DEFS	16
+CCR:	DEFB	0
+	DEFS	3
+
+TRAN:	DEFW	0		;Address of translation table
+DPH:	DEFW 	0		;DPH address
+BEGIN:	DEFW	0		;DMA store
+CRNREC:	DEFB	0		;current rec count
+RW:	DEFS	1		;read if 0 write if 1
+
+;	************************
+;	*	MESSGAES       *
+;	************************
+
+SIGNON:	DEFB	"CP/M 3 COPYSYS - MAP 80 Multi System Version 1.0$"
+SRCPRM:	DEFB	"SOURCE drive name $"
+VERGET:	DEFB	"SOURCE on "
+GDISK:	DEFS	1
+	DEFB	" then type return $"
+DESPRM:	DEFB	"DESTINATION drive name (or return to reboot) $"
+VERPUT:	DEFB	"DESTINATION on "
+PDISK:	DEFS	1
+	DEFB	" then type return $"
+CPYMSG:	DEFB	"Do you wish to copy CPM3.SYS? $"
+DONE:	DEFB	"FUNCTION COMPLETE$"
+
+;Error messages......
+
+QDISK:	DEFB	"ERROR: Invalid drive$"
+NOSYS:	DEFB	"ERROR: No system tracks on this disk.$"
+NOFILE:	DEFB	"ERROR: No source file on disk.$"
+NODIR:	DEFB	"ERROR: No directory space.$"
+FSPACE:	DEFB	"ERROR: Out of data space.$"
+BADDY:	DEFB	"ERROR: Can't read/write system track$"
+NOTPOS:	DEFB 	"ERROR: Requires CP/M 3$"
+
+	DEFS	64
+STACK:
+LOADP:
+	END

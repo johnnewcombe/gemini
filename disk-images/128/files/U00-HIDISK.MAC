@@ -1,0 +1,121 @@
+VER	DEFL 4			;Version 4 module
+
+	SUBTTL High Level Disk IO
+	PAGE
+
+	DSEG
+
+;	**********************************
+;	*	HIGH LEVEL DISK IO       *
+;	**********************************
+
+;Select Disk Drive.  Drive code in <C>.
+;Return address of disk parameter header in HL
+?SELDK:	LD A,C
+	LD (LDRIV),A		;Save drive select code
+	LD L,C
+	LD H,0
+	ADD HL,HL		;Create index from drive code
+	LD BC,DRVTBL
+	ADD HL,BC		;Get pointer to dispatch table
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A			;Point at disk descriptor
+	OR H
+	RET Z			;If no entry in table, no disk
+	DEC HL
+	DEC HL
+	LD A,(HL)
+	LD (PDRIV),A		;Get relative drive
+	INC HL
+	INC HL
+	RET 
+
+;Home selected drive.  Treated as ?SETRK(0).
+?HOME:	LD BC,0			;Same as set track zero
+
+;Set Track. Saves track address from <BC> 
+;in LTRAK for further operations.
+?SETRK:	LD (LTRAK),BC
+	RET 
+
+;Set Sector.  Saves sector number from <BC>
+;in pre skew LSECT for further operations.
+?SETSC:	LD (LSECT),BC
+	RET 
+
+;Set Disk Memory Address.  Saves DMA address
+;from <BC> in DMAADR and sets DMABNK to CURBNK
+;so that further disk operations take place
+;in current bank.
+?SETDM:	LD (DMAADR),BC
+	LD A,(CURBNK)		;Default DMA bank is current bank
+;Fall through to set DMA bank
+;Set Disk Memory Bank.  Saves bank number
+;in DMABNK for future disk data transfers.
+?SETBK:	LD (DMABNK),A
+	RET 
+
+;Sector Translate.  Indexes skew table in <DE> with sector in <BC>.
+;Returns physical sector in <HL>.
+;We do skewing at FDC sector select time
+?SCTRN:	LD L,C
+	LD H,B
+	LD (SKTAB),DE		;Don't do skew now
+	RET
+
+;Set multiple sector count. Saves passed count in MULCNT
+?MULIO:	LD A,C
+	LD (MULCNT),A
+	RET 
+
+;Read/Write physical record from currently selected drive.
+;Finds address of proper read/write routine from XDPH.
+;All entry points are common for read or write
+;RWFLAG tells us wether we're coming or going
+?WRITE:	XOR A			;Flag write
+	JR RDWR
+?READ:	LD A,1			;Flag read
+RDWR:	LD (RWFLAG),A
+	XOR A			;No errors yet !
+	LD HL,MULCNT+1		;Point at countdown
+	DEC (HL)
+	RET P			;Counting down so skip
+	LD (HL),0		;Not counting down so restore
+	CALL BIGSTK		;Take on local stack in common memory
+	LD HL,(LDRIV)
+	LD H,0
+	ADD HL,HL		;Get drive code and double it
+	LD DE,DRVTBL
+	ADD HL,DE		;Make address of table entry
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A			;Fetch table entry
+	LD DE,-8
+	ADD HL,DE		;Point to read/write routine address
+	LD A,(HL)
+	INC HL
+	LD H,(HL)
+	LD L,A			;Get address of routine
+	LD A,1
+	LD (BRKFLG),A		;Tell break routine disk active
+	CALL IPCHL		;Go to driver
+	LD C,A			;Save success/fail
+	LD HL,BRKFLG
+	DEC (HL)		;Should go back to Z
+	LD A,C
+	RET Z
+	JP ?WBOOT
+
+;BIOS deblocking buffer flush.  Not implemented.
+?FLUSH:	XOR A
+	RET 			;Return with no error
+
+	CSEG
+
+;Return address of drive table
+?GETDV:	LD HL,DRVTBL
+	RET 
+

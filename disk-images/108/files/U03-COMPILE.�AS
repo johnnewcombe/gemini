@@ -1,0 +1,1234 @@
+common clear$,cursor$,c.offset%
+common tot.inst%,length%,data.no(1),object$(1)
+common instruction$(1),register(1)
+common print.flag$,res.flag$,dat.flag$
+common comp.flag$,f1$,f2$,f3$
+common f4$,f5$
+common end.data,delete.data,blank.data
+rem :******************************************************************
+rem :
+rem :  Copyright (c) 1981 by Electronic Accounting Services.
+rem :
+rem :******************************************************************
+def fnc$(r%,c%) = cursor$ + chr$(r% + c.offset%) + chr$(c% + c.offset%)
+rem *********************************************************
+rem : Compiler to take a source program previously read in,
+rem : in an algebraic form and compile it into an internal
+rem : form using reverse polish notation.This is done by
+rem : using the technique of operator-precidence tables.
+rem : The results forming an object file which is then
+rem : written to disc.
+rem : This program requires the use of a terminal with
+rem : clear screen and an addressable curser.
+rem ********************************************************
+stop.flag$ = "NO STOP"
+reg.range% = 40
+if.flag% =0
+while.flag% = 0
+do.flag% = 0
+sub.flag% = 0
+blk$ = " "
+top1% = 42
+comp.flag$ = "ERROR"
+nest.level% = 0
+dim nest%(20)
+dim reg$(202)
+reg$(top1%) = "END2"
+top.stack% = 1
+dim stack$((length% + 1))
+dim stack%((length% + 1))
+rem : Write zeroes and blanks to register and object arrays.
+for i% = 1 to 200
+    object$(i%) = " "
+    register(i%) = 0
+next i%
+for i% = 201 to 400
+    object$(i%) = " "
+next i%
+object$(1) = "END1"
+rem : First level selection labels (25 seperate labels).
+DATA :,NAME,CALL,SUB,LABEL,DO,LOOP,READ,INPUT,PRINT,=,IF
+DATA RETURN,WHILE,WEND,STOP,GOTO,ELSE,FEND,SELECT,FIX,EXIT,INC,DEC,END
+dim label$(26)
+for i% = 1 to 25
+    read label$(i%)
+next i%
+rem : Operator precidence table for parsing expressions.
+DATA =,0,256,(,1,-(-,),2,-)-,+,3,252,-,3,253,*,4,254,/,4,255,^,5,251
+DATA ASIN,6,260,SIN,6,257,ACOS,6,261,COS,6,258
+DATA ATAN,6,262,TAN,6,259,ALOG,6,264,LOG,6,263,EXP,6,266,LN,6,265
+DATA SQ,6,267,RT,6,268,DEG,6,271,RAD,6,272,FACT,6,269,ABS,6,270
+dim op$(25),op%(25),ob.op$(25)
+for i% = 1 to 24
+    read op$(i%)
+    read op%(i%)
+    read ob.op$(i%)
+next i%
+error.flag$ = "NO ERRORS"
+perm.error.flag$ = "NO ERRORS"
+print clear$
+line.no% = 1
+while instruction$(line.no%) <> "END"
+    object.no% = object.no% + 1
+    label.flag$ = "NOT FOUND"
+    label.no% = 1
+    instr$ = ucase$(instruction$(line.no%)) 
+    p% = match("!",instr$,1)
+    if p% = 0 then \
+        label.flag$ = "BLANK LINE" : \
+        obj$ = " "
+    while (label.flag$ = "NOT FOUND") and (label.no% <> 26)
+        if match(label$(label.no%),instr$,1) > 0 then \
+            gosub 100 : \ rem select label
+            label.flag$ = "FOUND"
+        label.no% = label.no% + 1
+    wend
+    if label.flag$ = "NOT FOUND" then \
+        message$ = "Syntax error,unable to trace instruction:" : \
+        gosub 10000 :rem display error
+    print using "&###&&";"Line no. ";line.no%;" :";obj$
+    line.no% = line.no% + 1
+wend
+print :print :print
+print "LINE BY LINE COMPILATION COMPLETE."
+print :print
+print "TESTING FOR CONTEXT DEPENDANT ERRORS."
+if if.flag% > 0 then \
+    print "There are ";if.flag%; : \
+    print " unmatched if statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+if if.flag% < 0 then \
+    print "There are ";abs(if.flag%); : \
+    print " unmatched ifend statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+if while.flag% > 0 then \
+    print "There are ";while.flag%; : \
+    print " unmatched while statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+if while.flag% < 0 then \
+    print "There are ";abs(while.flag%); : \
+    print " unmatched wend statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+if do.flag% > 0 then \
+    print "There are ";do.flag%; : \
+    print " unmatched do statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+if do.flag% < 0 then \
+    print "There are ";abs(do.flag%); : \
+    print " unmatched loop statements." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+gosub 15000 :rem pre-run module checks
+print
+print "Type any character to continue : ";
+dummy% = conchar%
+print clear$
+gosub 11000 :rem save files
+if perm.error.flag$ <> "ERROR" then \
+    comp.flag$ = "NO ERROR"
+chain "PROG"
+stop
+
+100 rem ***** Select label *****
+if ucase$(instruction$(line.no%)) = "END" then \
+    return
+object$(object.no% + 1) = "END1"
+t% = len(instr$)
+on label.no% gosub \
+    150 , \  : : [comment]
+    200 , \  : NAME
+    300 , \  : CALL
+    400 , \  : SUB
+    500 , \  : LABEL
+    600 , \  : DO
+    700 , \  : LOOP
+    800 , \  : READ
+    900 , \  : INPUT
+   1000 , \  : PRINT
+   1100 , \  : =
+   1200 , \  : IF
+   1300 , \  : RETURN
+   1400 , \  : WHILE
+   1500 , \  : WEND
+   1600 , \  : STOP
+   1700 , \  : GOTO
+   1800 , \  : ELSE
+   1900 , \  : FEND
+   2000 , \  : SELECT
+   2100 , \  : FIX
+   2200 , \  : EXIT
+   2400 , \  : INC
+   2500 :rem : DEC
+object$(object.no%) = obj$ 
+return :rem ** End of select function **
+
+150 rem ***** : [comment] *****
+obj$ = "023:"
+return :rem ** End of : [comment] **
+
+200 rem ***** Name register *****
+p% = match("R",instr$,1)
+o% = match("#",instr$,1)
+if p% <> (o% - 1) then \
+    message$ = "No valid register number:" : \
+    gosub 10000 : \ rem display error
+    return
+put% = int%(val(right$(instr$,(t% - o% + 1))))
+if put% = 0 or put% > 40 then \
+    message$ = "No valid register number :" : \
+    gosub 10000 : \ rem display error
+    return
+p% = match("!",instr$,o%)
+f$ = right$(instruction$(line.no%),(t% - p% + 1))
+f$ = left$(f$,20)
+rem :NB f$ includes lower case labels.
+obj$ = "002:"
+gosub 11500 :rem place number
+obj$ = obj$ + f$
+return :rem ** End of name register **
+
+300 rem ***** Call subroutine *****
+obj$ = "003:"
+p% = match("CALL",instr$,1)
+f$ = right$(instr$,(t% - p% - 3))
+t% = len(f$)
+p% = match("!",f$,1)
+f$ = right$(f$,(t% - p% + 1))
+obj$ = obj$ + left$(f$,20)
+return :rem ** End of call subroutine **
+
+400 rem ***** Sub ( subroutine label ) *****
+if stop.flag$ = "NO STOP" then \
+    message$ = "NO 'STOP' instruction found before subroutines." : \
+    gosub 10000 : \ rem display error
+    return
+if sub.flag% <> 0 then \
+    message$ = "Previouse subroutine not ended:" : \
+    gosub 10000 : \ rem error display
+    return
+sub.flag% = 1
+obj$ = "004:"
+p% = match("SUB",instr$,1)
+f$ = right$(instr$,(t% - p% - 2))
+t% = len(f$)
+p% = match("!",f$,1)
+f$ = right$(f$,(t% - p% + 1))
+obj$ = obj$ + left$(f$,20)
+return :rem ** End of sub ( subroutine label ) **
+
+500 rem ***** Label *****
+p% = match("#",instr$,1)
+put% = int%(val(right$(instr$,(t% - p% + 1))))
+if put% = 0 then \
+    message$ = "Label number missing :" : \
+    gosub 10000 : \ rem display error
+    return
+obj$ = "005:"
+gosub 11500 :rem place number
+return :rem ** End of label **
+
+600 rem ***** Do ******
+obj$ = "006:"
+p% = match("R",instr$,1)
+o% = match("#",instr$,1)
+if p% = 0 and o% = 0 then \
+    message$ = "Instruction incomplete :" : \
+    gosub 10000 : \ rem display error
+    return
+if p% > 0 and p% <> (o% - 1) then \
+    message$ = "R not followed by register number :" : \
+    gosub 10000 : \ rem display error
+    return
+if p% <> (o% - 1) \
+    then gosub 11600 : \ rem place constant
+         put% = 0 \
+    else put% = int%(val(right$(instr$,(t% - o% + 1)))) : \
+         gosub 11500 :rem place number
+if put% > 40 then \
+    message$ = "The register number is greater than 40" : \
+    gosub 10000 : \ rem error display
+    return
+do.flag% = do.flag% + 1
+nest.level% = nest.level% + 1
+nest%(nest.level%) = 3
+return :rem ** End of do **
+
+700 rem ***** Loop *****
+obj$ = "007:"
+if nest%(nest.level%) <> 3 then \
+    message$ = "NESTING CONFLICT." : \
+    gosub 10000 : \ rem display error
+    return
+do.flag% = do.flag% - 1
+nest.level% = nest.level% - 1
+return :rem ** End of loop **
+
+800 rem ***** Read *****
+obj$ = "008:"
+p% = match("R",instr$,1) + 1
+gosub 1050 :rem Place registers
+return :rem ** End of read **
+
+900 rem ***** Input *****
+obj$ = "009:"
+p% = 1
+gosub 1050 :rem Place registers
+return :rem ** End of input **
+
+1000 rem ***** Print *****
+obj$ = "010:"
+p% = match("R",instr$,1) + 1
+gosub 1050 :rem Place registers
+return :rem ** End of print **
+
+1050 rem ***** Place registers *****
+while p% <> length% and p% <> 0
+    o% = match("#",instr$,p%)
+    p% = match("R",instr$,p%)
+    if p% <> (o% - 1) and (p% - o%) <> 0 then \
+        message$ = "Invalid register number:" : \
+        gosub 10000 : \ rem display error
+        return
+    if o% > 0 then  \
+        put% = int%(val(right$(instr$,(t% - o% + 1)))) : \
+        gosub 11500 :rem place number
+wend
+i% = 0
+p% = 1
+t% = len(obj$)
+while p% <> t%
+    put% = 1
+    i% = i% + 1
+    p% = match(":",obj$,p%)
+    if p% <> t% then \
+        put% = int%(val(right$(obj$,(t% - p%)))) : \
+        p% = p% + 1
+    if put% = 0 or put% > 40 then \
+        message$ = "Item no. " + str$(i%) +"is not a valid reg no:": \
+        gosub 10000 : \ rem display error
+        return
+wend
+return :rem ** End of place registers **
+
+1100 rem ***** = (expressions) *****
+top.stack% = 1
+stack$(top.stack%) = " "
+stack%(top.stack%) = -1
+p% = match("R41",instr$,1)
+if p% > 0 then \
+    message$ = "Register number 41 is beyond permissable range." : \
+    gosub 10000 : \ rem display error
+    return
+p% = match("PI",instr$,1)
+while p% > 0
+    aa$ = left$(instr$,(p% - 1)) + "R41"
+    aa$ = aa$ + right$(instr$,(t% - p% - 1))
+    instr$ = aa$
+    t% = t% + 1
+    s% = p% + 2
+    p% = match("PI",instr$,s%)
+    reg.range% = 41
+wend
+brackets% = 0
+obj$ = "011:"
+p% = 1
+exp.flag$ = "EXPECTING OPERAND"
+token.flag$ = "MORE"
+s% = 0
+token% = 0
+while token.flag$ = "MORE"
+    exp.err.flag$ = "NO ERROR"
+    token% = token% + 1
+    o% = match("#",instr$,p%)
+    if o% = 0 then \
+        o% = t% + 1
+    q% = match("R#",instr$,p%)
+    if q% = 0 then \
+        q% = t% + 1
+    if s% < p% then \
+        gosub 1140 :rem scan for next operator
+    if (o% < q%) and (o% < s%) and token% = 1 then \
+        message$ = "First token not a register number :" : \
+        gosub 10000 : \ rem display error
+        return
+    if (o% < q%) and (o% < s%) then \
+        gosub 1120 : \ rem test for error
+        gosub 11600 : rem place constant
+    if (q% < o%) and (q% < s%) then \
+        put% = int%(val(right$(instr$,(t% - q%)))) : \
+        gosub 1130 : \ rem test for error
+        gosub 11500 :  rem place number
+    if (s% < o%) and (s% < q%) then \
+        i% = s2% : \
+        gosub 1160 :rem select operator
+    if q% = o% and o% = s% then \
+        token.flag$ = "NO MORE"
+    if p% = (t% + 1) then \
+        token.flag$ = "NO MORE"
+    if exp.err.flag$ = "ERROR" then \
+        message$ = "Token no " + str$(token%) + "is operator when" : \
+        message$ = message$ + " operand was expected:" : \
+        gosub 10000 : \ rem display error
+        return
+    if exp.err.flag$="ERROR CON" or exp.err.flag$="ERROR REG 1" then \
+        message$ = "Token no " + str$(token%) + "is operand when" : \
+        message$ = message$ + " operator was expected:" : \
+        gosub 10000 : \ rem display error
+        return
+    if exp.err.flag$ = "ERROR LB" then \
+        message$ = "Token no " + str$(token%) + "is a left bracket" : \
+        message$ = message$ + " when an operator was expected:" : \
+        gosub 10000 : \ rem display error
+        return
+    if exp.err.flag$ = "ERROR RB" then \
+        message$ = "Token no " + str$(token%) + "is a right bracket" :\
+        message$ = message$ + " when an operator was expected:" : \
+        gosub 10000 : \ rem display error
+        return
+    if exp.err.flag$ = "ERROR REG 2" then \
+        message$ = "Token no " + str$(token%) : \
+        message$ = message$ + " is not a valid register" : \
+        gosub 10000 : \ rem display error
+        return
+wend
+if brackets% > 0 then \
+    message$ = str$(brackets%) + "unmatched left bracket/s" : \
+    gosub 10000 : \ rem display error
+    return
+if brackets% < 0 then \
+    message$ = str$(abs(brackets%)) + "unmatched right bracket/s" : \
+    gosub 10000 : \ rem display error
+    return
+gosub 1180 :rem unstack operands still on stack
+reg.range% = 40
+return :rem ** End of = (expressions) **
+ 
+1120 rem ***** Test for error (constant) *****
+if exp.flag$ = "EXPECTING OPERATOR" then \
+    exp.err.flag$ = "ERROR CON"
+exp.flag$ = "EXPECTING OPERATOR"
+return :rem ** End of test for error (constant) **
+
+1130 rem ***** Test for error (register) *****
+if exp.flag$ = "EXPECTING OPERATOR" then \
+    exp.err.flag$ = "ERROR REG 1"
+if put% = 0 or put% > reg.range% then \
+    exp.err.flag$ = "ERROR REG 2"
+exp.flag$ = "EXPECTING OPERATOR"
+return :rem ** End of test for error (register) **
+
+1140 rem ***** Select operator *****
+s1% = t% + 1
+for i% = 1 to 24
+    s% = match(op$(i%),instr$,p%)
+    if s% > 0 and op$(i%) = "-" then \
+        gosub 1150 : rem test for unary minus
+    if s% < s1% and s% > 0 then \
+        s1% = s% : \
+        s2% = i%
+next i%
+s% = s1%
+return :rem ** End of select operator **
+
+1150 rem ***** Test for unary minus *****
+ss% = match("#",instr$,s%)
+if ss% = (1 + s%) then \
+    s% = match("-",instr$,ss%)
+return :rem ** End of test for unary minus **
+
+1160 rem ***** Check operator stack *****
+p% = s% + len(op$(i%))
+if op$(i%) = "(" and exp.flag$ = "EXPECTING OPERATOR" then \
+    exp.err.flag$ = "ERROR LB" : \
+    return
+if op$(i%) = "(" and exp.flag$ = "EXPECTING OPERAND" then \
+    brackets% = brackets% + 1 : \
+    top.stack% = top.stack% + 1 : \
+    stack$(top.stack%) = ob.op$(i%) : \
+    stack%(top.stack%) = op%(i%) : \
+    return
+if op$(i%) = ")" and exp.flag$ = "EXPECTING OPERAND" then \
+    exp.err.flag$ = "ERROR RB" : \
+    return
+if op$(i%) = ")" and exp.flag$ = "EXPECTING OPERATOR" then \
+    brackets% = brackets% - 1 : \
+    gosub 1170 : \ rem unstack to '('
+    return
+rem ********** OPERATOR TEST **********
+if exp.flag$ = "EXPECTING OPERAND" and i% < 9 then \
+    exp.err.flag$ = "ERROR"
+rem ********** FUNCTION TEST **********
+if exp.flag$ = "EXPECTING OPERATOR" and i% >= 9 then \
+    exp.err.flag$ = "ERROR"
+rem ********** RESET FLAG    **********
+exp.flag$ = "EXPECTING OPERAND"
+while stack%(top.stack%) >= op%(i%)
+    obj$ = obj$ + stack$(top.stack%) + ":"
+    top.stack% = top.stack% - 1
+wend
+top.stack% = top.stack% + 1
+stack%(top.stack%) = op%(i%)
+stack$(top.stack%) = ob.op$(i%)
+return :rem ** End of check operator stack **
+
+1170 rem ***** Unstack to '(' *****
+while stack$(top.stack%) <> "-(-"
+    obj$ = obj$ + stack$(top.stack%) + ":"
+    top.stack% = top.stack% - 1
+wend
+top.stack% = top.stack% - 1
+return :rem ** End of unstack to '(' **
+
+1180 rem ***** Unstack at end of expression *****
+while stack$(top.stack%) <> "256"
+    obj$ = obj$ + stack$(top.stack%) + ":"
+    top.stack% = top.stack% - 1
+wend
+obj$ = obj$ + "256:"
+return :rem ** End of unstack at end of expression **
+
+1200 rem ***** IF *****
+obj$ = "012:"
+p% = 1
+gosub 1250 :rem match register
+if match.flag$ = "NO MATCH" then \
+    return
+s% = p%
+gosub 1280 :rem find test
+if func.flag$ = "NOT FOUND" then \
+    return
+p% = s%
+gosub 1250 :rem match register
+if match.flag$ = "NO MATCH" then \
+    return
+if.flag% = if.flag% + 1
+nest.level% = nest.level% + 1
+nest%(nest.level%) = 1
+rem : Check for > & >= and replace with < & <= ,swapping registers.
+t% = val(right$(obj$,8))
+if t% < 275 then \
+    return
+tt1% = val(right$(obj$,12))
+tt2% = val(right$(obj$,4))
+t% = t% -4
+obj$ = "012:"
+put% = tt2%
+gosub 11500 :rem place number
+obj$ = obj$ + str$(t%) + ":"
+put% = tt1%
+gosub 11500 :rem place number
+return :rem ** End of if **
+
+1250 rem ***** Match register *****
+match.flag$ = "MATCH"
+q% = match("R",instr$,p%)
+if q% = 0 then \
+    q% = t%
+o% = match("#",instr$,p%)
+if q% = t% and o% = 0 then \
+    message$ = "Syntax error :" : \
+    gosub 10000 : \ rem display error
+    match.flag$ = "NO MATCH" : \
+    return
+if q% < o% and q% <> (o% - 1) then \
+    message$ = "R not followed by register number :" : \
+    gosub 10000 : \ rem display error
+    match.flag$ = "NO MATCH" : \
+    return
+if q% <> (o% - 1) \
+    then gosub 11600 : \ rem place constant
+         put% = 0 \
+    else put% = int%(val(right$(instr$,(t% - o% + 1)))) : \
+         gosub 11500 :rem place number
+if put% > 40 then \
+    message$ = "The first register number is greater than 40" : \
+    gosub 10000 : \ rem error display
+    match.flag$ = "NO MATCH" : \
+    return
+return :rem ** End of match register **
+
+1280 rem ***** Find test *****
+func.flag$ = "NOT FOUND"
+p% = match("LTE",instr$,s%)
+if p% > 0 then \
+    func.flag$ = "FOUND" : \
+    obj$ = obj$ + "272:"
+p% = match("GTE",instr$,s%)
+if p% > 0 then \
+    func.flag$ = "FOUND" : \
+    obj$ = obj$ + "276:"
+p% = match("EQU",instr$,s%)
+if p% > 0 then \
+    func.flag$ = "FOUND" : \
+    obj$ = obj$ + "273:"
+p% = match("NEQ",instr$,s%)
+if p% > 0 then \
+    func.flag$ = "FOUND" : \
+    obj$ = obj$ + "274:"
+p% = match("LT",instr$,s%)
+if (p% > 0) and (func.flag$ = "NOT FOUND") then \
+    func.flag$ = "FOUND" : \
+    obj$ = obj$ + "271:"
+p% = match("GT",instr$,s%)
+if (p% > 0) and (func.flag$ = "NOT FOUND") then \
+    func.flag$ = "FOUND" : \
+obj$ = obj$ + "275:"
+if func.flag$ = "NOT FOUND" then \
+    message$ = "Test not found" : \
+    gosub 10000 : \ rem error display
+    return
+return :rem ** End of find test **
+
+1300 rem ***** Return from subroutine *****
+if sub.flag% <>  1 then \
+    message$ = "Return from non existant subroutine:" : \
+    gosub 10000 : \ rem error display
+    return
+obj$ = "013:"
+sub.flag% = 0
+return :rem ** End of return from subroutine **
+
+1400 rem ***** While *****
+obj$ = "014:"
+p% = 1
+gosub 1250 :rem match register
+if match.flag$ = "NO MATCH" then \
+    return
+s% = p%
+gosub 1280 :rem find test
+if func.flag$ = "NOT FOUND" then \
+    return
+p% = s%
+gosub 1250 :rem match register
+if match.flag$ = "NO MATCH" then \
+    return
+while.flag% = while.flag% + 1
+nest.level% = nest.level% + 1
+nest%(nest.level%) = 2
+rem : Check for > & >= and replace with < & <= ,swapping registers.
+t% = val(right$(obj$,8))
+if t% < 275 then \
+    return
+tt1% = val(right$(obj$,12))
+tt2% = val(right$(obj$,4))
+t% = t% -4
+obj$ = "014:"
+put% = tt2%
+gosub 11500 :rem place number
+obj$ = obj$ + str$(t%) + ":"
+put% = tt1%
+gosub 11500 :rem place number
+return :rem ** End of while **
+
+1500 rem ***** Wend *****
+obj$ = "015:"
+if nest%(nest.level%) <> 2 then \
+    message$ = "NESTING CONFLICT." : \
+    gosub 10000 : \ rem display error
+    return
+while.flag% = while.flag% - 1
+nest.level% = nest.level% - 1
+return :rem ** End of wend **
+
+1600 rem ***** Stop *****
+if stop.flag$ = "STOP" then \
+    message$ = "'STOP' appeared in line " + str$(stop.label%) : \
+    message$ = message$ + " and may only appear once." : \
+    gosub 10000 : \ rem display error
+    return
+stop.flag$ = "STOP"
+obj$ = "016:"
+stop.label% = object.no%
+return :rem ** End stop **
+
+1700 rem ***** Goto *****
+p% = match("#",instr$,1)
+no1% = int%(val(right$(instr$,(t% - p% + 1))))
+if no1% = 0 then \
+    message$ = "Jump label number missing :" : \
+    gosub 10000 : \ rem display error
+    return
+obj$ = "017:"
+put% = no1%
+gosub 11500 :rem place number
+return :rem ** End of goto **
+
+1800 rem ***** Else *****
+if if.flag% = 0 then \
+    message$ = "No if statement preceeds this else statement." : \
+    gosub 10000 : \ rem display error
+    return
+obj$ = "018:"
+return :rem ** End of else **
+
+1900 rem ***** FEND *****
+obj$ = "019:"
+if nest%(nest.level%) <> 1 then \
+    message$ = "NESTING CONFLICT." : \
+    gosub 10000 : \ rem display error
+    return
+if.flag% = if.flag% - 1
+nest.level% = nest.level% - 1
+return :rem ** End of fend **
+
+2000 rem ***** Select *****
+obj$ = "020:"
+o% = match("#",instr$,1)
+t% = len(instr$)
+put% = val(right$(instr$,(t% - o% + 1)))
+if put% = 0 or put% > 40 then \
+    message$ = "No valid register number." : \
+    gosub 10000 : \ rem display error
+    return
+gosub 11500 :rem place number
+o% = match("MAX",instr$,p%)
+if o% = 0 then \
+    message$ = "NO 'MAX' in select instruction" : \
+    gosub 10000 : \ rem display error
+    return
+p% = o% + 1
+o% = match("#",instr$,p%)
+if o% = 0 then \
+    message$ = "No constant in select instruction." : \
+    gosub 10000 : \ rem display error
+    return
+put% = val(right$(instr$,(t% - o% + 1)))
+gosub 11500 :rem place number
+o% = match("TIMES",instr$,p%)
+if o% = 0 then \
+    obj$ = obj$ + "001:" : \ rem default to 1
+    return
+p% = o% + 1
+o% = match("#",instr$,p%)
+if o% = 0 then \
+    message$ = "No constant when 'times' used." : \
+    gosub 10000 : \ rem display error
+    return
+put% = val(right$(instr$,(t% - o% + 1)))
+gosub 11500 :rem place number
+return :rem ** End of select **
+
+2100 rem ***** Fix *****
+obj$ = "021:"
+p% = match("R",instr$,1)
+o% = match("#",instr$,1)
+if o% = 0 then \
+    message$ = "Number of decimal places in fix not specified." : \
+    gosub 10000 : \ rem display error
+    return
+t% = len(instr$)
+s% = match("-",instr$,1)
+put% = val(right$(instr$,(t% - o% + 1)))
+if s% = (o% -1) then \
+    message$ = "Negative numbers may not appear in fix statements." : \
+    gosub 10000 : \ rem display error
+    return
+if p% = 0 and put% > 10 then \
+    message$ = "Number of decimal places too high to fix." : \
+    gosub 10000 : \ rem display error
+    return
+if p% = 0 then \
+    gosub 11600 : \ rem place constant
+    return
+gosub 11500 : rem place number
+return :rem ** End of fix **
+
+2200 rem ***** Exit *****
+obj$ = "022:"
+return :rem ** End of exit **
+
+2400 rem ***** Increment *****
+obj$ = "024:"
+o% = match("#",instr$,1)
+if o% = 0 then \
+    message$ = "Register number missing." : \
+    gosub 10000 : \ rem display error
+    return
+put% = val(right$(instr$,(t% - o% + 1)))
+if o% > reg.range% then \
+    message$ = "Number beyond register range." : \
+    gosub 10000 : \ rem display error
+    return
+gosub 11500 :rem place number
+return :rem ** End of increment **
+
+2500 rem ***** Decrement *****
+obj$ = "025:"
+o% = match("#",instr$,1)
+if o% = 0 then \
+    message$ = "Register number missing." : \
+    gosub 10000 : \ rem display error
+    return
+put% = val(right$(instr$,(t% - o% + 1)))
+if o% > reg.range% then \
+    message$ = "Number beyond register range." : \
+    gosub 10000 : \ rem display error
+    return
+gosub 11500 :rem place number
+return :rem ** End of decrement **
+
+10000 rem ***** Error trap 1 *****
+object.no% = object.no% - 1
+gosub 12000 :rem display instructions
+print
+print message$;
+print " in line number ";line.no%;"."
+print "Object string so far is : ";obj$
+print
+print "       : Re-type instruction ."
+print "[-OR-] : Type 'INS' if a line is to be inserted."
+print "[-OR-] : Type 'DEL' if the line is to be deleted ."
+print "[-OR-] : Type 'SKIP' if the compiler should skip the line ."
+print "[-OR-] : Type 'ABORT' to stop compilation :"
+print
+print fnc$(21,6);
+input replacement$
+while len(replacement$) > length%
+    print fnc$(21,6);
+    print "                                                         "
+    print "                                                         "
+    print fnc$(21,6);
+    print "Line has ";len(replacement$);" characters max accepted is ";
+    print length%
+    input "Re-input line : ";replacement$
+wend
+if ucase$(replacement$) = "INS" then \
+    gosub 10100 : \ rem insert instruction
+    line.no% = line.no% - 1 : \
+    error.flag$ = "ERROR" : \
+    return
+if ucase$(replacement$) = "DEL" then \
+    instruction$(line.no%) = "DEL" : \
+    error.flag$ = "ERROR" : \
+    return
+if ucase$(replacement$) = "SKIP" then \
+    perm.error.flag$ = "ERROR" : \
+    return
+if ucase$(replacement$) = "ABORT" then \
+    chain "PROG"
+instruction$(line.no%) = replacement$
+obj$ = " "
+line.no% = line.no% - 1
+error.flag$ = "ERROR"
+print clear$
+return :rem ** End of error trap 1 **
+
+10100 rem ***** Insert instruction *****
+while instruction$(i%) <> "END"
+    i% = i% + 1
+wend
+if i% = 400 then \
+    print "Program too long to insert another instruction" : \
+    print "Type any character to continue : "; : \
+    dummy% = conchar% : \
+    return
+l% = 40
+while l% > 35
+    print fnc$(21,6);
+    print "                                                      "
+    print "                                                      "
+    print fnc$(21,6);
+    print "Type in new instruction not more than 35 characters."
+    input "    : ";replacement$
+    l% = len(replacement$)
+wend
+while i% >= line.no%
+    instruction$(i% + 1) = instruction$(i%)
+    i% = i% - 1
+wend
+instruction$(line.no%) = replacement$
+return rem ** End of insert instruction **
+ 
+11000 rem ***** Save files *****
+if perm.error.flag$ = "ERROR" then \
+    gosub 11100 : \ rem permanent error
+    return
+if error.flag$ = "ERROR" then \
+    gosub 11200 : \ rem corrected error
+    return
+print :print
+print "Compilation complete with no errors."
+answer$ = "Y"
+while ucase$(answer$) <> "N"
+    print
+    print "Do you wish to save the object program ";
+    input "on disc Y/N : ";answer$
+    if ucase$(answer$) = "Y" \
+        then gosub 11300 : \ rem save object file
+             answer$ = "N" \
+        else gosub 11450 :rem set register values
+wend
+answer$ = "Y"
+while ucase$(answer$) <> "N"
+    print
+    print "Do you wish to save the source program ";
+    input "on disc Y/N : ";answer$
+    if ucase$(answer$) = "Y" then \
+        gosub 11400 : \ rem save source file
+        answer$ = "N"
+wend
+return :rem ** End of save files **
+
+11100 rem ***** Permanant error *****
+print
+print "Compilation completed but with uncorrected errors still"
+print "in the source file."
+print "The object file can therefore be neither run nor saved."
+answer$ = "Y"
+while ucase$(answer$) <> "N"
+    print :print
+    print "Do you wish to save the current version of the incorrect"
+    input "source file on disc Y/N : ";answer$
+    if ucase$(answer$) = "Y" then \
+        gosub 11250 : \ rem close up file
+        gosub 11400 : \ rem save source file
+        answer$ = "N"
+wend
+return :rem ** End of permanent error **
+
+11200 rem ***** Corrected error display *****
+print :print
+print "Compilation completed with no errors."
+print
+print "Some errors were however found during compilation and corrected"
+print "which means that the source file in memory is not the same as"
+print "the file which may previously have been saved on disc."
+print
+answer$ = "Y"
+while ucase$(answer$) <> "N"
+    print
+    print "Do you therefore wish to save the new source file"
+    input "on disc Y/N : ";answer$
+    if ucase$(answer$) = "Y" then \
+        gosub 11250 : \ rem close up file
+        gosub 11400 : \ rem save source file
+        answer$ = "N"
+wend
+print
+answer$ = "Y"
+while ucase$(answer$) <> "N"
+    print
+    print "Do you wish to save the object program on disc ";
+    input "Y/N : ";answer$
+    if ucase$(answer$) = "Y" \
+        then gosub 11300 : \ rem save object file
+             answer$ = "N" \
+        else gosub 11450 :rem set registers
+wend
+return :rem ** End of corrected error display **
+
+11250 rem ***** Close up file *****
+count% = 0
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    if instruction$(i%) = "DEL" \
+        then count% = count% + 1 \
+        else new% = i% - count% : \
+             instruction$(new%) = instruction$(i%)
+wend
+return :rem ** End of close up file **
+
+11300 rem ***** Save object file *****
+print clear$
+print :print :print
+print "All disc files used by this program to hold object files have"
+print "ambiguous filenames of '.OBJ'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.OBJ'."
+print :print
+input "Type in filename : ";f1$
+f1$ = f1$ + ".OBJ"
+create f1$ as 1
+i% = 0
+while object$(i%) <> "END1"
+    i% = i% + 1
+    print # 1 ;object$(i%)
+wend
+i% = 41
+while reg$(i%) <> "END2"
+    i% = i% + 1
+    print # 1 ;reg$(i%)
+    register(i%) = val(reg$(i%))
+wend
+close 1
+return :rem ** End of save object file **
+
+11400 rem ***** Save source file *****
+print clear$
+print :print :print
+print "All disc files used by this program to hold source files have"
+print "ambiguous filenames of '.SRC'."
+print
+print "Only the unambiguous part therefore needs to be specified"
+print "in the form 'test@' where @ is carriage return."
+print "This will be interpreted as 'TEST.SRC'."
+print :print
+input "Type in filename : ";f4$
+f4$ = f4$ + ".SRC"
+create f4$ as 4
+i% = 0
+while instruction$(i%) <> "END"
+    i% = i% + 1
+    print # 4 ;instruction$(i%)
+wend
+close 4
+return :rem ** End of save source file **
+
+11450 rem ***** Set registers *****
+for i% = 42 to 200
+    register(i%) = val(reg$(i%))
+next i%
+return :rem ** End of set registers **
+ 
+11500 rem ***** Place number *****
+p% = match(" ",instr$,o%)
+pp1% = match("R",instr$,o%)
+pp2% = match(")",instr$,o%)
+if p% = 0 then \
+    p% = t% + 1
+if pp1% = 0 then \
+    pp1% = t% + 1
+if pp2% = 0 then \
+    pp2% = t% + 1
+if pp1% < p% then \
+    p% = pp1%
+if pp2% < p% then \
+    p% = pp2%
+number$ = str$(put%)
+p1$ = number$
+if len(number$) = 1 then \
+    p1$ = "00" + number$
+if len(number$) = 2 then \
+    p1$ = "0" + number$
+obj$ = obj$ + p1$ + ":"
+return :rem ** End of place number **
+ 
+11600 rem ***** Place constant *****
+number = val(right$(instr$,(t% - o% + 1)))
+if match("-",instr$,(o% - 1)) = (o% - 1) then \
+    number = 0 - number
+i% = 42
+while reg$(i%) <> "END2"
+    if number = val(reg$(i%)) then \
+        put% = i% : \
+        gosub 11500 : \ rem place number
+        return
+    i% = i% + 1
+wend
+if top1% = 201 then \
+    print "Too many constants in program." : \
+    chain "PROG"
+reg$(top1% + 1) = reg$(top1%)
+reg$(top1%) = str$(number)
+put% = top1%
+gosub 11500 :rem place number
+top1% = top1% + 1
+return :rem ** End of place constant **
+
+12000 rem ***** Display selected instructions *****
+print clear$
+row% = 0
+end.flag$ = "NOT END"
+for i% = 9 to 0 step -1
+    row% = row% + 1
+    print fnc$(row%,1);
+    no% = line.no% - i%
+    if no% > 0 then \
+        print using "###&&" ;no%,":",instruction$(no%)
+    print fnc$(row%,41);
+    no% = no% +10
+    if instruction$(no%) = "END" then \
+        end.flag$ = "END"
+    if end.flag$ = "NOT END" then \
+        print using "###&&" ;no%,":",instruction$(no%)
+next i%
+return :rem ** End of display selected instructions **
+
+15000 rem ***** Pre-run module checks *****
+s1% = 0
+p1% = 0
+l1% = 0
+r1% = 0
+i% = 0
+while object$(i%) <> "END1"
+    i% = i% + 1
+    gosub 15200 :rem search for next goto
+    gosub 15400 :rem trace associated labels
+wend
+i% = 0
+call.flag$ = "NOT FOUND"
+while object$(i%) <> "END1"
+    sub.flag$ = "SUBROUTINE FOUND"
+    sub.label% = stop.label%
+    i% = i% + 1
+    if val(object$(i%)) = 3 then \ rem 3 = call
+        t% = len(object$(i%)) : \
+        call.flag$ = "FOUND" : \
+        name1$ = right$(object$(i%),(t% - 4)) : \
+        name$ = "004:" + name1$ : \ rem 4 = subroutine
+        gosub 15600 : rem scan for subroutine
+    if sub.flag$ <> "SUBROUTINE FOUND" then \
+        print "Subroutine '";name1$;"' not found."; : \
+        print "Called in line number ";i% : \
+        print : \
+        perm.error.flag$ = "ERROR"
+    if sub.label% < stop.label% then \
+        print "Subroutine '";name1$;"' appears before stop."; : \
+        print "In line number ";sub.label% : \
+        print : \
+        perm.error.flag$ = "ERROR"
+wend
+ret.flag$ = "NOT FOUND"
+while val(object$(i%)) <> 4 and i% > 0 :rem 4 = subroutine
+    i% = i% - 1
+    if object$(i%) = "013:" then \ rem 13 = return
+        ret.flag$ = "FOUND"
+wend
+if ret.flag$ <> "FOUND" and call.flag$ = "FOUND" then \
+    print "No return instruction follows final subroutine." : \
+    print : \
+    perm.error.flag$ = "ERROR"
+i% = 1
+while object$(i%) <> "END1"
+    p% = val(object$(i%))
+    if p% = 20 then \ rem 20 = select
+        gosub 15900 :rem check select options
+    i% = i% + 1
+wend
+return :rem ** End of pre-run module checks **
+
+15200 rem ***** Search for next goto *****
+while object$(i%) <> "END1"
+    temp% = val(object$(i%))
+    if temp% = 4 then \ rem 4 = subroutine
+        s1% = s1% + 1
+    if temp% = 13 then \ rem 13 = return
+        r1% = r1% + 1
+    rem  6 = do      14 = while      12 = if
+    if temp% = 6 or temp% = 14 or temp% = 12 then \
+        p1% = p1% + 1
+    rem 7 = loop    15 = wend       19 = ifend
+    if temp% = 7 or temp% = 15 or temp% = 19 then \
+        l1% = l1% + 1
+    if temp% = 17 then \ rem 17 = goto
+        p% = val(right$(object$(i%),4)) : \
+        return
+    i% = i% + 1
+wend
+p% = 0
+return :rem ** End of search for next goto/then **
+
+15400 rem ***** Trace associated labels *****
+if p% = 0 then \
+    return
+p2% = 0
+s2% = 0
+r2% = 0
+l2% = 0
+j% = 0
+while object$(j%) <> "END1"
+    j% = j% + 1
+    temp% = val(object$(j%))
+    if temp% = 4 then \ rem 4 = subroutine
+        s2% = s2% + 1
+    if temp% = 13 then \ rem 13 = return
+        r2% = r2% + 1
+    rem  6 = do       14 = while     12 = if
+    if temp% = 6 or temp% = 14 or temp% = 12 then \
+        p2% = p2% + 1
+    rem  7 = loop      15 = wend    19 = ifend
+    if temp% = 7 or temp% = 15 or temp% = 19 then \
+        l2% = l2% + 1
+    rem 5 = label
+    if temp% = 5 and val(right$(object$(j%),4)) = p% then \
+        gosub 15500 : \ rem test for error
+        return
+wend
+print "Label number ";p%;" called in line ";i%;" is missing."
+print
+return :rem ** End of trace associated labels **
+
+15500 rem ***** Test for error *****
+sub.error.flag$ = "NO ERROR"
+if abs(p1% - p2%) <> abs(l1% -l2%) then \
+    print "Jump from line ";i%;" to line ";j%;" illegal." : \
+    print : \
+    perm.error.flag$ = "ERROR" : \
+    sub.error.flag$ = "ERROR"
+if s1% <> s2% or r1% <> r2% then \
+    print "Jump from line ";i%;" to line ";j%;" illegal." : \
+    print : \
+    perm.error.flag$ = "ERROR" : \
+    sub.error.flag$ = "ERROR"
+k% = j%
+while object$(k%) <> "END1"
+    k% = k% + 1
+    temp% = val(object$(k%))
+    rem 5 = label
+    t% = len(object$(k%))
+    if temp% = 5 and val(right$(object$(k%),(t% - 4))) = p% then \
+        print "Label appears in both line ";j%;" and ";k% : \
+        print : \
+        perm.error.flag$ = "ERROR" : \
+        sub.error.flag$ = "ERROR"
+wend
+if sub.error.flag$ <> "ERROR" then \
+    temp$ = left$(object$(i%),4) : \
+    object$(i%) = temp$ : \
+    put% = j% : \
+    gosub 15800 :rem place line number
+return :rem ** End of test for error **
+
+15600 rem ***** Scan for subroutine *****
+while object$(sub.label%) <> "END1"
+    sub.label% = sub.label% + 1
+    if name$ = object$(sub.label%) then \
+        object$(i%) = "003:" : \
+        put% = sub.label% : \
+        gosub 15800 : \ rem place line number
+        return
+wend
+sub.flag$ = "SUBROUTINE NOT FOUND"
+return :rem ** End of scan for subroutine **
+
+15800 rem ***** PLace line number ******
+number$ = str$(put%)
+p1$ = number$
+if len(number$) = 1 then \
+    p1$ = "00" + number$
+if len(number$) = 2 then \
+    p1$ = "0" + number$
+object$(i%) = object$(i%) + p1$ + ":"
+return :rem ** End of place line number **
+
+15900 rem ***** Check select options *****
+rem Acceptable select options are :-
+rem : CALL (3) ; GOTO (17) ; EXIT (22) ; EXPRESSION (11) ;
+rem : READ (8) ; INPUT (9) ; PRINT (10) ; : [comment] (23) .
+p% = val(right$(object$(i%),4)) :rem Times (multiplier)
+o% = val(right$(object$(i%),8)) :rem Max (number of options)
+j% = i% + 1
+p% = j% + (p% * o%) - 1
+for i% = j% to p%
+    select.flag$ = "NOT ACCEPTABLE"
+    o% = val(object$(i%))
+    if o% = 3 or o% = 17 or o% = 22 or o% = 11 then \
+        select.flag$ = "ACCEPTABLE"
+    if o% = 8 or o% = 9 or o% = 10 or o% = 23 then \
+        select.flag$ = "ACCEPTABLE"
+    if select.flag$ = "NOT ACCEPTABLE" then  \
+        print "Select instruction in line ";(j% - 1); : \
+        print "points to an" : \
+        print "illegal instruction in line ";i% : \
+        perm.error.flag$ = "ERROR"
+next i%
+return :rem ** End of check select options **
+

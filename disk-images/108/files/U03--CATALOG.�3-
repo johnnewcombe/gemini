@@ -1,0 +1,38 @@
+UK Users Group Volume 3
+
+Programmable Calculator Simulation by Electronic Accounting
+Services.
+Utilities.
+
+
+NUMBER	SIZE	NAME		COMMENTS
+
+		CATALOG.03	CONTENTS OF CP/M VOL. 03
+03.1	2K	BM.OBJ		A routine to run an approximation to PCW
+				benchmarks.
+03.2	1K	BM.SRC		Source of above.
+03.3	5K	BREAK.ASM	File transfer, removing EOF (^Z) characters.
+03.4	1K	BREAK.COM	.COM of above.
+03.5	13K	CALC.BAS	Calculator program.
+03.6	5K	CALC.INT	.INT of above.
+03.7	27K	CNOTES.PRN	System notes for calculator package.
+03.8	36K	COMPILE.BAS	Simulation compiler.
+03.9	14K	COMPILE.INT	.INT of above.
+03.10	1K	CRCKLIST.CRC	Checksums for files on this disk.
+03.11	21K	EDITOR.BAS	Simulation program editor.
+03.12	8K	EDITOR.INT	.INT of above.
+03.13	17K	EDITOR1.BAS	Simulation data file editor.
+03.14	7K	EDITOR1.INT	.INT of above.
+03.15	1K	INIT.BAS	Simulation initialisation program.
+03.16	1K	INIT.INT	.INT of above.
+03.17	5K	LIST.ASM	List with paginate and tab expand.
+03.18	1K	LIST.COM	.COM of above.
+03.19	2K	PCALC.BAS	Controlling program for calculator.
+03.20	1K	PCALC.INT	.INT of above.
+03.21	8K	PROG.BAS	Simulation menu program.
+03.22	4K	PROG.INT	.INT of above.
+03.23	19K	RUNOBJ.BAS	Runtime module for calculator.
+03.24	7K	RUNOBJ.INT	.INT of above.
+03.25	2K	SAL.OBJ		Object of SAL.SRC
+03.26	2K	SAL.SRC		Routine to generate payslips
+

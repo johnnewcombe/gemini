@@ -1,0 +1,23 @@
+
+
+                      AFORMAT AND VERIFY A DISKETTEN
+
+          If  the  "F"  or  "V" command is  entered  in  answer  to  the    
+     system prompt "*",  the computer will ask the operator to    select 
+     which  FLOPPY  number  is to be  formatted/verified.     After  the 
+     operator  has selected the required FLOPPY number     the  computer 
+     will display the list of available    FORMATS.  He simply types the 
+     required  FORMAT number and    presses RETURN.  In order to finally 
+     activate the    format/verify command he must press the RETURN  key 
+     once     more.  Note  that formatting a disk will destroy  all  the    
+     previous  information  stored  on  that  diskette.   If  a  "V"  is    
+     entered after the "F" ,  the system will perform a verify on    the 
+     diskette after the formatting process.
+    
+                              SYNTAX :-
+                              F{fl,fm}
+                              V{fl,fm}
+                              FV{fl,fm}
+
+                APRESS RETURN OR ENTER KEY FOR MAIN MENUN
+

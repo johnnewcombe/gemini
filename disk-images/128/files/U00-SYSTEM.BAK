@@ -1,0 +1,424 @@
+VER	DEFL 4			;Version 4 module
+
+	SUBTTL System Equates for CP/M PLUS
+	PAGE
+
+;	***************************
+;	*	CPU EQUATES       *
+;	***************************
+
+MAP	EQU F			;Set true for MAP CPU
+
+;Select CPU board
+G811	EQU F AND NOT MAP
+G813	EQU T AND NOT MAP
+NAS	EQU F AND NOT MAP
+
+;	*****************************************
+;	*	SYSTEM DEFINITION EQUATES       *
+;	*****************************************
+
+;Equates in this section are the ones that are
+;1) Most likely to be altered by the user
+;2) Established according to system
+;Equates unlikely to change are entered in DATA.MAC
+
+;Select video device
+VFC	EQU F			;True for VFC
+IVC	EQU T			;True for IVC/SVC (requires special PROM with MAP)
+
+;VFC location
+ALT	EQU F			;VFC port at alternate location
+
+MPILNK	EQU F 			;Set only if MPI is linked for side change
+
+;Select floppy drive type and format
+;Only 4 physical drives are permitted, but you may split a double sided
+; drive into 2 logical ones. These must be consecutive
+FPPY1	DEFL STNDRD
+FPPY2	DEFL STNDRD
+FPPY3	DEFL PERTEC
+FPPY4	DEFL DR7200
+
+FASG1	DEFL 1			;Floppy assignment
+FORM1	DEFL MAP96D		;Format
+
+FASG2	DEFL 2
+FORM2	DEFL MAP96D
+FASG3	DEFL 3
+FORM3	DEFL MAP48
+FASG4	DEFL 4
+FORM4	DEFL TANDY
+FASG5	DEFL 2
+FORM5	DEFL NULLF
+FASG6	DEFL 2
+FORM6	DEFL NULLF
+FASG7	DEFL 2
+FORM7	DEFL NULLF
+FASG8	DEFL 0
+FORM8	DEFL 0
+FASG9	DEFL 0
+FORM9	DEFL 0
+FASG10	DEFL 0
+FORM10	DEFL 0
+FASG11	DEFL 0
+FORM11	DEFL 0
+FASG12	DEFL 0
+FORM12	DEFL 0
+FASG13	DEFL 0
+FORM13	DEFL 0
+FASG14	DEFL 0
+FORM14	DEFL 0
+FASG15	DEFL 0
+FORM15	DEFL 0
+
+;Select keyboard with MAP CPU
+MKBD	EQU F AND MAP AND (VFC OR IVC)	;Set true for MAP keyboard on VFC/IVC
+BREAK	EQU 0A1H		;Break key for CPU keyboard, CTRL/SHIFT F1
+ESCKEY	EQU F AND MKBD		;Set true for 7 bit ESC keyboard with MKBD
+;Select keyboard with Nascom
+NKBD	EQU T AND NAS AND (VFC OR IVC)	;True for Nascom with Nascom keyboard
+
+;Select directory allocation blocks for vdisk
+DALV	EQU 1			;MUST NOT exceed 2
+
+;Select Winchester type and logical drives it is split into
+DRVW	DEFL 0  		;Winchester type
+NDRVW	DEFL 0			;Drive allocation to Winchester
+;Winchester size allocation, leave as 0 for auto sizing as equally sized drives
+;   		else
+;   enter tracks (8.5k) allocated to each drive
+;   total tracks = (cylinders*heads)-{(cylinders*heads)/150}
+;   2 tracks (17k) allocated as a system tracks
+SIZW1	DEFL 0
+SIZW2	DEFL 0
+SIZW3	DEFL 0
+SIZW4	DEFL 0
+SIZW5	DEFL 0
+SIZW6	DEFL 0
+;Winchester block size, leave at 0 for auto allocation starting at 4096
+;   Block size can be 1024,2048,4096,8192 or 16384
+;   note that this is interactive with directory allocation
+BLSW1	DEFL 0
+BLSW2	DEFL 0
+BLSW3	DEFL 0
+BLSW4	DEFL 0
+BLSW5	DEFL 0
+BLSW6	DEFL 0
+;Winchester directory allocation, leave as 0 for auto allocation
+;   note that actual directory entries depends on block size
+;	BLOCK SIZE	DIRECTORY ENTRIES PER BLOCK
+;	   1024			  32
+;	   2048			  64
+;	   4096			 128
+;	   8192			 256
+;	  16384			 512
+;   Maximum allocation is 16 blocks
+DALW1	DEFL 0
+DALW2	DEFL 0
+DALW3	DEFL 0
+DALW4	DEFL 0
+DALW5	DEFL 0
+DALW6	DEFL 0
+
+	IF MAP
+;Keyboard selection, if MKBD not selected above
+IKBD	EQU (NOT MKBD) AND IVC	;IVC keyboard if IVC and not MKBD
+VKBD	EQU F			;Unusable option
+	IF IVC
+KBDP	EQU 0F0H		;MAP CPU keyboard port (requires special PROM)
+	ELSE
+KBDP	EQU 0B0H		;MAP CPU keyboard port
+	ENDIF
+;Ports
+PIO	EQU 0B4H		;Base PIO port (0 no PIO setup)
+EPROM	EQU 0F8H		;MAP CPU EPROM enable/disable port
+;Serial Initialisation
+CPCTC	EQU 0B8H		;On board CTC
+CPSIO	EQU 0BCH		;On board SIO
+;Specify how CTC channel for SIO has been linked
+SIOCHA	EQU FAST		;SIO A CTC 0 clock, slow=1Mhz fast=2Mhz
+SIOCHB	EQU SLOW		;SIO B CTC 1 clock, slow=1Mhz fast=2Mhz
+;Initial mode and baud rate
+IMODEA	EQU MBIO+MBSERL+MBSOFT+MBXNXF	;Initial IO mode
+IMODEB	EQU MBIO+MBSERL+MBSOFT		;Initial IO mode
+IBAUDA	EQU B1200		;Initial baud rate
+IBAUDB	EQU B300		;Initial baud rate
+;Initial assignment
+	IF VFC OR IVC
+;VFC/IVC/SVC operation
+CONSIN	EQU 8000H		;Console input from keyboard
+CONSOT	EQU 4000H		;Console output to video
+LSTOUT	EQU 2000H		;List to Centronics
+AXIN	EQU 1000H		;Auxillary in from SIO-A
+AXOUT	EQU 1000H		;Auxillary out to SIO-A
+	ELSE
+;Terminal operation
+CONSIN	EQU 4000H		;Console input from SIO-A
+CONSOT	EQU 4000H		;Console output to SIO-A
+LSTOUT	EQU 8000H		;List to Centronics
+AXIN	EQU 2000H		;Auxillary in from SIO-B
+AXOUT	EQU 2000H		;Auxillary out to SIO-B
+	ENDIF
+	ENDIF
+
+	IF G813 OR G811
+;Keyboard selection
+VKBD	EQU VFC			;VFC keyboard with VFC
+IKBD	EQU IVC			;IVC keyboard with IVC
+;Ports
+PIO	EQU 0B4H		;Base PIO port (0 no PIO setup)
+;Serial data
+UARTD	EQU 0B8H		;Serial data port
+UARTS	EQU UARTD+5		;Serial status port
+PHAND	EQU UARTD+6		;Printer handshake port
+BAUDL	EQU UARTD+1
+LCRG	EQU UARTD+3
+MCRG	EQU UARTD+4
+;Initial mode and baud rate
+RS232	EQU 0FH			;Selects 8250 RS232
+SETU	EQU 3			;Bits/stops/no parity
+MODEU	EQU RS232		;RS232/cassette
+IBAUD	EQU B9600		;Initial baud rate
+;Initial assignments
+	IF VFC OR IVC
+;VFC/IVC/SVC operation
+CONSIN	EQU 8000H		;Console input from keyboard
+CONSOT	EQU 4000H		;Console output to video
+LSTOUT	EQU 2000H		;List to PIO
+AXIN	EQU 1000H		;Auxillary in from 8250
+AXOUT	EQU 1000H		;Auxillary out to 8250
+	ELSE
+;Terminal operation
+CONSIN	EQU 4000H		;Console input from 8250
+CONSOT	EQU 4000H		;Console output to 8250
+LSTOUT	EQU 8000H		;List to Centronics
+AXIN	EQU 4000H		;Auxillary in from 8250
+AXOUT	EQU 4000H		;Auxillary out to 8250
+	ENDIF
+	ENDIF
+
+	IF NAS
+;Keyboard selection if NKBD not selected above
+VKBD	EQU VFC AND NOT NKBD	;VFC keyboard if not NKBD
+IKBD	EQU IVC AND NOT NKBD	;IVC keyboard if not NKBD
+KBDP	EQU 0			;Keyboard port on Nascom
+XKOPT	EQU 1			;Nascom keyboard default (1=lower)
+KLONG	EQU 0800H		;Initial repeat delay
+KSHRT	EQU 00C0H		;Repeat speed
+;Ports
+PIO	EQU 4			;Base PIO port (0 no PIO setup)
+;Serial data
+UARTD	EQU 01H			;Serial data port
+UARTS	EQU UARTD+1		;Serial status port
+PHAND	EQU 00H			;Printer handshake port
+;Initial mode
+PTYE	EQU 3			;Parity even
+PTYO	EQU 1			;Parity odd
+NPTY	EQU 0			;No parity
+SRLOP	EQU PTYE		;Set list option
+;Initial assignmenst
+	IF VFC OR IVC
+;VFC/IVC/SVC operation
+CONSIN	EQU 8000H		;Console input from keyboard
+CONSOT	EQU 4000H		;Console output to video
+LSTOUT	EQU 2000H		;List to PIO
+AXIN	EQU 1000H		;Auxillary in from UART
+AXOUT	EQU 1000H		;Auxillary out to UART
+	ELSE
+;Terminal operation
+CONSIN	EQU 4000H		;Console input from UART
+CONSOT	EQU 4000H		;Console output to UART
+LSTOUT	EQU 8000H		;List to Centronics
+AXIN	EQU 4000H		;Auxillary in from UART
+AXOUT	EQU 4000H		;Auxillary out to UART
+	ENDIF
+	ENDIF
+
+;Stack sizes
+INTSIZ	EQU 60			;Internal stack size
+USRSIZ	EQU 80			;Users stack size
+
+;Memory in 4k blocks given to CP/M PLUS
+VRTRK	EQU 0			;Reserved tracks from bank 1 (0 BIOS will set)
+BONDARY	EQU 8000H		;Bank boundary MUST be set if VRTRK NE 0
+	IF MAP OR G813
+BASBNK	EQU 1000H		;Base of banked memory
+	ELSE
+BASBNK	EQU 0000H		;Base of banked memory
+	ENDIF
+FDBANK	EQU 2			;First data bank
+FDADR	EQU BASBNK+1000H	;First address in FDBANK available to CP/M PLUS
+
+	IF VFC
+;VFC parameters
+
+	IF MAP OR G813
+INITM	EQU 04			;Non auto boot, inverse video
+	ELSE
+INITM	EQU 06			;Auto boot, inverse video
+	ENDIF
+
+	IF ALT
+VPORT	EQU 0C0H		;Alternate location
+	ELSE
+VPORT	EQU F2797		;Standard location
+	ENDIF
+CNTRL	EQU VPORT+0CH
+VSWICH	EQU VPORT+0EH		;VFC video 1
+
+EVMASK	EQU 00000011B		;EPROM and VRAM enable bits
+
+VFCCLR	EQU 3
+KBDST	EQU 5
+KBDIN	EQU 7
+VIDOUT	EQU 12
+
+	ENDIF
+
+	IF VFC OR IVC
+CURN	EQU 4808H		;Normal cursor (R10,11)
+CUR1	EQU 0009H		;Edit mode 1 cursor (Blinking block)
+CUR2	EQU 4009H		;Edit mode 2 cursor (Solid block)
+CURX	EQU 0808H		;No cursor (no blink), (2808h for no cursor)
+	ENDIF
+
+	IF IVC
+;Port controlled video (IVC)
+PVDUD	EQU 0B1H		;Data port (R/W)
+PVDUS	EQU PVDUD+1		;Status D0=1 Video busy, D7=0 Data ready
+PVDUR	EQU PVDUD+2		;Reset port
+	ENDIF
+
+KCHED	EQU 0			;Screen edit character
+
+PDATA	EQU PIO
+PDATB	EQU PIO+1
+PCTRLA	EQU PIO+2
+PCTRLB	EQU PIO+3
+
+;Kill Winchester if not assigned properly
+	IF DRVW EQ 0
+NDRVW	DEFL 0
+	ENDIF
+
+	IF NDRVW EQ 0
+DRVW	DEFL 0
+	ENDIF
+
+;Calculate number of floppies, by testing format and drive
+;Assign drive type to format
+NDRVF	DEFL 0
+FN	DEFL 1
+
+;Up to 15 floppies - Winchester assignment permitted
+	REPT 15-NDRVW
+;;Format and Floppy assinged ?
+	MLAB2 FM.,FORM,%FN,FG.,FASG,%FN
+	IF (FM. EQ 0) OR (FG. LT 1) OR (FG. GT 4)
+	EXITM
+	ELSE
+;;Drive exists ?
+	MLAB1 FT.,FPPY,%FG.
+	IF FT. EQ 0
+	EXITM
+	ENDIF
+	ENDIF
+
+NDRVF	DEFL NDRVF+1
+FN	DEFL FN+1
+	ENDM
+
+	IF DRVW
+;Winchester ports
+SASIC	DEFL 0E5H		; SASI control port
+SASID	DEFL SASIC+1		; SASI data port
+
+;WINCHESTER FORMAT
+SECW	EQU 512			;host bytes/sector
+MXSW	EQU 17			;host sectors/track
+OFFW	EQU 2			;system tracks
+
+FSTEP	EQU 5			;Fast step integer
+
+;Construct Winchester Block Size, Directory Allocation and Tracks
+MAKTRK	MACRO ?FD
+TOTTRK	DEFL CYL&?FD*HDS&?FD	;;Cylinders*head pairs
+BADALT	DEFL TOTTRK/150		;;Leave bad sector allocation
+TOTTRK	DEFL TOTTRK-BADALT	;;User tracks
+	ENDM
+
+MB1	EQU 110			;Tracks for 1Mb (approx)
+MB14	EQU 1650		;Tracks for 14Mb (approx)
+
+MAKPW	MACRO ?N
+	IF BLSW&?N EQ 0		;;Not 0 then user allocated
+	IF SIZW&?N LT MB14	;;Block size limited by max 16 dir allocs
+BLSW&?N	DEFL 4096		;;Block size 4k up to 14Mb
+	ELSE
+	IF SIZW&?N LT MB14*2
+BLSW&?N	DEFL 2*4096		;;Block size 8k up to 28Mb
+	ELSE
+BLSW&?N	DEFL 4*4096		;;Block size 16k up to 56Mb
+	ENDIF
+	ENDIF
+	ENDIF
+
+	IF DALW&?N EQ 0		;;Not 0 then user allocated
+;;Directory allocation blocks (1 4096 block per Mb approx)
+DALW&?N	DEFL (SIZW&?N/MB1)/(BLSW&?N/4096)+1
+	ENDIF
+
+	IF DALW&?N GT 16	;;16 dirs maximum
+DALW&?N	DEFL 16
+	ENDIF
+
+??BLS	DEFL BLSW&?N
+??DAL	DEFL DALW&?N
+;	SHOW BLOCK_SIZE,??BLS,DEC
+;	SHOW DIR_ALLOC,??DAL,DEC
+	ENDM
+
+;Make user assigned parameters
+MAKWU	MACRO ?NUM
+	IF SIZW&?NUM EQ 0	;;Me to assign rest
+?END	DEFL -1
+	EXITM
+	ENDIF
+NUM	DEFL NUM+1
+WINTOT	DEFL WINTOT-SIZW&?NUM	;;Take off user assigned
+NWIN	DEFL NWIN-1
+	MAKPW ?NUM
+	ENDM
+
+;Make my assigned
+MAKWM	MACRO ?NUM
+SIZW&?NUM	DEFL WINTOT/NWIN
+	MAKPW ?NUM
+NUM	DEFL NUM+1
+	ENDM
+
+;Assign Winchester
+	MAKTRK %DRVW		;Get total tracks
+
+WINTOT	DEFL TOTTRK		;Initialise tracks counter
+NWIN	DEFL NDRVW		;Initialise drive counter
+NUM	DEFL 1
+?END	DEFL 0
+
+;Set parameters for each Winchester
+	REPT NDRVW
+	MAKWU %NUM
+	IF ?END NE 0
+	EXITM
+	ENDIF
+	ENDM
+
+;Assign to rest
+	REPT NWIN
+	MAKWM %NUM
+	ENDM
+
+	ENDIF
+
+

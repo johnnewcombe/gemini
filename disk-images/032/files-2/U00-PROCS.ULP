@@ -1,0 +1,293 @@
+Procedure Repack_batchfile;
+
+var
+  zf : FILE of labelprint;
+
+begin
+  if Batchexists then
+  begin
+    reset(batchfile);
+    assign(zf,'B:COPY.$$$');
+    rewrite(zf);
+    while not eof(batchfile) do
+    begin
+      read(batchfile,batchitem);
+      if batchitem.QtyToPrint>0 then
+      write(zf,batchitem);
+    end;
+    close(batchfile);
+    close(zf);
+    erase(batchfile);
+    rename(zf,'MASTER.Q'+labext);
+    assign(batchfile,'B:MASTER.Q'+labext);
+    reset(batchfile);
+    maxnum:=filesize(batchfile);
+  end; {if batchexists}
+end;  {repack_file}
+
+Procedure display_queue;
+var
+  posn : integer;
+begin
+  posn:=1;
+  gotoxy(1,10);
+  reset(batchfile);
+  while not eof(batchfile) do
+  begin
+    read(batchfile,batchitem);
+    with batchitem do
+    begin
+      gotoxy(1,posn+9);
+      write(posn:3,'   Label= ',labelname:10);
+      gotoxy(27,posn+9);
+      write('Qty to Print= ',QtyToPrint,' ');
+      clreol;
+      posn:=posn+1;
+    end;  {of with}
+  end; {of while}
+  if posn<16 then
+  begin
+    gotoxy(1,posn+9);
+    write(posn:3);
+  end;
+end;  {of display_queue}
+
+procedure editqueue;
+
+label
+  dropout;
+
+begin
+  REPEAT
+    clrframe(10,25);
+    gotoxy(1,6);clreol;
+    display_queue;
+    clrframe(4,5);
+    write('        Delete  Amend   Move    Insert');
+    writeln;
+    write('        Entry   Qty     Entry   Entry');
+    gotoxy(1,8);write('Select Function above or press ESC to exit: ');clreol;
+    repeat
+      read(kbd,ans1);
+    until ans1 in [f1,f2,f3,f4,#27];
+    case ans1 of
+
+      f1 :
+      if batchexists then
+      begin      {Delete Entry}
+        repeat
+          entry:='';
+          gotoxy(1,8);
+          write('Enter number of entry to Delete or press <ESC> to exit: ');
+          clreol;
+          repeat
+            getinput(2,57,8,entry,'n',fin,1);
+            val(entry,entrynum,j)
+          until j=0;
+        until (entrynum in [1..maxnum]) or (fin);
+        if fin then goto dropout;
+        entrynum:=entrynum-1;
+        batchitem.QtyToPrint:=0;
+        seek(batchfile,entrynum);
+        write(batchfile,batchitem);
+        clrframe(10,25);
+        repack_batchfile;
+      end;
+
+      f2 :
+      if batchexists then
+      begin      {Amend Qty}
+        repeat
+          entry:='';
+          gotoxy(1,8);
+          write('Enter number of entry to amend or press <ESC> to exit: ');
+          clreol;
+          repeat
+            getinput(2,56,8,entry,'n',fin,1);
+            val(entry,entrynum,j)
+          until j=0;
+        until (entrynum in [1..maxnum]) or (fin);
+        if fin then goto dropout;
+        entrynum:=entrynum-1;
+        seek(batchfile,entrynum);
+        read(batchfile,batchitem);
+        Str(batchitem.QtyToPrint,entry);
+        inst:=false;
+        repeat
+          getinput(5,41,entrynum+10,entry,'n',fin,1);
+          val(entry,testq,j);
+        until (testq<=32000) and (j=0);
+        batchitem.QtyToPrint:=trunc(testq);
+        seek(batchfile,entrynum);
+        write(batchfile,batchitem);
+        gotoxy(41,entrynum+10);
+        write(batchitem.QtyToPrint,'     ');
+      end;
+
+      f3 :
+      if batchexists then
+      begin     {Move Entry}
+        repeat
+          entry:='';
+          gotoxy(1,8);
+          write('Enter number of entry to Move or press <ESC> to exit: ');
+          clreol;
+          repeat
+            getinput(2,55,8,entry,'n',fin,1);
+            val(entry,entrynum,j)
+          until j=0;
+        until (entrynum in [1..maxnum]) or (fin);
+        if fin then goto dropout;
+        entrynum:=entrynum-1;
+        seek(batchfile,entrynum);
+        read(batchfile,batchitem);
+        gotoxy(1,entrynum+10);
+        lowvideo;write('>',entrynum+1:2);normvideo;
+        write('   Label= ',batchitem.labelname:10,' ');
+        gotoxy(27,entrynum+10);
+        write('Qty to Print= ');
+        gotoxy(41,entrynum+10);
+        write(batchitem.QtyToPrint,' ');
+        repeat
+          entry:='';
+          gotoxy(1,8);write('Enter Position to move to: ');clreol;
+          repeat
+            getinput(2,28,8,entry,'n',fin,1);
+            val(entry,movetonum,j)
+          until j=0;
+        until movetonum in [1..maxnum];
+        movetonum:=movetonum-1;
+        Tempitem:=batchitem;
+        IF movetonum<entrynum then
+        for C:=entrynum-1 downto movetonum do
+        begin
+          seek(batchfile,C);
+          read(batchfile,batchitem);
+          write(batchfile,batchitem);
+        end;
+        if movetonum>entrynum then
+        for C:=entrynum+1 to movetonum do
+        begin
+          seek(batchfile,C);
+          read(batchfile,batchitem);
+          seek(batchfile,filepos(batchfile)-2);
+          write(batchfile,batchitem);
+        end;
+        seek(batchfile,movetonum);
+        write(batchfile,tempitem);
+      end; {of move}
+
+      f4 :
+      if maxnum<15 then
+      begin                                    {Insert entry}
+        setup;
+        repeat
+          entry:='';
+          gotoxy(1,8);
+          write('Enter position for new entry or press <ESC> to exit: ');
+          clreol;
+          repeat
+            getinput(2,54,8,entry,'n',fin,1);
+            val(entry,entrynum,j)
+          until j=0;
+        until (entrynum in [1..maxnum+1]) or (fin);
+        if fin then goto dropout;
+        entrynum:=entrynum-1;
+        clrframe(10,25);
+        labname:='';
+        gotoxy(1,10);
+        display_files('L'+labext,10,labeldrive[1]);
+        gotoxy(1,8); write('Enter Label Name: ');clreol;
+        getinput(8,19,8,labname,'c',fin,1);
+        assign(zf,labeldrive+labname+'.L'+labext);
+        {$I-} reset(zf);  {$I+}
+        i:=ioresult;
+        if i <>0 then
+        begin
+          gotoxy(1,8);lowvideo;
+          write('Label ',labname,' is not on drive ',labeldrive);
+          write('Error ',i);
+          normvideo; delay(4000);
+          close(zf);
+        end
+        else
+        begin
+          if entrynum=maxnum+1 then maxnum:=maxnum+1
+          else
+          for C:=maxnum-1 downto entrynum do
+          begin
+            seek(batchfile,C);
+            read(batchfile,batchitem);
+            write(batchfile,batchitem);
+          end;
+          str(nextnum,ss);
+          qname:=labeldrive+'QUELAB'+ss;
+          assign(tempf,qname+'.Q'+labext);
+          rewrite(tempf);
+          sccol(green);
+          while not eof(zf) do
+          begin
+            read(zf,lab);
+            write(tempf,lab);
+            put_on_screen;
+          end;
+          if VarsExist then
+          begin
+            reset(tempf);
+            while not eof(tempf) do
+            begin
+              read(tempf,lab);
+              if lab.mode='V' then
+              begin
+                areanum:=lab.area;
+                set_area_boundries;
+                update_current;
+                sccol(black);sstle(0);
+                breakline(lab.text);
+                i:=length(lab.text);
+                lab.text:='';
+                clrframe(4,5);
+                sccol(black);
+                breakline(lab.text);
+                put_cursor;
+                gotoxy(1,8);
+                write('Enter variable data: ');clreol;
+                getinput(i,22,8,lab.text,'b',fin,1);
+                sccol(green);
+                breakline(lab.text);
+                remove_cursor;
+                lab.mode:='T';
+                seek(tempf,filepos(tempf)-1);
+                write(tempf,lab);
+              end; {if mode=V}
+            end; {eof tempf}
+          end;  {if varsexist}
+          repeat
+            gotoxy(1,8);
+            write('Enter number of copies required (Maximum 32000): ');
+            clreol; entry:='';
+            getinput(5,49,8,entry,'n',fin,1);
+            val(entry,testq,j);
+          until (testq<=32000) and ((j=0) or (fin));
+          batchitem.qtytoprint:=trunc(testq);
+          batchExists:=TRUE;
+          batchitem.labelname:=labname;
+          batchitem.QueName:=qname;
+          seek(batchfile,entrynum);
+          write(batchfile,batchitem);
+          close(tempf); close(zf);
+          nextnum:=nextnum+1;
+          reset(numberfile);
+          write(numberfile,nextnum);
+          close(numberfile);
+          repack_batchfile;
+        end;
+      end;   {of insert}
+
+    end; {of case}
+dropout:
+  UNTIL (fin) or (ans1=#27);
+  close(batchfile);
+  close(numberfile);
+end;
+

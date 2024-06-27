@@ -1,0 +1,145 @@
+label out;
+const
+  data = $A1;    status = $A0;     init_ = $a6;
+  lto_ = $80;    mto_ = $97;    ffill_ = $82;
+  sccol_ = $89;    sfcol_ = $88;
+  scwp_ = $a5;    scdp_ = $83;    sstle_ = $8a;
+  red = 4;    blue = 2;
+  green = 1;    yellow = 5;    cyan = 3;    black = 0;
+
+  esc = #27;  cul = #28;  cur = #29;  cup = #30;  cud = #31;
+  ins = #23;  del = #127; cr = #13;  bs = #8;  ch = #25;
+  symbol_sizex = 540;
+  symbol_sizey = 283;
+
+  version = 'Version 2.04 17/02/88';
+
+   IndexMax              =  300;
+
+type
+     vecrec = Record
+       status : integer;
+       startx : integer;
+       starty : integer;
+       endx   : integer;
+       endy   : integer;
+     end; {of record}
+
+
+  str80 = string[80];
+  str14 = string[14];
+  str10 = string[10];
+  str8 = string[8];
+  str3  = string[3];
+  str2 = string[2];
+  str125 = string[125];
+  str255 = string[255];
+  vecline = array[0..30] of integer;
+
+  labelcont = record
+         stat : boolean;
+         area : integer;
+         across : integer;
+         down : integer;
+         scale : real;
+         font : string[14];
+         pen : byte;
+         mode : char;
+         key : str10;
+         modif : byte;
+         text : str125;
+   end; {of record}
+
+   Keytype        = string[10];
+   MaxPhraseSize  = string[125];
+
+   DataRec = record
+      case Boolean of
+         TRUE      : (NumRecs    : Integer);
+         FALSE     : (Key        : Keytype;
+                      phrase     : MaxPhraseSize);
+   end; {of record}
+
+   IndexRec  = record
+     Key   : KeyType;
+     Num   : Integer;
+   end; {of record}
+
+   IndexList  =  array[1..IndexMax] of IndexRec;
+
+   Use_name = (Move,EntTx1,EntTx2,EntSy,EntVar,Save,Edt1,Edt2,non);
+   Info_name = (Blank,Svl,CurrentLb,CurrentAr,CurrentFt,CurrentSc,CurrentPn);
+
+   Dimension = (Line, Box);
+   picture   = (Symbolarea, Textarea, Null);
+
+   paramrec = record
+     case first : boolean of
+      TRUE : (label_name : str8;
+              label_extension : str2;
+              label_drop : real);
+     FALSE :
+      (Partition : integer;      {At present, 1 or 2}
+        AreaType : dimension;    {Line or Box}
+              tx : integer;      {If Line: tx,ty = FROM}
+              ty : integer;      {If Box: tx,ty = top left corner}
+              bx : integer;      {If Line: bx,by = TO}
+              by : integer;      {If Box:  bx,by = bottom right corner}
+         Noprint : boolean;      {TRUE = Don't print on label}
+        Contents : picture);     {Symbolarea, Textarea or Null for line}
+   end;  {of record}
+
+
+var
+  Klist      :  Indexlist;
+  Rec        :  DataRec;
+  Dfile      :  File of DataRec;
+  MaxRec     :  Integer;
+  symname : str10; {symbol name}
+  sf : File of vecrec;
+  symvec : vecrec;
+  ir : byte;
+  col, sx, sy, tx, ty, count : integer;
+  by : byte;
+  k,j,i,l : integer;
+  x,y : integer;
+  a,d : real;
+  f : FILE;
+  tl,nl : str125;
+  num, inp : integer;
+  ac, dn : integer;
+  cf : file of vecline;
+  scl : real;
+  vecary : array [1..95] of vecline;
+  ans : char;
+  scalbase,base,cx,cy,cx1,cy1 : integer;
+  tcx,tcy,fcx,fcy : integer;
+  lab : labelcont;
+  oldname, newname, labname : string[10];
+  tempf,lf,nf : file of labelcont;
+  fontname : string[8];
+  opmode : Use_name;
+  curpen : integer;
+  curmode : char;
+  areanum, top, bottom, left, right : integer;
+  charsize : integer;
+  inst, fin : boolean;
+  error : integer;
+  noup, nodown, up, down : boolean;
+  tempstr : str125;
+  xoffs, yoffs : integer;
+  vector : vecline;
+  penwidth : byte;
+  ifnm : info_name;
+  txtmode : char;
+  Vsize : str3;
+  Vn, Breaknum : integer;
+  Curdp, Curwp : byte;    {Current Pluto display & work partition}
+  labeldrive, workdrive : str3;
+  paramf : FILE of paramrec;
+  param : paramrec;
+  labext : str2;
+  twoscreens : boolean;
+  VarsExist : boolean;
+  jumpx, jumpy : integer;
+

@@ -1,0 +1,448 @@
+Procedure Map of Pluto Labels Program V16 20/9/86.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+HEADER.INC.           {Const, Type & Var Declarations}
+             Types:
+             vecrec = Vector record, used for symbols.
+             labelcont = Label contents record.
+             DataRec = Record of Risk and Safety phrases {RISKSAFT.DAT}
+             IndexRec = Record for index of DataRec.
+             IndexList= Array of IndexRec.
+             Use_name = List of uses of function keys
+             Info_name= Extra info line for Use_name
+             STR3,10,14,80,125,255 = String types
+             Sixbyte = array of 128 bytes to hold printer output bytes
+             Vecline = array of 30 integer for character vectors
+
+PLUTO16.PAS           {Main Program with include files}
+             Proc Set_area_boundries
+             To set up variables top,bottom,left,right for the current area
+             Calls: nil
+
+DISP.INC              {To display certain files on current drive}
+
+PLUTO.INC             {All the Pluto Procedures/Functions}
+
+UTILS.INC             {Utility / Global Procs & Functions}
+
+1.            Proc options
+              To go to line 8, clear it, write OPTIONS ready for input.
+              Params: nil
+              Calls: nil
+
+2.            Proc draw_vector
+              To draw a symbol vector.
+              Params:
+                    start x co-ord
+                    start y co-ord
+                    end x co-ord
+                    end y co-ord
+                    colour to use
+              Vector values are scaled and any screen offset is added.
+              Start and End are the same for a Move.
+              Status is 1 for move/line and 2 for fill
+              Calls:
+                   sccol (pluto)
+                   moveto (pluto)
+                   lto (pluto)
+                   ffill (pluto).
+
+3.            Proc Key_info
+              To display second or third information lines below
+              function key uses.
+              Params:
+                     line number to display on
+                     info name for case statement
+              Calls: nil
+
+4.            Proc Key_use
+              To display the uses of the function keys during various
+              parts of the program
+              Params:
+                     use name for case statement
+              Calls:
+                    Key_info (utils)
+
+5.            Proc SortIndexList
+              To sort the index list of the RISKSAFT.DAT
+              Params: nil
+              Calls: nil
+
+6.            Proc MakeIndex
+              To create the index file of RISKSAFT.DAT
+              Params: nil
+              Calls:
+                     SortIndexList (utils)
+
+7.            Funct FindKey
+              To search the Index file for a given key
+              Returnes an integer for position in file or -1
+              if not found.
+              Params:
+                     Key to be searched for
+              Calls: nil
+
+8.            Proc CloseFile
+              To update and close RISKSAFT.DAT
+              Params: nil
+              Calls: nil
+
+9.            Proc Delay
+              To delay for a specified time
+              Params:
+                     Number of times to count to MAXINT
+              Calls: nil
+
+10.           Proc Clrframe
+              To clear the display on the main screen
+              Params:
+                  screen line to start clearing
+                  screen line to finish clearing
+              Calls: nil
+
+11.           Proc Display_label_area
+              To display label areas and outline on Pluto in blue
+              Params: nil
+              At current stage all params are in the procedure.
+              Future versions will read params from a disk file.
+              Calls:
+                     sccol (pluto)
+                     moveto (pluto)
+                     lto (pluto)
+
+12.           Proc Display_edit_options
+              To display the editing options in the input procedure
+              Params: nil
+              Calls: nil
+
+13.           Funct UpCaseStr
+              To return a string converted to Uppercase
+              Params:
+                     string to convert (max 80 chars)
+              Calls: nil
+
+14.           Funct ConstStr
+              To return a string of a character
+              Params:
+                     character to be used
+                     number of these chars to return
+              Used to print a row of dashes for instance.
+              Calls: nil
+
+15.           Proc Getinput
+              15.1    Proc printchar
+                      To insert a char into input string and print on screen
+                      Params: nil
+                      Calls: nil
+              To read an input line on the screen
+              Params:
+                     1) Max number of chars to be input
+                   2-3) Params giving start of line on screen
+                     4) Kind of chars permitted:
+                         1) Alpha
+                         2) Numeric
+                         3) Alphanumeric
+                         4) Alphanumeric with lowercase to uppercase
+                         5) Specials
+                     5) Boolean TRUE if ESC pressed
+                     6) Position in string to start input
+              Calls:
+                    ConstStr (utils)
+                    printchar (getinput)
+
+16.           Proc scalefont
+              To re-scale the vectors in the array holding the characters
+              Params: nil
+              Calls: nil
+
+17.           Proc Loadfont
+              To load the font from the disk file into the array
+              Params: nil
+              Calls: nil
+
+18.           Proc Fontchange
+              To request and load a new font
+              Params: nil
+              Calls:
+                    loadfont (utils)
+                    scalefont (utils)
+                    options (utils)
+
+19.           Proc Scalechange
+              To request a new scale and re=scale font
+              Params: nil
+              Calls:
+                    scalefont (utils)
+                    options (utils)
+
+20.           Proc Penchange
+              To request and change to a new pen shape
+              Displays the four pen shapes available
+              Updates the variable PENWIDTH
+              Updates the Pen Number on screen
+              Params: nil
+              Calls:
+                    clrframe (utils)
+                    options (utils)
+                    Key_info (utils)
+
+21.           Proc Remove_cursor
+              To remove the blue cursor cross on the Pluto screen
+              without destroying any of the other colour planes
+              by ANDing it with the same cross in yellow.
+              Params: nil
+              Calls:
+                    sstle (pluto)
+                    sccol (pluto)
+                    moveto (pluto)
+                    lto (pluto)
+
+22.           Proc Put_cursor
+              To place the blue cursor on the Pluto screen
+              without destroying any of the other colour planes
+              by ORing it in blue
+              Params: nil
+              Calls:
+                    sstle (pluto)
+                    sccol (pluto)
+                    moveto (pluto)
+                    lto (pluto)
+
+23.           Proc Setkeys
+              To setup the characters to be returned by the function keys
+              Params: nil
+              Calls: nil
+
+24.           Proc Write_it
+              24.1        Proc print
+                          To print a string passed to WRITE_IT on Pluto
+                          screen starting at a position set by WRITE_IT
+                          Params: nil
+                          Calls: moveto (pluto)
+                                 lto (pluto)
+              To write a string on Pluto screen by calling PRINT the
+              required number of times with different start points
+              depending on the current PEN
+              Params:
+                      string to be printed (max 255)
+              Calls:
+                    print (write_it)
+
+25.           Proc Breakline
+              To calculate if a string to be printed on Pluto is too
+              long for the area and if so, where to break it.  The whole
+              string or the broken parts of it are passed to WRITE_IT
+              It can trap a single word string that is too long.
+              Params:
+                     string to be broken and printed. (max 255)
+              Calls:
+                    delay (utils)
+                    breakline (recursive)
+                    write=it (breakline)
+                    moveto (pluto)
+
+26.           Proc Show_function_line
+              To display on main screen F0 to F9 in inverse video
+              Params: nil
+              Calls: nil
+
+27.           Proc Setup
+              To initialise and setup defaults required at the start
+              of a label
+              Params: nil
+              Calls:
+                    initialise (pluto)
+                    sccol (pluto)
+                    sbcol (pluto)
+                    sstle (pluto)
+
+28.           Proc Delete_Symbol
+              To delete a symbol on the Pluto screen by re_drawing
+              it in black.
+              Params:
+                     name of file of symbol vectors
+              Calls:
+                    delay (utils)
+                    draw_vector (utils)
+
+29.           Proc Put_symbol
+              To draw a symbol on the Pluto screen in green when
+              accepted as OK.
+              Params:
+                     name of file of symbol vectors
+              Calls:
+                    delay (utils)
+                    draw_vector (utils)
+
+30.           Proc Temp_symbol
+              To draw a symbol on the Pluto screen in red as a
+              temporary display awaiting acceptance as OK
+              Params:
+                     name of file of symbol vectors
+              Calls:
+                    delay (utils)
+                    draw_vector (utils)
+
+
+ENTER.INC           {Procedures for entering text and symbols into a label}
+
+1.            Proc Text_edit_and_place
+              To get a line of free text
+              To display it in red on Pluto
+              To edit line contents
+              To re=position line within area
+              To change font, scale and pen
+              To Abort or accept line
+              Params: nil
+              Calls:
+                    Display_edit_options (utils)
+                    getinput (utils)
+                    clrframe (utils)
+                    key_use (utils)
+                    options (utils)
+                    sccol (pluto)
+                    sstle (pluto)
+                    breakline (utils)
+                    remove_cursor (utils)
+                    put_cursor (utils)
+                    fontchange (utils)
+                    loadfont (utils)
+                    scalechange (utils)
+                    penchange (utils)
+
+2.            Proc Enter_text
+              To check that an Area, Font and Label have been selected
+              To position the cursor before text input
+              To set up for Free Text input or Standard Phrases
+              To do input by calling TEXT_EDIT_AND_PLACE
+              To put function key use and info lines back as required
+              in move mode at end.
+              Params: nil
+              Calls:
+                    clrframe (utils)
+                    delay (utils)
+                    Key_use (utils
+                    Remove_cursor (utils)
+                    Put_cursor (utils)
+                    UpCaseStr (utils)
+                    Display_edit_options (utils)
+                    Getinput (utils)
+                    FindKey (utils)
+                    Text_edit_and_place (enter)
+                    Key_info (utils)
+
+3.            Proc Update_current
+              To update the current Font, Scale, Pen, Penwidth and
+              area boundries to that of the label line selected
+              for edit or being read from file and drawn on Pluto
+              Params: nil
+              Calls:
+                    delay (utils)
+                    loadfont (utils)
+                    scalefont (utils)
+
+4.            Proc Put_on_screen
+              To put a line of text or a symbol onto Pluto.
+              To update the Font, Scale and Pen Vars and displays
+              Params: nil
+              Calls:
+                    update=current (enter)
+                    breakline (utils)
+                    Key_info (utils)
+                    Set_area_boundries (Pluto16)
+                    put_symbol (utils)
+
+5.            Proc Display_lab_contents
+              To read a label file and call Put_on_screen to
+              put each line/symbol onto Pluto
+              Params: nil
+              Calls:
+                    remove_cursor (utils)
+                    put_on_screen (enter)
+                    key_info (utils)
+
+6.            Proc Load_symbol
+              The Symbol eqivalent of ENTER_TEXT.
+              Displays all symbols on current drive
+              Requests and displays a symbol in red
+              Re-displays in green if accepted and puts data in
+              label file.
+              Params: nil
+              Calls:
+                    display_files (disp)
+                    getinput (utils)
+                    temp_symbol (utils)
+                    clrframe (utils)
+                    sstle (pluto)
+                    delete_symbol (utils)
+                    put_symbol (utils)
+                    remove_cursor (utils)
+
+EDIT.INC          {Procs used when editing a label's contents}
+
+1.            Proc Repack_file
+              To rewrite the label file omitting the deleted
+              entries.
+              params: nil
+              calls: (not written yet)
+
+2.            Proc indicate
+              To indicate on the main screen the parameters
+              of the line/symbol during the scan for editting
+              Params: nil
+              Calls:
+                    Remove_cursor (utils)
+                    set_area_boundries (pluto16)
+                    put_cursor (utils)
+
+3.            Proc redraw_label
+              To clear Pluto and redraw the label from the temp file
+              in cases of a screen corruption
+              Params: nil
+              Calls:
+                    initialise (pluto)
+                    sccol (pluto)
+                    sstle (pluto)
+                    display_label_area (utils)
+                    put_on_screen (enter)
+
+4.            Proc edit_routine
+              To do the editting on a selected line/symbol
+              Allows deletion of line/symbol.
+              Allows change of Font, Scale, Pen or text
+              Allows the repositioning of a text line
+              Amendments can be abandoned or accepted.
+              If accepted, temp file is updated.
+              Params: nil
+              Calls:
+                    Key_use (utils)
+                    sccol (pluto)
+                    put_on_screen (enter)
+                    delete_symbol (utils)
+                    fontchange (utils)
+                    loadfont (utils)
+                    scalechange (utils)
+                    getinput (utils)
+                    clrframe (utils)
+                    set_area_boundries (pluto16)
+                    breakline (utils)
+                    put_symbol (utils)
+                    remove_cursor (utils)
+                    put_cursor (utils)
+
+
+5.            Proc Edit_label
+              To scan through a label and select a
+              line/symbol for editting.
+              Params: nil
+              Calls:
+                    redraw_label (edit)
+                    indicate (edit)
+                    edit_routine (edit)
+                    clrframe (utils)
+                    repack_file (edit)
+
+PLUTO16.PAS           {Main Part}
+
+Setup the screen and defaults
+Create index file of RISKSAFT.DAT
+

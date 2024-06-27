@@ -1,0 +1,47 @@
+MFT - a Multiple File Transfer Utility
+======================================
+
+by Lawrence E. Hughes
+Mycroft Labs, P.O.Box 6045
+Tallahassee, FL 32301
+
+The listing for this utility appeared in Dr.Dobbs, October 1980.
+
+" This article describes the design and
+use of a utility which makes it practical
+to use a single disk drive on the Digital
+Research CP/M operating system. The
+entire source is included in this article,
+and is also available from the author
+on an 8" single density, 128-byte sector
+diskette, along with a few other public
+domain programs, from the above address,
+for $15. I hereby release MFT into
+the public domain, for use on any CP/M
+(or other) system. No right is granted
+for resale, with or without modifications.
+
+To use MFT, merely type its name,
+followed by one or more ambiguous file
+names (using ? and/or * wildcards).
+You will be prompted to mount the input
+disk and type CR. At this time, the disk
+with MFT may be removed, if the desired
+files are on a different disk. Once the
+input disk is mounted, the directory
+will be searched and a list of all file
+names which satisfy at least one of the
+ambiguous file names will be compiled.
+As many files as will fit into memory will
+then be read. You will then be asked to
+mount the output disk and type CR.
+Note that MFT can write on this disk
+without your having to 'log it in'. All
+data read from the input disk is then
+written to the output disk. If more
+files remain to be read, this cycle repeats
+until all files are transferred. As an
+example, MFT *.* may be used to copy 
+all files from one disk to another.
+
+
