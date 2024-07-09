@@ -1,15 +1,18 @@
 version: "3.8"
 services:
-  xbeaver:
+xbeaver:
     container_name: "xbeaver"
     restart: always
     build: .
     privileged: true
-    image: "johnnewcombe/xbeaver:1.3"
+    image: "<user>/xbeaver:<tag>"
     ports:
-      - target: 5901
+    - target: 5901
         published: 5901
-      - target: 6901
+    - target: 6901
         published: 6901
+    device_cgroup_rules:
+    - 'c *:* rmw'
     volumes:
-      - /Users/john/.xbeaver:/root/xbeaver
+    - /Users/<user>/.xbeaver:/root/xbeaver
+    - /dev:/dev
