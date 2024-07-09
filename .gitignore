@@ -3,3 +3,7 @@
 ._.DS_Store
 **/.DS_Store
 **/._.DS_Store
+.DS_Store
+disk-images/.DS_Store
+utilities/.DS_Store
+utilities/gemdisk/.DS_Store
