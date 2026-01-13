@@ -101,7 +101,7 @@ Note that MFB-1 was designed to run with the GM829 controller. MFB-2 requires th
 
     001 - GM555 Bios 3.5 2-DM Serial 2-248-03060__
     002 - Gemini Bios 3's
-    003 - GM860 EPROM Programmer Source Listings and Prigram Version 1.0 28/11/85__
+    003 - GM860 EPROM Programmer Source Listings and Program Version 1.0 28/11/85__
     004 - Upgrade Software for MultiNet, MultiNet Version 2 29/09/85__
     005 - GM925 MFB 2 Master Disk Bios Vers 3.3 10W Release 1.3 Serial 2-248-02662__
     006 - MFB 2 Update, Update Release December 1985 Bios 3.4

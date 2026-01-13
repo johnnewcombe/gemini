@@ -4,8 +4,9 @@ import (
 	_ "embed"
 	"fmt"
 	"gemdisk/globals"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -26,12 +27,14 @@ const (
 // ******************************************************
 // Bios 3.5
 // ******************************************************
+//
 //go:embed "embedded/bios35.bin"
 var BiosFW35_sys []byte
 
 // ******************************************************
 // Bios 1.4
 // ******************************************************
+//
 //go:embed "embedded/bios14.bin"
 var BiosF14_sys []byte
 
@@ -40,6 +43,7 @@ var BiosF14_sys []byte
 // ******************************************************
 // This is the version that does all bios 3 formats and
 // supersedes the one supplied with 3.2
+//
 //go:embed "embedded/FORMAT.COM"
 var Format_com []byte
 

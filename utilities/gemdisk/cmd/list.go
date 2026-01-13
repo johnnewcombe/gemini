@@ -3,8 +3,9 @@ package cmd
 import (
 	"fmt"
 	"gemdisk/disk"
-	"github.com/spf13/cobra"
 	"io/ioutil"
+
+	"github.com/spf13/cobra"
 )
 
 var listCmd = &cobra.Command{
@@ -35,7 +36,12 @@ var listCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\r\n\r\nDIRECTORY LISTING FOR %s.\r\n", inputDiskImage)
-		fmt.Print(dsk.ListFiles())
+		list, err := dsk.ListFiles()
+		if err != nil {
+			return err
+		}
+
+		fmt.Print(list)
 
 		return nil
 	},

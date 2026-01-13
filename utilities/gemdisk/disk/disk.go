@@ -31,6 +31,7 @@ const (
 	RecordsPerExtent        = 128
 	QDDSSize                = 819200
 	DDDSSize                = 358400
+	QDDSHalfSize            = 409600
 	textEof            byte = 0x1F
 	deleteByte         byte = 0xE5
 	allAreas                = 255
@@ -57,6 +58,7 @@ func (d *Disk) LoadDiskImage(data []byte) error {
 	)
 
 	switch len(data) {
+	case QDDSHalfSize:
 	case QDDSSize:
 		d.Qdds = true
 	case DDDSSize:
@@ -138,6 +140,8 @@ func (d *Disk) ReadFile(filename Filename) ([]byte, error) {
 
 	// get file size (based on 128 byte records)
 	fileSize = int(lastEntry.EX)*ExtentBytes + (int(lastEntry.RC) * RecordBytes)
+
+	result = make([]byte, 0, fileSize)
 
 	for _, entry = range entries {
 		for _, allocation := range entry.Allocations {
@@ -271,7 +275,7 @@ func (d *Disk) FileExists(filename Filename) bool {
 }
 
 // ListFiles List all files from all user areas. Excludes deleted files.
-func (d *Disk) ListFiles() string {
+func (d *Disk) ListFiles() (string, error) {
 
 	var (
 		result    strings.Builder
@@ -286,7 +290,7 @@ func (d *Disk) ListFiles() string {
 
 	for _, entry = range d.DirectoryEntries {
 
-		key:= string(entry.Filename.UserArea)+entry.Filename.Name+entry.Filename.Extn
+		key := string(entry.Filename.UserArea) + entry.Filename.Name + entry.Filename.Extn
 
 		// if the value (bool) is false then the name is not already in the map
 		if _, value := keys[key]; !value && entry.Filename.UserArea != deleteByte {
@@ -298,6 +302,11 @@ func (d *Disk) ListFiles() string {
 			// the largest extent
 			fn := Filename{UserArea: entry.Filename.UserArea, Name: entry.Filename.Name, Extn: entry.Filename.Extn}
 			directories := d.GetDirectoryEntries(fn)
+
+			if directories == nil {
+				return "", errors.New("no directory entries found")
+
+			}
 			last := directories[len(directories)-1:][0]
 			result.WriteString(fmt.Sprintf("  %2d  %8s.%3s  %6d\r\n", last.Filename.UserArea, strings.Trim(last.Filename.Name, " "), last.Filename.Extn, d.GetFileSize(fn)))
 
@@ -310,7 +319,7 @@ func (d *Disk) ListFiles() string {
 	result.WriteString(fmt.Sprintf(" free: %3d blocks\r\n", d.FreeBlockCount()))
 	//	result.WriteString(fmt.Sprintf("bytes: %3d K\r\n\r\n",int(math.Ceil(float64(byteCount)/1024))))
 	result.WriteString(fmt.Sprintf("bytes: %3d\r\n\r\n", byteCount))
-	return result.String()
+	return result.String(), nil
 }
 
 // Dump Dumps the disk image to the console.
@@ -439,7 +448,7 @@ func (d *Disk) ToBytes() []byte {
 	return result
 }
 
-//FreeBlockCount Returns the number of free blocks.
+// FreeBlockCount Returns the number of free blocks.
 func (d *Disk) FreeBlockCount() int {
 
 	return int(d.lastBlock) - d.UsedBlockCount()
@@ -743,6 +752,7 @@ func (d *Disk) getDirectory() []byte {
 	var result []byte
 
 	//directory is first 4k of data i.e. start of third track (2)
+
 	sects := d.Sectors[20:28]
 
 	// convert to a byte slice
