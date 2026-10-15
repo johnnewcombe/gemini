@@ -1,0 +1,84 @@
+00 - CPM_BIOS34_JN.1.GEMQDDS.IMG * CPM_Bios34_JN - 64K Version of CP/M distributed with the 3.4 MFB Bios with selected utilities and tools.
+01 - GM555_MASTER.1.GEMQDDS.IMG * GM555_64K_CPM - 64K Version of CP/M based as supplied with the GM555 (BIOS 3.5) distribution.
+02 - GM557_MBASIC.1.GEMQDDS.IMG 
+03 - GM512_MASTER.1.GEMDDDS.IMG * GM512_64K_CPM - 64K Version of CP/M based as supplied with the GM512 (BIOS 1.4) distribution.
+04 - DISKUTILS.1.GEMDDDS.IMG * DiskUtils - Format utilities retrieved from a gemini system. This disk also includes the CopySys program (see text).
+05 - DBASE241.1.GEMDDDS.IMG * DBASEII - Ashton Tate's DBaseII
+06 - WS3_IVC.1.GEMDDDS.IMG * Wordstar3 - Wordstar 3 configured for the Gemini IVC Video Card.
+07 - WS4.1.GEMDDDS.IMG 
+08 - TURBO.1.GEMDDDS.IMG * TurboPascal - Turbo Pascal 3 from Borland.
+09 - TURBODBT.1.GEMDDDS.IMG * TurboPascalDBToolkit - Turbo Pascal 3 database toolkit from Borland.
+10 - AZTECC.1.GEMDDDS.IMG * AztecC - Aztec C compiler and library utilities.
+11 - AZTECC.2.GEMDDDS.IMG * AztecC - Aztec C compiler and library utilities.
+12 - VEDIT.1.GEMDDDS.IMG * VEdit - VEdit text editor.
+13 - TEX.1.GEMDDDS.IMG * Tex - The Tex text formatter from Digital Research.
+14 - ASCOM22.1.GEMDDDS.IMG * Ascom_2.2 - ASCOM ver 2.2 for CP/M 2.2 is a Communications program.  Originally came on an Osbourne disk but was running on a Microbee.
+15 - ROOTS.1.GEMDDDS.IMG * Roots - The Roots genealogy Program.
+16 - GEMZAP.1.GEMDDDS.IMG * GemZap - GemZap, the Gemini Z80 compiler.
+17 - NSWEEP.1.GEMDDDS.IMG * NSweep - NSweep, the CP/M file manager.
+18 - SARGON.1.GEMDDDS.IMG * SargonChess - Sargon Chess.
+19 - ZORK1.1.GEMDDDS.IMG * Zork1 - The Zork1 adventure game.
+20 - ALIENS.1.GEMDDDS.IMG * Aliens - Space Invaders for CP/M
+21 - LADDER.1.GEMDDDS.IMG * Ladder - Ladder 'Super Mario' type clone for CP/M complete with terminal configuration utility.
+22 - CATCHUM.1.GEMDDDS.IMG * Catchum - Catchum 'Pacman' type clone for CP/M complete with terminal configuration utility.
+23 - NEMESIS.1.GEMDDDS.IMG * Nemesis - The Nemesis adventure game.
+24 - HITCH.1.GEMDDDS.IMG * Hitchhiker - Dont Panic!, it's the Hitchhikers Guide to the Galaxy.
+25 - CBASICCOMPILER.1.GEMDDDS.IMG * CBasicCompiler - CBasic Compiler.
+26 - GEMDEBUG.1.GEMDDDS.IMG * GemDebug - GemDebug, the Gemini Z80 debugger.
+27 - MACRO80.1.GEMDDDS.IMG * Macro80 - Microsoft's M80/L80/LIB80/CREF80 Assembler, linker, library and cross referencing utilities.
+28 - FORTRAN80.1.GEMDDDS.IMG * Fortran80 - Microsoft Fortran 80.
+29 - COBOL80.1.GEMDDDS.IMG * Cobol80 - Microsoft Cobol 80.
+30 - MBASIC.1.GEMDDDS.IMG * MBasic - Microsoft Basic.
+31 - MUMPS4.1.GEMDDDS.IMG * Mumps4 - Massachusetts General Hospital Utility Multi-Programming System.
+32 - MUMPS4.2.GEMDDDS.IMG * Mumps4 - Massachusetts General Hospital Utility Multi-Programming System.
+33 - TNET.1.GEMDDDS.IMG * T-Net - Serial port based networking utility developed by John B. Hanson.
+34 - ZSID14.1.GEMDDDS.IMG * ZSID - The Z80 symbolic instruction debugger from Digital Research.
+35 - XIZtoXZI.1.GEMDDDS.IMG * XIZtoXZI - Z80 to Intel, Intel to Z80 convertor.
+36 - MALLARD80BASIC.1.GEMDDDS.IMG * Mallard80Basic - Mallard Basic.
+37 - SC2.1.GEMDDDS.IMG * SuperCalc2 - Supercalc 2 spreadsheet program.
+38 - XEBEC_UTILS.1.GEMDDDS.IMG 
+39 - XEBEC_UTILS.1.GEMQDDS.IMG 
+40 - GM925_Backup_A0.1.GEMQDDS.IMG 
+41 - GM925_Backup_A0.2.GEMQDDS.IMG 
+42 - GM925_Backup_A0.3.GEMQDDS.IMG 
+43 - GM925_Backup_A0.4.GEMQDDS.IMG 
+44 - GM925_Backup_A0.5.GEMQDDS.IMG 
+45 - GM925_Backup_A10.1.GEMQDDS.IMG 
+46 - GM925_Backup_A2.1.GEMQDDS.IMG 
+47 - GM925_Backup_A3.1.GEMQDDS.IMG 
+48 - GM925_Backup_A9.1.GEMQDDS.IMG 
+49 - GM925_Backup_B0.1.GEMQDDS.IMG 
+50 - GM925_Backup_B1.1.GEMQDDS.IMG 
+51 - GM925_Backup_B10.1.GEMQDDS.IMG 
+52 - GM925_Backup_B15.1.GEMQDDS.IMG 
+53 - GM925_Backup_B2.1.GEMQDDS.IMG 
+54 - GM925_Backup_B3.1.GEMQDDS.IMG 
+55 - GM925_Backup_B4.1.GEMQDDS.IMG 
+56 - GM925_Backup_B5.1.GEMQDDS.IMG 
+57 - GM925_Backup_B6.1.GEMQDDS.IMG 
+58 - GM925_Backup_B8.1.GEMQDDS.IMG 
+59 - GM925_Backup_B9.1.GEMQDDS.IMG 
+60 - BIOS14_BLANK.GEMDDDS.IMG
+61 - BIOS14_BLANK.GEMDDDS.IMG
+62 - BIOS14_BLANK.GEMDDDS.IMG
+63 - BIOS14_BLANK.GEMDDDS.IMG
+64 - BIOS14_BLANK.GEMDDDS.IMG
+65 - BIOS14_BLANK.GEMDDDS.IMG
+66 - BIOS14_BLANK.GEMDDDS.IMG
+67 - BIOS14_BLANK.GEMDDDS.IMG
+68 - BIOS34_BLANK.GEMQDDS.IMG
+69 - BIOS34_BLANK.GEMQDDS.IMG
+70 - BIOS34_BLANK.GEMQDDS.IMG
+71 - BIOS34_BLANK.GEMQDDS.IMG
+72 - BIOS34_BLANK.GEMQDDS.IMG
+73 - BIOS34_BLANK.GEMQDDS.IMG
+74 - BIOS34_BLANK.GEMQDDS.IMG
+75 - BIOS34_BLANK.GEMQDDS.IMG
+76 - BIOS35_BLANK.GEMQDDS.IMG
+77 - BIOS35_BLANK.GEMQDDS.IMG
+78 - BIOS35_BLANK.GEMQDDS.IMG
+79 - BIOS35_BLANK.GEMQDDS.IMG
+80 - BIOS35_BLANK.GEMQDDS.IMG
+81 - BIOS35_BLANK.GEMQDDS.IMG
+82 - BIOS35_BLANK.GEMQDDS.IMG
+83 - BIOS35_BLANK.GEMQDDS.IMG
